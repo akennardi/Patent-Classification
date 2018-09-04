@@ -1,0 +1,219 @@
+                                        Abstract
+The invention of using microcontroller integrated circuit board with embedded IMU
+algorithms for sport equipment (ball) traction. Usage of inexpensive components as
+gyroscope, accelerometer and magnetometer injected into the ball acquires readings
+during ball motions. Embedded processor performs calculations of ball's orientation
+and earth referenced acceleration. Wireless data transmission reduces the need of
+physical connection between microcontroller and requestor's equipment. In this context
+the equipment is any device which supports wireless data transmission like
+smartphone, personal computer and smart-watch. Each round or ball feed takes
+recording and processes the data for a short period of time (no more than 30 seconds).
+During this period the human which interacts with the invention performs relevant
+action by feeding the ball. Each round is transmitted back to the client to represent
+relevant information about the flight: velocity, flight time, revolution rate, flight distance.
+
+                                                          8$
+                                         TuhDownat 4274
+                                     J                    2
+                                       j                     M/Sec
+  Time cycle: 0
+                        le pmt at324
+22 Meters
+                                                            25
+                                                              20$
+                                                            10
+         Time cy cle: 0                                         -
+                                         __4ca6..       3      M/Sec
+
+     Editorial Note
+      <removed-apn>
+There are six pages of description only
+
+Konstantin Rebrov
+April 30, 2018
+This document describes the principle of providing inexpensive real time spot analytical system with the
+reference to the Cricket game. The solution has been developed to track flight trajectory, revolution
+rate, and velocity with a set of sensors embedded in the ball. The model is not tied to the Cricket in
+particular therefore the same approach can be used in the similar areas like baseball, tennis or golf.
+The overall solution diagram provided in the Figure 1 (see drawing document)
+The prototype has been developed with the following key components Figure 2 (see drawing document)
+     1) ESP8266 - wifi module and L106 32-bit RISC microprocessor
+     2)  MPU9250 sensor with accelerometer, gyroscope and magnetometer
+Mathematical model
+Position and rotation matrix
+According to Euler's rotation theorem [1][3] the rotation of a rigid body (or three-dimensional
+coordinate system with the fixed origin) is described by a single rotation about some axis. Such a
+rotation may be uniquely described by a minimum of three real parameters. However, for various
+reasons, there are several ways to represent it. Many of these representations use more than the
+necessary minimum of three parameters, although each of them still has only three degrees of freedom.
+An example where rotation representation is used is in computer vision, where an automated observer
+needs to track a target. Let's consider a rigid body, with three orthogonal unit vectors fixed to its body
+(representing the three axes of the object's local coordinate system). The basic problem is to specify the
+orientation of these three unit vectors, and hence the rigid body, with respect to the observer's
+coordinate system, regarded as a reference placement in space. The ultimate goal is to describe the 3D
+trajectory and ball's telemetry in the 6 degrees of freedom (6Dof) as per Figure 3 (see drawings
+document)
+In order to do that the best way is to use quaternion. Quaternions, that form a four-dimensional vector
+space, have proven very useful in representing rotations due to several advantages above the classical
+Euler representations mentioned above [2]. Given that Euler vector [3] usage might lead to the Gimbal
+lock. A quaternion representation of rotation is written as a vector (normalized quaternion)
+                                                                 Eqq
+                                                  Equation 1
+
+The above-mentioned triad of unit vectors is also called a basis. Specifying the coordinates
+(components) of vectors of this basis in its current (rotated) position, in terms of the reference (non
+rotated) coordinate axes, will completely describe the rotation. The three unit vectors that form the
+rotated basis each consist of 3 coordinates, yielding a total of 9 parameters. The orthogonal matrix
+(post-multiplying a column vector) corresponding to a clockwise/left-handed (looking along positive axis
+to origin) rotation by the unit quaternion
+                                           S= qO+ iqi + jq2 + k93
+                                                    Equation 2
+where qO, is equivalent to qi, q1 is qj, q2, etc. The solution is using Sebastian Madgwick [5][8] algorithm
+to derive the quaternion which is applicable to inertial measurement units (IMUs) consisting of tri-axis
+gyroscopes and accelerometers, and magnetic angular rate and gravity (MARG) sensor arrays that also
+include tri-axis magnetometers. The MARG implementation incorporates magnetic distortion
+compensation. The algorithm uses a quaternion representation, allowing accelerometer and
+magnetometer data to be used in an analytically derived and optimized gradient descent algorithm to
+compute the direction of the gyroscope measurement error as a quaternion derivative. Performance has
+been evaluated empirically using a commercially available orientation sensor and reference
+measurements of orientation obtained using an optical measurement system. Performance was also
+benchmarked against the propriety Kalman-based [6][7] algorithm of orientation sensor. In the
+algorithm the quaternion needs to be converted back to Euler angles to be presented in the client
+device. Euler angles $ , 6 and $, in the so called aerospace sequence describe an orientation of frame
+achieved by the sequential rotations
+                                      At an2 (2q2q3 - 2qi qj,2q + 29       - 1)
+                                        0 = -sin- 1    (2q2q,  + 2qaq3)
+                                 =   Atan2 (2q3q4 - 2qiq2, 2q'12 + 2q      - 1)
+                                                    Equation 3
+Given by the inhomogeneous expression the rotation matrix can be described as follows
+                             1- 2(q      + q)      2(qiq2 -q q3)        2(qoq2 + qiq3)
+                    R=       2(qq2 + qlq3)         1- 2(ql + q3)        2(q2q3   -qoq1)
+                            [2(qi q3 -qoq2)        2(qoq + q2q3)         1-2(q+q)
+                                                    Equation 4
+Where R is the rotation matrix.
+
+Earth referenced acceleration
+Using the equation 4 it's possible to subtract gravity acceleration and get Earth referenced acceleration.
+The accelerometer comprised a tri-axial accelerometer with a dynamic range of g. (g=9.81 m*sA2). The
+static condition no movement, vector magnitude      =  1 g should indicate the Z axis as 9.81 m*s-2 and the
+remaining axis's are 0. Rotating accelerometer upside-down will show Z acceleration becomes negative
+as -9.81 m*sA2. Rotating accelerometer with a slight tilt on one side will spread the gravity across X, Y
+and Z axis. In order to get pure side acceleration it's required to apply rotation matrix on top of raw
+reading from the sensor. Given the quaternion is derived the earth referenced acceleration can be
+calculated as per below
+Xearth = (1 - 2(q2 +     qi)) x Xraw + (2(q   1 q2 - qoq 3 )) X Yraw + (2(qoq    2 + q1 q3 )) X Zraw
+ Earth = (2(q    1q2 + qoqs)) X Xraw + (1 - 2(ql + q)) x Yraw +          (2(q 2 q3 -  goq 1 )) x Zraw
+Zearth = ((2(qiq3 - qoq     2 )) X Xraw + (2(qoq 1 + q2 q3 )) X Yraw+(1 -2(q           +q2)) xZraw)       9-81
+                                                   Equation 5
+Where Xraw, Yraw and Zraw are values from accelerometer sensor. Xearth, Yearth and Zearth are
+calculated earth referenced acceleration excluding tilts from all three axes.
+Virtual gyroscope
+The gyroscope is the critical component in the Madgwick's [8] orientation algorithm. Gyroscopes are
+very sensitive and accurate. However there is a limitation in commercially popular sensors at around 6
+revolutions per second (rps). 2000 dps (degree per second on each axis) [4]. Meanwhile even an
+amateur player can throw the ball at much higher revolution rate. It is also important mentioning the
+limitation usually manifested only at one axis. Roughly the diagram below is showing phases of the ball
+motion with the mapping to the diagram of a typical profile of gyroscope sensors output. Figure 4 (see
+drawings document)
+At each given measurement the limit of gyroscope is on one axis. In order to get the most accurate
+orientation during the flight period the virtual gyro is used when sensor hits the limit of 2000 deps. For
+other two axes the real gyro data is used. The method below describes how to get approximate values
+of angels for each side.
+The sensor accelerometer, Gp, and magnetometer, Bp, readings measured after the three rotations
+Rz($ ) then Ry(6) and finally Rx($) are described by the equations:
+
+                      G, =),(#)R,()R( yrJ)G,                 R,($)R,(&)R(y)       0
+                   B, = R,(p)R,(9)R(y)Br= R,(#)R,( 6)RZ(V)B                         0
+                                                                                 $in o
+                                                   Equation 6
+The tilt-compensated virtual algorithm first calculates the roll and pitch angles $, and 0 from the
+accelerometer reading by pre-multiplying Equation 6 by the inverse roll and pitch rotation matrices.
+Where the vector contains the three components of gravity measured by the accelerometer.
+                      cos 6 0 sing                1     0           0        p2
+                         0    1      0            0 cos 0 -sin0             Gpy  =     0
+                     -sin 0 0 cos 6               0 sin p cos $             G,        g
+                            cos S sin Osin $ sin Ucos 0                   '    I   r(
+                   ~>         0         cos 0            -sin    p         GPY       0
+                           -sin 6 cos Osin p cos Ocos p, ,Gp,                      r
+                                     Equation 7 The expansion of equation 6
+The y component of Equation 7 defines the roll angle $,as:
+                                    G,,cos 0- G sin
+                                         = tan( 0) =
+                                              Equation 8 Roll angle
+The x component of Equation 7 gives the pitch angle 6 as
+
+                     G,9cos 0+ GYsin Osin 0 + G,sin 9cos # = 0
+                               -> tan (0) =                          v
+                                                   Gysin p + G,,,cos
+                                             Equation 9 Pitch angle
+With the angles $,and 6 known from the accelerometer, the magnetometer reading can be de-rotated
+to correct for the sensor orientation
+                                            os yfBcos J= B,
+                                          sin VB cos J= -B
+                                                                  4
+  -> tan (qv) =-
+                    -B
+                          =-y
+                                                (Bz- zP V_)sin0-(By - V,)cos p                 i
+                    Bfx        (B,, - V,)cos 0+ (B,,- V,)sin Osin p + (B,_-                 V )sin 0cos
+                                            Equation 10 Yaw angle tp
+where $ is computed relative to magnetic north. The yaw angle $ is therefore the required tilt
+compensated sensor heading.
+The method above is used to derive approximate rotation rate of the axis which is experiencing high
+revolution rate during the ball flight.
+Client software
+On the client side the data is received as an array of
+    1) Earth Referenced acceleration for each of three-axis
+    2)  Converted Euler angles from the quaternion
+    3)   Milliseconds passed from the moment microcontroller started
+Integrating of each side the java-script software is plotting the ball 3D trajectory till the moment ball
+touches the ground. The touch down point is derived as a spike in the acceleration. Figure 5 (see
+drawings document)
+Reference list
+1) https://en.wikipedia.org/wiki/Conversion between quaternions and Euler angles
+
+2) https://en.wikipedia.org/wiki/Rotation formalisms in three dimensions#Conversion formulae be
+   tween formalisms
+3) https://en.wikipedia.org/wiki/Euler angles
+4) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3634007/
+5) http://x-io.co.uk/res/doc/madgwick internal report.pdf
+6) LEFFERTS, E. J., MARKLEY, F. L., AND SHUSTER, M. D. Kalman filtering for spacecraft attitude
+   estimation. Journal of Guidance, Control, and Dynamics 5, 5 (1982), 417-429.
+7) LIANG, W. Y., MIAO, W. T., HONG, L. J., LEI, X. C., AND CHEN, Z. Attitude estimation for small
+   helicopter using extended kalman filter. In Robotics, Automation and Mechatronics, 2008 IEEE
+   Conference on (2008), IEEE, pp. 577-581.
+8) MADGWICK, S. An efficient orientation filter for inertial and inertial/magnetic sensor arrays. Report
+   x-io and University of Bristol (UK) (2010).
+
+ Editorial Note
+   <removed-apn>
+There is one page of claims only
+
+Claims
+Konstantin Rebrov
+30 April 2018
+     (a) In General
+The invention of using microcontroller integrated circuit board with embedded IMU algorithms to for
+sport equipment (ball) traction. Usage of inexpensive components as gyroscope, accelerometer and
+magnetometer injected into the ball acquires readings during ball motions. Embedded processor
+performs calculations of ball's orientation and earth referenced acceleration. Wireless data transmission
+reduces the need of physical connection between microcontroller and requestor's equipment. In this
+context the equipment is any device which supports wireless data transmission like smartphone,
+personal computer and smart-watch. Each round or ball feed takes recording and processes the data for
+a short period of time (no more than 30 seconds). During this period the human which interacts with the
+invention performs relevant action by feeding the ball. Each round is transmitted back to the client to
+represent relevant information about the flight: velocity, flight time, revolution rate, flight distance
+     (b) Conclusion.
+The designed solution provides telemetry data of sport's equipment (ball in this context) in motion. In
+this context the Cricket game is used as a primary area of the claim.
+
+    Editorial Note
+      <removed-apn>
+There are four pages of drawings only
+
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+           <removed-apn>        <removed-date>
+Top view         22 Meters
+

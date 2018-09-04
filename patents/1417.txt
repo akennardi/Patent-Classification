@@ -1,0 +1,1030 @@
+1002215872
+                                           ABSTRACT
+Offset values, such as Sample Adaptive Offset (SAO) values in video coding standards such as
+the High Efficiency Video Coding standard (HEVC), may be improved by performing
+calculations and operations that improve the preciseness of these values without materially
+affecting the signal overhead needed to transmit the more precise values. Such calculations and
+operations may include applying a quantization factor to a video sample and at least some of its
+neighbors, comparing the quantized values, and classifying the video sample as a minimum,
+maximum, or one of various types of edges based on the comparison. Other sample range, offset
+mode, and/or offset precision parameters may be calculated and transmitted with metadata to
+improve the precision of offset values.
+
+1002215872
+                          SAMPLE ADAPTIVE OFFSET CONTROL
+CROSS-REFERENCE TO RELATED APPLICATIONS
+[01]     This application claims priority to U.S. Patent Application No. 14/255,609, filed on April
+17, 2014, which is a continuation of U.S. Patent Application No. 14/173,676, filed on February
+5, 2014, which claims benefit under 35 U.S.C. § 119(e) of U.S. Provisional Application Serial
+No. 61/836,93 1, filed June 19, 2013, which is incorporated herein by reference in its entirety.
+[01A] Also incorporated herein by reference, in its entirety, is PCT/US2014/036375 (published
+as WO 2014/204584), filed on 1 May 2014. This application is also a divisional application of
+Australian Patent Application No. <removed-apn>, filed on 19 April 2017.
+BACKGROUND
+[02]     The present invention relates to a method of reconstructing signal amplitudes for video
+coding and compression. More specifically, it relates to methods for quantization and adaptive
+dynamic range signaling in Sample Adaptive Offset (SAO) processes in video coding and
+processing systems such as within the High Efficiency Video Coding (HEVC) standard.
+[03]     The HEVC standard, currently published as ISO/IEC 23008-2 MPEG-HPart2 and ITU
+T H.265, introduced several new video coding tools designed to improve video coding efficiency
+over previous video coding standards and technologies, including, but not limited to MPEG-2,
+MPEG-4 Part 2, MPEG-4 AVC/H.264, VCl, and VP8. One of these tools is the SAO, which is a
+filtering mechanism typically performed after deblocking filtering. The process may be in-loop,
+e.g., impacting subsequent pictures that may use an SAO processed picture as a reference, or out
+of loop, e.g., only impacting display or other subsequent processing outside an encoder. SAO
+groups reconstructed pixels into categories and reduces distortion by applying an offset to pixel
+values based on a predefined categorization or classification process.
+[04]      SAO, as defined in the HEVC specification, supports two operating modes: an edge
+offset mode and a band offset mode. In the edge offset mode, the value of a predetermined
+sample may be compared to two of eight neighboring samples in a horizontal, vertical, or
+diagonal direction. Based on a simple direct comparison of sampled values, the predetermined
+sample may be classified into one of several categories. In the band offset mode, the amplitude
+                                                   1
+
+1002215872
+of a predetermined sample may be used to categorize the sample into 1 of 32 bands. An offset
+may be specified for the sample if it is categorized into 1 of 4 contiguous bands in the set of 32
+bands for which SAO supports an offset parameter.
+[051     The existing HEVC standard includes limitations on SAO methods with respect to
+classification and overhead.      In this regard, the classification process is limited by bitdepth,
+precision, color, and the number of bands used for the classification. To reduce the overhead
+needed to signal offset values, the existing HEVC standard limits both the number of bands into
+which an offset may be provided, and also the ability to specify precise offset values for each of
+the different pixel categories. For example, limiting the maximum value of offset values for bit
+depths above 10 bits reduces the preciseness of SAO values at higher bit depths in favor of an
+increased dynamic range covered by the SAO values.              However, in some instances, higher
+precision of SAO values may be more important for image quality purposes than a high dynamic
+range, such as when the offset to be added is within a small range. There is therefore a need for
+a more flexible approach to SAO that is able to classify samples with less susceptibility to noise,
+and to expand the precision of applied offsets while minimizing the impact on the dynamic range
+of the offset values and/or the signal overhead needed to transmit these offsets.
+[05A] Reference to any prior art in the specification is not an acknowledgment or suggestion
+that this prior art forms part of the common general knowledge in any jurisdiction or that this
+prior art could reasonably be expected to be understood, regarded as relevant, and/or combined
+with other pieces of prior art by a skilled person in the art.
+SUMMARY
+[05B] In an aspect of the invention there is provided a decoding method, the method
+comprising: receiving, by a decoder, a quantization factor, a value of coded video data at a first
+location of a frame, coded values of at least two locations each neighboring the first location;
+decoding the coded video data at the first location, the decoding including scaling intermediate
+decoded video at the first location by the quantization factor; evaluating, by the decoder, the value
+at the first location and the values at the neighboring locations; classifying the decoded value of
+video data at the first location into a category based on the evaluation; deriving an offset value
+based on the classification; and performing sample adaptive offset filtering of the decoded video
+data at the first location according to the derived offset value.
+                                                    2
+
+1002215872
+BRIEF DESCRIPTION OF THE DRAWINGS
+[06]     FIG. 1 is a flowchart illustrating a method for quantization according to an embodiment
+of the present invention.
+[07]     FIG. 2 is a flowchart illustrating another method for quantization according to an
+embodiment of the present invention.
+[08]     FIG. 3 is a flowchart illustrating another method for quantization according to an
+embodiment of the present invention.
+[09]     FIG. 4A and 4B are flowcharts illustrating methods for applying sample adaptive offset
+in converted color spaces according to an embodiment of the present invention.
+[10]     FIG. 5 is a flowchart illustrating a method for offset interpolation according to an
+embodiment of the present invention.
+[11]     FIG. 6 is a flowchart illustrating a method for identifying offsets for samples having non
+uniformly distributed ranges according to an embodiment of the present invention.
+[12]     FIG. 7 is a block diagram of a coding system according to an embodiment of the present
+invention.
+[13]     FIG. 8 is a block diagram of a decoding system according to an embodiment of the
+present invention.
+[14]     FIG. 9 is a block diagram of a multi-terminal system according to an embodiment of the
+present invention.
+[15]     FIG. 10 is a flowchart illustrating a method for determining and signaling a dynamic
+range and/or precision of sample adaptive offset.
+DETAILED DESCRIPTION
+[16]     Embodiments of the present invention provide techniques for reducing and controlling
+the impact of noise on and/or accommodating a bit-depth for offset values of samples.           Such
+techniques may be applied for sample adaptive offset (SAO) processes, as well as post
+processing.
+                                                   3
+
+1002215872
+[17]     In one embodiment, an additional, optional quantization step may be performed during a
+categorization or classification process.   In the classification process, sample values may be
+classified into distinct groups before being compared in order to reduce a noise sensitivity of the
+offset value. In another embodiment, sample range, offset mode, and offset precision parameters
+may also be calculated and transmitted with metadata associated with sampled video data to
+improve the application of offsets in other embodiments.
+[18]     In another embodiment, video data may be converted to a second color space having
+components that are better suited for applying offset values. Once the offset values have been
+applied in the second color space, the video data with the applied offset may be converted back
+to the first color space. Again, in this instance, if identification information about the second
+color space is to be transmitted, minimal overhead may be needed to transmit this identification
+information.
+[19]     In another embodiment, offset values for certain bands that are not able to be expressly
+signaled due to limited signal overhead, may instead be interpolated from offset values that were
+expressly signaled. This interpolation may occur by expressly signaling non-adjacent bands and
+then interpolating the offset values associated with the intermediate bands situated between the
+expressly signaled non-adjacent bands. Bands may also be split non-uniformly so that some
+bands have different widths and/or encompass a broader range of values than other bands. These
+embodiments may enable offset values to be applied more precisely in particular sections of the
+image most affected by offsets.
+                            Quantization and Classification of Samples
+[20]      SAO may include classifying reconstructed samples into various categories, obtaining an
+offset for each category, and adding the obtained offset to each sample in the category. The
+offset for each category may be calculated at the encoder and signaled to the decoder.
+Classification of samples may be performed at both the encoder and the decoder. Quantization
+may mask noise in the content, and provide better focus on edges of the video content. In those
+instances when information about the specific quantization factor used is to be transmitted, only
+the specific quantization value need be transmitted. The overhead may be further reduced by
+using the same quantization factor for multiple samples. Additional sample range, offset mode,
+and offset precision parameters may also be calculated and transmitted with metadata associated
+                                                 4
+
+1002215872
+with sampled video data to improve the application of offsets in other embodiments.               A
+quantization parameter may be introduced to assist edge classification by checking not only
+whether samples are distant, but also how distant they are. The quantization parameter may also
+be used to determine whether the absolute difference between neighbor samples is larger than a
+threshold, where the threshold may be precise or quantized. The quantization parameter may
+also quantize the difference between neighbor samples and perform classification based on the
+quantized differences.       Conventional edge offset determinations are based on a direct
+comparison, using a greater thankless than/equal to criterion, of the current sample value as
+compared to that of its neighbors but they are easily skewed by noise, especially at higher bit
+depths. The quantization parameter techniques discussed herein are expected to reduce
+sensitivity to such noise effects.
+[21]     In a first embodiment, all samples to be processed may be quantized using a quantization
+factor. The quantization factor may include a divisor by which a given sample value and sample
+values of its neighbors are divided.      The quantized samples may be rounded. The rounded
+results may then be used as parameters for the classification process. In some instances, other
+operations, such as a ceiling or floor calculation, may be performed on the quotient in addition to
+or as an alternative to rounding. For example, if the value of the divisor is a power of 2, then the
+division operation may be simplified by using a shift operation or a bitwise AND mask instead,
+which may conserve memory resources, and is further described herein. The decision process
+may then categorize samples based on the new quantized samples. Table 1 shows exemplary
+conditions for classifying different edge types in the edge offset mode based on this embodiment.
+In Table 1, T, which may be a floating point number, corresponds to the divisor.
+  EDGEIDX                              CONDITION                             CLASSIFICATION
+        0                            None of the above                          Monotonic Area
+        1          round(p/T) < round(no/T) and round(p/T) < round(ni/T)           Local Min
+                   round(p/T) < round(no/T) and round(p/T) = round(ni/T)
+        2                                    or                                 First Edge Type
+                  round(p/T) < round(ni/T) and round(p/T) = round( no/T)
+                                                   5
+
+1002215872
+                  round(p/T) > round(no/T) and round(p/T) = round(ni/T)
+        3                                   or                              Second Edge Type
+                  round(p/T) > round(ni/T) and round(p/T) = round(no/T)
+        4         round(p/T) > round(no/T) and round(p/T) > round(ni/T)         Local Max
+                Table 1: Exemplary Classification Criteria Using Quantized Samples
+[22]     FIG. 1 shows an exemplary method 100 according to the first embodiment. In step 101, a
+quantization factor (T), a value of a predetermined video sample (p), a value of a first neighbor
+(no) to the predetermined video sample, and a value of a second neighbor (ni) to the
+predetermined video sample may be identified. In step 102, each of the identified values (p, no,
+ni) may be divided by the quantization factor (T). In step 103, the divided sample value (p/T)
+may be compared to divided values of its neighbors (no/T) and (ni/T).
+[23]     In some instances, before the comparison occurs, a function may be applied to one or
+more of the divided values (p/T), (no/T), and/or (ni/T), to associate these divided values with
+more general categories.     For example, in some instances, such as in box 105, a rounding
+function may be applied to each of the divided values so that each of the divided values is
+associated with a corresponding whole number.        The associated whole numbers may then be
+compared to each other in step 103. Different functions may be applied in other instances. For
+example, in box 106, a floor or ceiling calculation function may be applied to each of the divided
+values before comparing the values to each other in step 103. Other functions may also be used
+in other embodiments. In step 104, the predetermined video sample may be classified as one of:
+a minimum, a first edge type, a second edge type, a maximum, and none of these, based on the
+comparison made in step 103. Table 1 above shows exemplary criteria for classifying a video
+sample as one of these types based on the comparing in step 103. Exemplary comparing criteria
+are shown in the condition column in Table 1.
+[24]     In a further embodiment, classification of edge types may be based on quantization of
+differences between a sampled value and its neighbors, where the differences between the
+sampled value and its neighbors may be evaluated according to conventional SAO methods.
+Table 2 shows exemplary conditions for classifying different edge types in the edge offset mode
+based on this embodiment.
+                                                  6
+
+1002215872
+                  EDGE
+                                      CONDITION                CLASSIFICATION
+                 INDEX
+                     0              None of the above            Monotonic Area
+                     1        Q[p -no]<0 and Q[p -ni]<0              Local Min
+                              Q[p -no] <0 and Q[p -ni] =0
+                     2                       or                  First Edge Type
+                              Q[p - ni] <0 and Q[p -no]= 0
+                              Q[p -no] >0 and Q[p -ni] =0
+                     3                       or                 Second Edge Type
+                              Q[p - ni] > 0 and Q[p -no]= 0
+                     4        Q[p -no]>0 and Q[p -ni]>0             Local Max
+     Table 2: Exemplary Classification Criteria Using Quantized Differences between Samples
+[25]     FIG. 2 shows an exemplary method 200 according to the second embodiment. In step
+201, a quantization factor (Q), a value of a predetermined video sample (p), a value of a first
+neighbor (no) to the predetermined video sample, and a value of a second neighbor (ni) to the
+predetermined video sample may be identified. In step 202, the differences (p - no and p - ni)
+between the predetermined video sample (p) and each of its neighbors (no, ni) may be
+determined. In step 203, the quantization factor (Q) may be applied to each of the differences
+between the value and its neighbors determined in step 202 as further described herein. In step
+204, the method 200 may evaluate the sign of the quantization of each of the differences between
+the predetermined video sample value and its neighbors. In step 205, the predetermined video
+sample (p) may be classified as one of: a minimum, a first edge type, a second edge type, a
+maximum, and none of these, based on the evaluation made in step 204. Table 2 above shows
+exemplary criteria for classifying a video sample as one of these types based on the evaluation
+made in step 204. Exemplary comparing criteria are shown in the condition column in Table 2.
+[26]     In yet another embodiment, all samples to be processed may be quantized using the same
+quantizer   Q.   The decision process may then categorize samples based on the new quantized
+                                                 7
+
+1002215872
+samples. The quantization parameter may reduce the dynamic range of samples by quantizing
+them to lower precision before edge classification. By quantizing samples once, then reusing the
+quantized value for all neighborhood decisions, this embodiment may conserve memory
+resources. Table 3 below shows exemplary conditions for classifying different edge types in the
+edge offset mode based on this embodiment.          In Table 3, and the other tables herein (unless
+indicated otherwise), p corresponds to the value of a given sample, no corresponds to a value of a
+first directional neighbor (typically in a horizontal, vertical, or diagonal direction) from the given
+sample, ni corresponds to a value of a second directional neighbor (typically opposite that of the
+first direction in the horizontal, vertical, or diagonal direction) from the given sample, and       Q
+corresponds to the quantization factor.
+                  EDGE
+                                        CONDITION                   CLASSIFICATION
+                 INDEX
+                     0                None of the above                Monotonic Area
+                     1         Q[p] < Q[no] and Q[p] < Q[ni]              Local Min
+                               Q[p] < Q[no] and Q[p] = Q[ni]
+                     2                        or                       First Edge Type
+                               Q[p] < Q[ni] and Q[p] = Q[no]
+                               Q[p] > Q[no] and Q[p] = Q[ni]
+                     3                        or                     Second Edge Type
+                               Q[p] > Q[ni] and Q[p] = Q[no]
+                     4         Q[p]  > Q[no] and Q[p] > Q[ni]             Local Max
+                Table 3: Exemplary Classification Criteria Using Quantized Samples
+[27]     FIG. 3 shows an exemplary method 300 according to the third embodiment. In step 301,
+a quantization factor (Q), a value of a predetermined video sample (p), a value of a first neighbor
+(no) to the predetermined video sample, and a value of a second neighbor (ni) to the
+predetermined video sample may be identified. In step 302, the quantization factor (Q) may be
+applied to each of the identified values (p, no, ni). For example, the quantization may be a
+rounding function as described in relation to Table 1 above.           In this example, Table 3 is a
+                                                   8
+
+1002215872
+generalization of Table 1. In step 303, the quantized sample value Q[p] may be compared to
+quantized values of its neighbors Q[no] and Q[nl]. In step 304, the predetermined video sample
+(p) may be classified as one of: a minimum, a first edge type, a second edge type, a maximum,
+and none of these, based on the comparison made in step 303. Table 3 above shows exemplary
+criteria for classifying a video sample as one of these types based on the comparison made in
+step 303. Exemplary comparing criteria are shown in the condition column in Table 3.
+[28]     With respect to each of the embodiments described herein, the quantization process may
+be a shift operation, such as a shift right operation, by        j bits. In some instances, the shift
+operation may further include rounding control. In one mode of the quantization process, the
+quantization step size may be dynamically computed based on the bit-depth of the samples. For
+example, samples may be quantized to their eight most significant bits. In other words, where
+bitDepth represents the bit-depth of the sample to be processed and N (which replaces      j) is fixed
+based on the bitDepth, i.e. N   = bitDepth  - 8, quantization may be performed as Q1(x)     = x >> N
+for the FIG. 1 and FIG. 3 embodiments discussed herein.
+[29]     In an embodiment, the quantization may be performed using a sample x and a
+quantization factor j for the FIG. 2 embodiment discussed herein as follows:
+                          Q2(x, j) = floor(x/(2Aj)) = sign (x) * (abs(x) >> j)
+                                  Q3(x, j) = ((x + (1 << (j - 1))) >> j)
+[30]     Quantization methods QI and Q3 are similar. For example, if positive and negative
+values are not separated, there is a negative bias, so the value would never become 0, if negative,
+and the sample may be shifted right without a rounding factor.
+[31]     The quantization methods can be alternatively conceptualized in a coding tree
+modification process, in which the value of the edge index, edgeldx, may be derived as follows:
+edgeldx    = 2 + Sign( recPicture[ xSi ][ ySj ] - recPicture[ xSi + hPos[ 0 ] ][ ySj + vPos[ 0]])
++ Sign( recPicture[ xSi ][ ySj ] - recPicture[ xSi + hPos[ 1 ] ][ ySj + vPos[ 1 ] ] )
+When quantization is applied according to an embodiment as in the present invention, edge index
+may be derived by replacing sign with SignQuant as follows:
+                                                    9
+
+1002215872
+edgeldx    = 2 + SignQuant( recPicture[ xSi ][ ySj ]          -     recPicture[ xSi + hPos[ 0 ] ][ ySj +
+vPos[ 0 ] ] ) + SignQuant ( recPicture[ xSi ][ ySj ]            -    recPicture[ xSi + hPos[ 1 ]] ySj +
+vPos[ 1]])
+where SignQuant may be:
+                                                                  x > (1 <    j)
+                              SignQuant(xj) =                     x < -(1    «j)
+                                                    0,            otherwise
+In an alternative embodiment, this could be as:
+edgeldx    = 2 + Sign( Q(recPicture[ xSi    ][ ySj ]      -       recPicture[ xSi   + hPos[ 0 ] ][ ySj  +
+vPos[ 0 ] ]) ) + Sign( Q(recPicture[ xSi ][ ySj        ]    -      recPicture[ xSi + hPos[ 1]I]    ySj  +
+vPos[ 1]]))
+with  Q being a   quantization method as described previously, for example          Q may be Q2 or Q3. In
+a further embodiment, it may also be as follows:
+edgeldx    = 2 + Sign( Q1(recPicture[ xSi ][ ySj ])    -       Q1(recPicture[ xSi + hPos[ 0 ] ][ ySj +
+vPos[ 0 ] ]) ) + Sign( Q1(recPicture[ xSi ][ ySj ])      -      Q1(recPicture[ xSi + hPos[ 1 ] ][ ySj +
+vPos[ 1]]))
+[32]     In another mode of the quantization process,  j    may be signaled for each color component.
+The signaling may be performed in the slice header, providing the advantage of minimizing
+overhead.      For example, the slice segment header may be modified as follows, where
+slicesaolumathresscale and slicesaochromathresscale specify the thresholds that may
+be used for comparison in quantizing sampled video values in the edge offset classification
+discussed herein, for each of the luma and chroma components:
+                 slice segmentheaderO {                                          Descriptor
+                         if (sampleadaptiveoffsetenabled flag) {
+                                                 10
+
+1002215872
+                         slicesaolumaflag                               u(1)
+                         slicesaochromaflag                             u(1)
+                         if (ChromaArrayType != 1) {
+                           slicesaoluma thres scale                     ue(v)
+                           slice saochroma thres scale                  ue(v)
+                         }
+                       }
+                }
+The signaling may also be performed in the SAO syntax, adapted for a coding tree unit, at the
+PPS or at the SPS level. This mode may provide greater flexibility by dissociating quantization
+from a predetermined number of most significant bits by which samples are quantized, and the
+quantization parameter can be signaled at various levels.
+                     Signaling Dynamic Range and Precision Parameters
+[33]     In one embodiment, for both edge offset and band offset classification methods, the
+precision of SAO may be expanded while constraining the signaling overhead and preserving the
+dynamic range by supporting the signaling of additional parameters.              These additional
+parameters may include parameters specifying a dynamic range and/or precision of the signaled
+offsets.
+[34]     Although SAO is designed to better reconstruct original signal amplitudes, SAO
+performance may be poor, particularly at high bit-rates and bit-depths in the existing HEVC
+standard. In SAO, a picture and correcting offsets are received in a bit-stream. The samples of a
+reconstructed picture are classified into categories, and correcting offsets corresponding to the
+categories are added onto the reconstructed picture samples after deblocking.      In the existing
+HEVC standard, the magnitude of the coded offset values is limited to a maximum value of (1
+<< (Min(bitDepth, 10) - 5)) - 1, while the sign values are either signaled in the bit stream (e.g.,
+                                                11
+
+1002215872
+in the band offset method), or predefined for each edge category. Thus, the final offset value
+may be calculated as:
+            SaoOffset = offsetSign * saoOffsetAbs << ( bitDepth - Min( bitDepth, 10))
+[35]     Where offsetSign is the specified sign for an offset, saoOffsetAbs is the signaled offset
+magnitude, and bitDepth is the specified bit-depth of the samples processed. The SaoOffset may
+be separately defined and signaled for each color component as further described herein. For
+example, the offset range for 8 bit data is within [-7, 7], 10 bit data is within [-31, 31], and 12 bit
+data is within [-31, 31] * 4. Quantization is represented in the above equation as the right shifted
+portion, i.e., << ( bitDepth - Min( bitDepth, 10 )). In other words, quantization in the existing
+HEVC standard is applied for bit-depths over 10.
+[36]     However, this calculation method may result in poor performance. For example, for
+either the edge or band offset SAO methods, the offsets to be signaled, given a certain
+optimization model (e.g. using the least mean squares method), may lie within a limited and
+rather small range. However, when the final SAO offset value is determined for signaling, given
+additional constraints such as coding, as well as the rounding, quantization, and clipping
+constraints required by the HEVC standard (for bit-depths higher than 10), after quantization,
+these offsets may end up either in their majority or as a whole be completely quantized down to
+zero.    This would reduce the effectiveness of SAO, or even completely turn off SAO, which
+negatively impacts the overall coding efficiency.
+[37]     Thus, SAO performance may be improved by removing quantization and/or adjusting the
+quantization for a given bit-depth . In an embodiment, a parameter specifying the precision of
+the SAO offsets may be provided. Instead of applying a fixed scaling factor to adjust the offset
+parameters by a fixed, bit-depth dependent quantity, a varying scaling parameter may be
+provided. The scaling parameter may specify a particular scaling factor that is to be applied to
+particular samples.
+[38]     FIG. 10 is a flowchart illustrating a method 1000 for determining and signaling a
+dynamic range and/or precision of sample adaptive offset. In a first step 1002, the method 1000
+receives coded video data in a bit-stream, and may extract parameters specifying how the SAO
+offset is to be applied from the bit-stream. In some instances, a saoShiftOffset parameter may be
+used to signal a particular scaling factor. In step 1004, method 1000 determines whether the bit
+                                                  12
+
+1002215872
+stream contains a parameter specifying an SAO shift offset value. For example, legacy systems
+might not transmit a parameter specifying how SAO offset is to be applied. If no parameter
+specifying how to apply SAO offset is extractable, the method 1000 then proceeds to step 1008
+in which a default SAO offset scheme is applied. For example, if saoShiftOffset is not signaled,
+not received, or not present, then the offsets may be scaled in accordance with an existing fixed
+scaling scheme (i.e., applying quantization for bit-depths over 10). If method 1000 does extract
+an SAO offset parameter, then the method proceeds to step 1006, in which SAO is applied to the
+video according to the parameter. For example, the offset may be shifted by a quantity specified
+by the saoShiftOffset parameter according to the exemplary code below:
+if (saoShiftOffset is not present)
+          SaoOffset  = offsetSign * saoOffsetAbs << ( bitDepth - Min( bitDepth, 10))
+else
+          SaoOffset  = offsetSign * saoOffsetAbs << saoShiftOffset
+[39]     In alternative embodiments, criteria may also be specified to limit the instances in which
+customized offset scaling is used. For example, additional criteria may be specified to only
+allow customized offset scaling if bitDepth is larger than 10, while also limiting the dynamic
+range within the current maximum sample value given the specified bitDepth based on the
+saoMaxLogOffsetAbs quantity.
+[40]     In an embodiment, the parameter SaoOffset may be signaled in the picture parameter set
+(PPS). In an alternative embodiment, the parameter may be expressly signaled in the sequence
+parameter set (SPS), slice header, or other metadata associated with the encoded video data. In
+some instances, these additional parameters may be supported in new profiles different from the
+already defined profiles in HEVC, such as the Main, Main-10, and Main Still profiles.           The
+parameters may be signaled for each largest coding unit (LCU), while prediction mechanisms
+between LCUs can reduce the signaling overhead.
+[41]     The parameters may be defined for each color component, which may but need not be
+similar to each other.      Thus, each color component may have its own saoOffset parameter
+associated with it. For example, the luma component may have its own saoOffset parameter and
+                                                 13
+
+1002215872
+the chroma component may have its own saoOffset parameter.In alternative embodiments,
+different color components may use the same saoOffset parameter or a same set of saoOffset
+parameters.
+[42]     For example, the parameter SaoOffset may be signaled by parameters saolumabitshift
+and saochroma-bit-shift in the picture parameter set raw byte sequence payload (RBSP) syntax
+as follows:
+  picparameter-set-rbsp() {                                                     Descriptor
+    if( pps-extension1 flag) {
+       if( transform skipenabledflag)
+          log2maxtransform skip blocksize minus2                                ue(v)
+       lumachromajpredictionenabled flag                                        u(1)
+       chromaqpadjustmentenabled flag                                           u(1)
+       if( chroma qpadjustmentenabledflag) {
+          diffcuchroma qp_adjustment depth                                      ue(v)
+          chromaqpadjustmenttablesizeminus1                                     ue(v)
+          for( i = 0; i <= chromaqpadjustmenttablesize-minus1; i++) {
+             cbqpadjustment[ i]                                                 se(v)
+             cr qpadjustment[ i]                                                se(v)
+           }
+       }
+     saolumabitshift                                                            ue(v)
+     saochromabitshift                                                          ue(v)
+       ppsextension2_flag                                                       u(1)
+                                               14
+
+1002215872
+    }
+    if( pps extension2_flag)
+       while( morerbspdata()
+          pps extension dataflag                                                  u(1)
+    rbsptrailing bits()
+  }
+[43]     sao_lumabitshift may specify the parameter used to derive the SAO offset values for
+luma samples. The value of saolumabitshift may be in the range of 0 to BitDepthy -6,
+inclusive. When not present, the value of saolumabitshift may inferred to be equal to 0, in
+which case, quantization may be performed according to the existing HEVC standard.
+saochromabitshift may specify the parameter that is used to derive the SAO offset values
+for the chroma samples. The value of saochromabitshift may be in the range of 0 to
+BitDepthc -6, inclusive. When not present, the value of saochromabitshift is inferred to be
+equal to 0, in which case, quantization may be performed according to the existing HEVC
+standard.
+[44]     In some instances, a maximum allowable value for the signaled offset quantities,
+saoOffsetAbs, may also be included in the parameter or as an additional parameter.         The
+maximum allowable value may be encoded as is, or it may be more efficiently encoded by taking
+its base 2 logarithm, saoMaxLogOffsetAbs.     In this instance, a maximum allowable offset may
+be specified as:
+                        saoMaxOffset   = (1 << saoMaxLogOffsetAbs) - 1
+[45]     In some instances, the entropy coding process (cmax) of saoOffsetAbs may be affected
+by this encoding. In an alternative embodiment, since the current maximum value may be set to
+be equal to (1 << (Min(bitDepth, 10) - 5)) - 1, a few bits may be saved by signaling a
+saoDeltaMaxLogOffsetAbs and setting saoMaxLogOffsetAbs as being equal to:
+saoMaxLogOffsetAbs      = (Min(bitDepth, 10) - 5) + saoDeltaMaxLogOffsetAbs
+[46]     If saoDeltaMaxLogOffsetAbs is equal to 0, then an existing dynamic range may be used,
+otherwise an expanded dynamic range may be provided.
+                                                15
+
+1002215872
+[47]     In an alternative embodiment, the adaptive dynamic range signaling may be provided and
+extracted at a slice level control. For example, SaoOffsetVal[ cldx ][ rx ][ ry ][ i ] for i ranging
+from 0 to 4, inclusive, may be derived as follows:
+SaoOffsetVal[ cdx ][rx ][ry ][ 0]= 0
+for(i=0;i<4;i++) {
+SaoOffsetVal[ cldx ][ rx ][ ry ][ i + 1  = offsetSign * sao_offsetabs[ cldx ][ rx ][ ry ][ i]
+}
+[48]     In an alternative embodiment the adaptive dynamic range signaling may be provided and
+extracted at a sequence level control as follows:
+  seq_parameterset rbsp() {                                                            Descriptor
+           sample adaptive offsetenabledflag                                           u(1)
+           sps-extensionpresentflag                                                    u(1)
+           if( sps_extensionpresent flag) {
+                   for(i=0;i<1;i++)
+                           spsextension flag[ i]                                       u(1)
+                   spsextension_7bits                                                  u(7)
+                   if( sps extensionflag[ 0]) {
+                           transformskiprotationenabled flag                           u(1)
+                           transformskipcontextenabled flag                            u(1)
+                           intrablock copyenabledflag                                  u(1)
+                           implicit rdpcm enabled flag                                 u(1)
+                           explicit rdpcm enabled flag                                 u(1)
+                           extendedprecisionprocessingflag                             u(1)
+                                                  16
+
+1002215872
+                          intrasmoothingdisabled flag                               u(1)
+                          highprecisionoffsetsenabled flag                          u(1)
+                          fastriceadaptationenabledflag                             u(1)
+                          if (sampleadaptiveoffsetenabled_flag)
+                             saoquant _enabled-flag                                 u(1)
+                  }
+           }
+           rbsptrailing bits()
+  }
+[49]     When saoquantenabled flag is 1, the decoder may be alerted that quantization is to be
+applied for saooffsetabs. saoquant _enabled_flag equals 0 may indicate that quantization
+for saooffsetabs is not to be used. When not present, the value of sao_quant enabled flag is
+inferred to be equal to 0, in which case, quantization may be performed according to the existing
+HEVC standard
+[50]     Additionally, while HEVC applies SAO as an in-loop processing mechanism, one or
+more of the embodiments described herein may be applied as part of the in-loop SAO processing
+mechanism or they may be applied as post-processing mechanisms independent of a codec such
+as HEVC.       For those embodiments that are applied as codec-independent post-processing
+mechanisms, SAO metadata could still be signaled within the codec using a carrier mechanism,
+including but not limited to Supplemental Enhancement Information (SEI) messages, MPEG-2
+systems' User Specified Metadata, or other mechanisms.         Additionally, embodiments of the
+invention may be included in other codecs that may provide for some form of SAO. These other
+codecs may include future codecs or extensions of HEVC, such as the scalable or 3D/multiview
+extensions of HEVC.
+                                                 17
+
+1002215872
+                            Applying SAO in Converted Color Spaces
+[51]     In addition to supporting the YUV 4:2:0 color space, HEVC also supports other color
+spaces and color sampling formats such as YUV 4:2:2 and YCoCg, YCoCg-R or RGB 4:4:4
+among others. In different embodiments, SAO may be applied in different color spaces from a
+native color space of video data. Applying SAO in a different color space may enable offsets to
+be specified more precisely for particular parameters associated with a particular color space,
+such as a chrominance parameter instead of a particular color value like in the RGB color space.
+[52]      SAO may be applied in non-native color spaces by converting image data into a different
+color space and sampling format, such as from 4:2:0 to 4:4:4, applying SAO in the different
+color space and sampling format, and then converting the image data back to the native color
+space and sampling format. For example, if the native encoding color space is RGB Rec.709 or
+Rec.2020, then the image data may be converted to the YUV color space in order to directly
+apply SAO to the luma and/or chrominance components of the image data. Once the image data
+is converted to the YUV color space, one or more offsets based on SAO may be applied to the
+converted image data in the YUV color space. An inverse transform or color conversion
+algorithm may be applied to the data in the YUV color space to return to the original RGB color
+space.
+[53]     The determination, type of color space and/or sampling format conversion may be
+signaled or identified within a set of encoded data and, in some instances, may be included in a
+sequence parameter set (SPS), picture parameter set (PPS), slice header, or the SAO syntax. In
+other instances this information may be part of other metadata or may be signaled elsewhere.
+[54]     An inverse transform for returning to the native color space may be derived by computing
+an inverse of a forward transform M. For example, inverse transform M- may be computed as
+M= adj(M)/det(M), where adj is the adjucate of matrix M, and det is the determinant of M. In
+some instances, such a computation may reduce the overhead needed for signaling a return to the
+native color space.
+[55]     Applying SAO in non-native color spaces may, in some instances, replace the existing
+native color space methods in HEVC or future video coding systems. In other instances, the
+ability to apply SAO in non-native color spaces may be added as an additional option in HEVC
+or other video coding systems. In some instances, the conversion to different color spaces may
+                                                  18
+
+1002215872
+be restricted to only 4:4:4 content to simplify the computational requirements for conversion, but
+in other instances the conversion could also be extended to other color sampling cases by
+allowing the chroma samples to be upscaled and downscaled within the color transformation
+process as well. Upscaling and downscaling may be performed with simple calculations such as
+pixel replication or decimation, or may include more computationally intensive filters, starting
+from bilinear, to multi-tap, edge adaptive, and bi-lateral algorithms among others.
+[56]     As in the current HEVC specification, it may be desirable to apply one form of SAO for
+one color sample (e.g. luma), but another form of SAO for different color samples (chroma u or
+chroma v). Each of the embodiments described herein may support applying different types of
+SAO non-uniformly and/or on a sample-by-sample basis to video data.
+[57]     FIG. 4A shows an exemplary coding method 400. In box 401, video data may be
+converted from a first color space to a second color space. The first color space may be a default
+or predetermined color space in which the video data is to be encoded. The second color space
+may be selected because it includes one or more color components that may be further improved
+with an offset applied in the second color space instead of the first color space.
+[58]     Once the video data has been converted to the second color space, in box 402, at least one
+offset calculation criterion may be applied to the converted video data in the second color space.
+Once an offset has been calculated, the converted video data including the calculated offsets may
+be converted back to the first color space in box 403.
+[59]     An identifier or other property of the second color space may then be included or
+otherwise signaled in metadata associated with the converted video in the first color space 404 to
+provide information about the conversion to the second color space for subsequent video
+processing functions.
+[60]     FIG. 4B shows an exemplary decoding method 410. In box 411, an identifier or other
+property of the second color space may then received and/or extracted from metadata associated
+with the converted video in a first color space. The identifier may provide information about
+conversion to a second color space for video processing functions.           Based on the identifier
+received in box 411, one or more an offset calculation criterion may be applied to the converted
+video data in the second color space.
+                                                  19
+
+1002215872
+                                          Offset Interpolation
+[61]      As discussed previously, the existing band offset mode provided an ability to specify an
+offset for 4 contiguous bands out of 32 possible bands. In some instances, however, it may be
+desirable to specify offsets for more bands than just the limited set of 4 contiguous bands without
+necessarily increasing the overhead and/or number of signaled offsets.
+[62]      To achieve this, in some instances offset signaling may be permitted for non-contiguous
+bands. In some instances, the same set of 4 bands may be selected, but some or all of the bands
+may be selected to be nonadjacent. An offset for those intermediate bands situated between
+nonadjacent bands may be interpolated using the offsets associated with the nonadjacent bands.
+The number of intermediate bands may be specified in a signaled parameter included within the
+SPS, PPS, slice header, SAO syntax, or other metadata associated with the encoded data.
+[63]      In those instances where all of the 4 bands are evenly spaced so that a same number of
+intermediate bands (parameter saointermediate_offset) is situated between each of the 4 bands,
+the     number      of   possible    offsets    may    equal   (4+3*sao_intermediateoffsets).     If
+saointermediateoffsets is set to a value other than 0, then only the offsets of bands having a
+band separation distance equal to the parameter saointermediateoffsets may be signaled,
+starting from an initial band at a first band position (parameter sao band-position), as signaled in
+the bit stream. Each of the other non-signaled intermediate bands may be interpolated using the
+signaled band offsets. The simplest method is to use bilinear interpolation and generate the
+offsets as:
+w   = saointermediateoffsets + 1;
+s  = sao-band_position;
+for (k=O;k<4;k++) {
+  for (i = 1; i < w; i++) {
+     bandoffset[s +4*k+i]    =
+         ((w - i) * bandoffset[s +4*k] + i * bandoffset[s +4*(k+1)] + (w>>1)) / w;
+  }
+}
+                                                   20
+
+1002215872
+[64]     Other, longer filters may be used in different instances. Additional offsets outside this
+specified range may also be extrapolated based on the values of offsets within the specified
+range.
+[65]     FIG. 5 shows an exemplary method 500 in an embodiment. In box 501, a range of
+possible amplitudes of values associated with sampled video data may be subdivided into
+multiple bands. Each band may correspond to a particular subset of the entire amplitude range
+such that each amplitude value in the entire range falls in one and only one band.
+[66]     Due to overhead restrictions, in existing systems it was only possible to specify offset
+values for a limited contiguous number of these bands, such as only a set of 4 adjacent bands out
+of 32 bands. In an embodiment, an offset could only be applied to this limited set of contiguous
+bands for which an offset was expressly specified. In an alternative embodiment, an offset could
+also not be specified for or applied to bands that were not adjacent to another band for which an
+offset was specified.
+[67]     In box 502, offsets may be signaled for each of at least two non-adjacent bands. Thus,
+instead of requiring offsets to be signaled for a set of 4 contiguous bands adjacent to one another,
+such as, for example, bands 1, 2, 3, and 4, offsets may be signaled in box 502 for a same number
+or different number of non-adjacent bands, such as, for example, bands 1, 5, 9, and 13.
+[68]     In box 503, an offset may be interpolated for an intermediate band between the at least
+two non-adjacent bands for which an offset was signaled in box 502. The offset may be
+interpolated using the values of the offsets for the at least two non-adjacent bands signaled in box
+502. Any type of interpolation algorithm may be used including, but not limited, to linear,
+bilinear, polynomial, and spline interpolation.
+                                        Non-Uniform Bands
+[69]     In other instances, samples may be non-uniformly distributed or have different ranges in
+which smaller changes may be more perceptible to the naked eye, as specified for example by
+the Weber-Fechner law. In these instances, the sample range need not be split uniformly with
+evenly spaced bands. Instead, bands may be split using a logarithmic, exponential, or other non
+linear function. For example, in some instances, the bands may be defined by the following
+functions:
+                                                  21
+
+1002215872
+f(x) =  ceil(log2(x + 1)),
+f(x) =  ceil(log2((1 << bitDepth) - x))
+f(x) =  (x <= (1<<(bitDepth - 1)) ? ceil(log2(x + 1)) : ceil(log2((1 << bitDepth) - x))
+f(x) =  round((2.OA(float(x)/float((1<<bitdepth) - 1))*31))-31
+f(x)= round((2.OA(float((1 << bitDepth) - x - 1 )/float((1<<bitdepth) - 1))*31))-31
+[70]     These and other functions may be used to create different bands with different numbers
+of samples within each band. In another embodiment, parameters may be provided in which both
+the number of bands is explicitly signaled, as well as the number of samples associated with each
+respective band in a sequence. In some instances, a starting point of each band may be signaled
+explicitly or differentially via an additional starting point parameter. In other instances those
+methods provided in existing HEVC specifications may also be used to identify signaled bands.
+[71]     Interpolation may be used to identify additional offsets beyond those expressly signaled.
+Intermediate band offsets may be interpolated independent of their size, or a size parameter may
+be used to scale an interpolated result. In some instances a first band or a particular band creation
+process may be signaled through a parameter included in the SPS, PPS, slice level, or other
+metadata associated with the encoded data.
+[72]     Bands may also be dynamically adjusted for each offset or encoded macroblock, coding
+unit, or coding tree unit. This may, however, require additional bandwidth and computing power
+to generate more complex bands. In some instances, instead of switching a band partitioning
+process for each macroblock, coding unit, or coding tree unit, different supported modes may
+signaled, including different variations of the band offset and/or edge offset mode. Additionally
+parameters such as the saotype idxluma and sao_type idx-chroma indicators may also be
+provided to further increase the number of supported modes.
+[73]     FIG. 6 shows an exemplary method in an embodiment. In box 601, a range of possible
+amplitude values of sampled video data may be identified. In box 602, a non-linear operation
+may be applied to the identified range. The non-linear operation may subdivide the range of
+amplitude values into non-uniform bands, with some bands being wider and encompassing more
+values than other bands. The non-linear operation may include any type of logic or function
+generating a non-uniform output from which non-uniform bands may be generated. The non
+                                                 22
+
+1002215872
+linear operation may include, but is not limited to, a non-linear function such as an exponential,
+logarithmic, or an at least second order polynomial function. In box 603, the amplitude range
+identified in box 601 may be split into non-uniform bands based on a result of applying the non
+linear operation to the amplitude range. In box 604, an identifier of the non-uniform bands may
+be signaled or otherwise included in metadata associated with the encoded video data so that the
+bands may be distinguished. In some instances the identifier may specify a start and/or an end of
+each band. In other instances the identifier may identify a start of a first band and a formula or
+other criteria used to identify each of the bands. In other instances, the identifier may include
+other types of identification information from which the different non-uniform bands may be
+submitted.
+                                    Focused Edge Offset Mode
+[74]     As discussed herein, in the existing edge offset mode the value of a predetermined
+sample is compared to two of eight neighboring samples in a horizontal, vertical, or diagonal
+direction to classify the sample. The existing edge offset mode considers all samples equally
+without considering the relative magnitude of each of the samples. In some instances, encoders
+may consider sample magnitudes in addition to the edge characteristics, which may improve a
+focus on particular edges, objects, or areas that would benefit the most from edge offsetting.
+[75]     The focus on particular edges, objects, or areas may be achieved by providing for the
+signaling of an SAO band indicator parameter, such as saoband-position parameter provided in
+the band offset mode to indicate the start of the SAO offset bands. This band indicator parameter
+may specify those band(s) for which the edge offset mode should be applied. In other words, a
+sample may first be checked to determine if it belongs in a particular band.       The edge index
+Edgeldx criterion may then be applied to determine the appropriate offsets only if the sample is
+first determined to belong to the particular band.
+[76]     In some instances, a single band may be identified as the particular band based on either
+the uniform sampling scheme as specified in the current HEVC specification or on other non
+uniform schemes such as those described herein. In other instances, additional bands, including
+two or more consecutive bands may also be identified as the particular bands through another
+parameter specifying an additional number of bands to be processed. Each of the parameters
+may be signaled in metadata associated with the encoded video data, including but not limited to
+                                                  23
+
+1002215872
+the SPS, PPS, slice header, or within the SAO syntax. This enhanced edge offset mode may
+replace the existing edge offset mode or may be provided as an additional type of operating
+mode.
+                                        System Overview
+[77]     Additionally, while HEVC applies SAO as an in-loop processing mechanism, one or
+more of the embodiments described herein may be applied as part of the in-loop SAO processing
+mechanism or they may be applied as post-processing mechanisms independent of a codec such
+as HEVC.       For those embodiments that are applied as codec-independent post-processing
+mechanisms, SAO metadata could still be signaled within the codec using a carrier mechanism,
+including but not limited to Supplemental Enhancement Information (SEI) messages, MPEG-2
+systems' User Specified Metadata, or other mechanisms.          Additionally, embodiments of the
+invention may be included in other codecs that may provide for some form of SAO. These other
+codecs may include future codecs or extensions of HEVC, such as the scalable or 3D/multiview
+extensions of HEVC.
+[78]     FIG. 7 shows a simplified block diagram of a coding system 700 in an embodiment of the
+invention that includes components for encoding and decoding video data. The system 700 may
+include a subtractor 712, a transform unit 714, a quantizer 716 and an entropy coding unit 718.
+The subtractor 712 may receive an input motion compensation block from a source image and,
+depending on a prediction mode used, a predicted motion compensation block from a prediction
+unit 750. The subtractor 712 may subtract the predicted block from the input block and generate
+a block of pixel residuals. If no prediction is performed, the subtractor 712 simply may output
+the input block without modification. The transform unit 714 may convert the block it receives
+to an array of transform coefficients according to a spatial transform, typically a discrete cosine
+transform ("DCT") or a wavelet transform.           The quantizer 716 may truncate transform
+coefficients of each block according to a quantization parameter ("QP"). The QP values used for
+truncation may be transmitted to a decoder in a channel. The entropy coding unit 718 may code
+the quantized coefficients according to an entropy coding algorithm, for example, a variable
+length coding algorithm or context-adaptive binary arithmetic coding.         Additional metadata
+containing the message, flag, and/or other information discussed above may be added to or
+included in the coded data, which may be output by the system 700.
+                                                24
+
+1002215872
+[79]     The system 700 also may include an inverse quantization unit 722, an inverse transform
+unit 724, an adder 726, a filter system 730, a buffer 740, and a prediction unit 750. The inverse
+quantization unit 722 may quantize coded video data according to the QP used by the quantizer
+716.     The inverse transform unit 724 may transform re-quantized coefficients to the pixel
+domain. The adder 726 may add pixel residuals output from the inverse transform unit 724 with
+predicted motion data from the prediction unit 750. The summed output from the adder 726 may
+output to the filtering system 730.
+[80]     The filtering system 730 may include a deblocking filter 732, a strength derivation unit
+734, and a sample adaptive offset (SAO) filter 733. The filters in the filtering system may be
+applied to reconstructed samples before they are written into a decoded picture buffer 740 in a
+decoder loop.     The deblocking filter 732 may apply deblocking filtering to recover video data
+output from the adder 526 at a strength provided by the strength derivation unit 734.            The
+strength derivation unit 734 may derive a strength value using any of the techniques described
+above.     The SAO filter 733 may be configured to perform at least one of the offset features
+described herein, and in some instances may perform different combinations of two or more of
+the offset features described herein.    SAO filtering may be applied adaptively to all samples
+satisfying particular conditions defined herein.       SAO may modify decoded samples by
+conditionally adding an offset value to each sample based on values in look-up tables transmitted
+by an encoder.      For example, a classifier index specifying classification of each sample and
+offsets of the samples may be encoded by entropy coder 718 in a bitstream. In a decoding
+processor, the classifier index and offsets may be decoded by a corresponding decoder. The
+filtering system 730 also may include other types of filters, but these are not illustrated in FIG. 7
+merely to simplify presentation of the present embodiments of the invention.
+[81]     The buffer 740 may store recovered frame data as outputted by the filtering system 730.
+The recovered frame data may be stored for use as reference frames during coding of later
+received blocks.
+[82]     The prediction unit 750 may include a mode decision unit 752, and a motion estimator
+754. The motion estimator 754 may estimate image motion between a source image being coded
+and reference frame(s) stored in the buffer 740.      The mode decision unit 752 may assign a
+prediction mode to code the input block and select a block from the buffer 740 to serve as a
+                                                 25
+
+1002215872
+prediction reference for the input block. For example, it may select a prediction mode to be used
+(for example, uni-predictive P-coding or bi-predictive B-coding), and generate motion vectors
+for use in such predictive coding. In this regard, prediction unit 750 may retrieve buffered block
+data of selected reference frames from the buffer 740.
+[83]     FIG. 8 is a simplified block diagram of a decoder 800 according to an embodiment of the
+present invention. The decoder 800 may include an entropy decoder 818, an inverse quantizer
+816, an inverse transform unit 814, an adder 812, a strength derivation unit 834, a deblocking
+filter 832, and an SAO filter 833. The decoder 800 further may include a prediction unit 850 and
+a buffer 840.
+[84]         The entropy decoder 818 may decode data received from a channel (or via a channel
+buffer, which is not shown), according to an entropy decoding algorithm, for example a variable
+length decoding algorithm or context-adaptive binary arithmetic decoding. The inverse quantizer
+816 may multiply coefficient data received from the entropy decoder 818 by a quantization
+parameter. The inverse transform unit 814 may transform dequantized coefficient data received
+from the inverse quantizer 816 to pixel data. The inverse transform unit 814 may perform the
+converse of transform operations performed by the transform unit of an encoder (e.g., DCT or
+wavelet transforms). The adder 812 may add, on a pixel-by-pixel basis, pixel data obtained by
+the inverse transform unit 814 with predicted pixel data obtained from the prediction unit 850.
+The adder 812 may output recovered data, from which a recovered frame may be constructed and
+rendered at a display device (not shown). A frame buffer 840 may accumulate decoded data and
+build reconstructed frames therefrom. The strength derivation unit 834 may derive a strength
+value using any of the techniques discussed above.        The deblocking filter 832 may perform
+deblocking filtering operations on recovered frame data according to filtering parameters
+identified by the channel and at a strength provided by the strength derivation unit 834. The
+SAO filter 833 may be configured to perform at least one of the offset features described herein,
+and in some instances may perform different combination of two or more of the offset features
+described herein. SAO filtering may be applied adaptively to all samples satisfying particular
+conditions defined herein. SAO may modify decoded samples by conditionally adding an offset
+value to each sample based on values in look-up tables transmitted by an encoder. For example,
+a classifier index specifying classification of each sample and offsets of the samples may be read
+and decoded from a bitstream.
+                                                  26
+
+1002215872
+[85]     FIG. 9 illustrates a multi-terminal system 900 suitable for use with embodiments of the
+present invention. The system 900 may include at least two terminals 910, 920 interconnected
+via a channel 950. For unidirectional transmission of data, a first terminal 910 may code video
+data at a local location for transmission to the other terminal 920 via the channel 950.        The
+second terminal 920 may receive the coded video data of the other terminal from the channel
+950, decode the coded data and display the recovered video data.                Unidirectional data
+transmission is common in media streaming applications and the like.
+[86]     FIG. 9 also illustrates a second pair of terminals 930, 940 provided to support
+bidirectional   transmission    of    coded   video   that   may    occur,  for   example,    during
+videoconferencing.     For bidirectional transmission of data, each terminal 930, 940 may code
+video data captured at a local location for transmission to the other terminal via the channel 950.
+Each terminal 930, 940 also may receive the coded video data transmitted by the other terminal,
+may decode the coded data, and may display the recovered video data at a local display device.
+[87]     In FIG. 9, the terminals 910-940 are illustrated as servers, personal computers and smart
+phones, but the principles of the present invention are not so limited.        Embodiments of the
+present invention find application with laptop computers, tablet computers, media players and/or
+dedicated video conferencing equipment.        Each terminal 910-940 may include a processing
+device and a memory. The processing device may include a device such as a central processing
+unit, microcontroller, or other integrated circuit that is configured to execute instructions stored
+in the memory.      Memory may include any form of tangible media that is capable of storing
+instructions, including but not limited to RAM, ROM, hard drives, flash drives, and optical discs.
+The channel 950 represents any number of networks that convey coded video data among the
+terminals 910-940, including for example wire line and/or wireless communication networks. A
+communication network may exchange data in circuit-switched and/or packet-switched channels.
+Representative networks include telecommunications networks, local area networks, wide area
+networks and/or the Internet.     In another embodiment, the channel 950 may be provided as a
+storage device, for example, an electrical, optical or magnetic storage device. For the purposes
+of the present discussion, the architecture and topology of the channel 950 is immaterial to the
+operation of the present invention.
+                                                  27
+
+1002215872
+[88]     The foregoing discussion has described operation of the embodiments of the present
+invention in the context of codecs. Commonly, codecs are provided as electronic devices. They
+can be embodied in integrated circuits, such as application specific integrated circuits, field
+programmable gate arrays and/or digital signal processors. Alternatively, they can be embodied
+in computer programs that execute on personal computers, notebook computers or computer
+servers. Similarly, decoders can be embodied in integrated circuits, such as application specific
+integrated circuits, field programmable gate arrays and/or digital signal processors, or they can
+be embodied in computer programs that execute on personal computers, notebook computers or
+computer servers. Decoders commonly are packaged in consumer electronics devices, such as
+gaming systems, DVD players, portable media players and the like and they also can be
+packaged in consumer software applications such as video games, browser-based media players
+and the like. These components may be provided as hybrid systems that distribute functionality
+across dedicated hardware components and programmed general purpose processors as desired.
+[89]     The foregoing description has been presented for purposes of illustration and description.
+It is not exhaustive and does not limit embodiments of the invention to the precise forms
+disclosed. Modifications and variations are possible in light of the above teachings or may be
+acquired from the practicing embodiments consistent with the invention. Unless described
+otherwise herein, any of the methods may be practiced in any combination. For example, the
+methods of signaling and the method of deriving the quantization factor for classification may be
+practiced in any combination.
+[90]     As used herein, except where the context requires otherwise, the term "comprise" and
+variations of the term, such as "comprising", "comprises" and "comprised", are not intended to
+exclude further features, components, integers or steps.
+                                                28
+
+1002215872
+WHAT IS CLAIMED IS:
+1.       A decoding method, comprising:
+         extracting a quantization factor and coded pixel values from a coded video stream
+for derivation of sample adaptive offset (SAO) offset values for coded luma data and for
+derivation of SAO offset values for coded chroma data,
+         decoding the coded pixel values to produce reconstructed pixel data,
+         scaling the reconstructed pixel data by applying the quantization factor,
+         altering the scaled pixel data by applying a function that associates scaled pixel data
+with more general categories,
+         evaluating the altered pixel data,
+         classifying a reconstructed pixel at a current location into a category based on
+the evaluation,
+         deriving a first SAO offset value for luma data based on the classification,
+         performing SAO filtering on a luma component of the reconstructed pixel data using
+the derived first SAO offset value as an input identifying an offset in the SAO filtering
+operation,
+         deriving a second SAO offset value for chroma data based on the classification, and
+performing SAO filtering on a chroma component of the reconstructed pixel data using the
+derived second SAO offset value as an input identifying an offset in the SAO filtering
+operation.
+2.       A decoding method, comprising:
+         extracting a quantization factor and coded pixel values from a coded video stream
+for derivation of sample adaptive offset (SAO) offset values for coded luma data,
+         decoding the coded pixel values to produce reconstructed pixel data,
+         scaling the reconstructed pixel data by applying the quantization factor,
+                                                 29
+
+1002215872
+         altering the scaled pixel data by applying a function,
+         evaluating the altered pixel data,
+         classifying a reconstructed pixel at a current location into a category based on the
+evaluation,
+         deriving an SAO offset value based on the classification, and
+         performing SAO filtering on a luma component of the reconstructed pixel data sing
+the derived      SAO offset value       as an input identifying  an offset in the    SAO filtering
+operation.
+3.       A decoding method, comprising:
+         extracting a quantization factor and coded pixel values from a coded video stream
+for derivation of sample adaptive offset (SAO) offset values for coded chroma data,
+         decoding the coded pixel values to produce reconstructed pixel data,
+         scaling the reconstructed pixel data by applying the quantization factor,
+         altering the scaled pixel data by applying a function,
+         evaluating the altered pixel data,
+         classifying a reconstructed pixel at a current location into a category based on the
+evaluation,
+         deriving an SAO offset value based on the classification, and
+         performing SAO filtering on a chroma component of the reconstructed pixel data
+using the derived second SAO offset value as an input identifying an offset in the SAO
+filtering operation.
+4.       A method for decoding video, comprising:
+         identifying a quantization factor, and coded pixel values for a current location and at
+least two neighboring locations;
+                                                  30
+
+1002215872
+         decoding the coded pixel values to produce reconstructed pixel data at the current
+location and the neighboring locations;
+         determining difference values between reconstructed pixel data at the current
+location and reconstructed pixel data at neighboring locations;
+         scaling the difference values by applying the quantization factor;
+         evaluating the scaled difference values;
+         classifying a reconstructed pixel at the current location into a category based on
+the evaluation;
+         deriving an offset value based on the classification; and
+         performing sample adaptive offset filtering of the reconstructed pixel data at the
+current location according to the derived offset value.
+5.       The method of claim 4, further comprising:
+         writing reconstructed pixel values based on the sample adaptive offset filtering into
+a decoded picture buffer of decoder loop in a video encoder; and
+         encoding the quantization factor and the coded pixel values into an encoded video
+bitstream.
+6.       The method of claim 4, wherein the evaluating includes comparing the scaled pixel
+data of the current location to the scaled pixel data of the neighboring locations.
+7.       The method of claim 4, further comprising:
+         determining difference values between an reconstructed pixel data at the current
+location and reconstructed pixel data at neighboring locations;
+         wherein the evaluating includes evaluating the sign of a the quantization of the
+difference values.
+                                                31
+
+1002215872
+8.       The method of claim 4, further comprising:
+         performing a ceiling/floor calculation on the scaled pixel data.
+9.       The method of claim 4, further comprising:
+         rounding the scaled pixel data.
+10.      The method of claim 4, wherein applying the quantization factor to reconstructed
+pixel data at the current location include dividing an reconstructed pixel data at the current
+location by the quantization factor, and further including:
+         dividing reconstructed pixel data at the neighboring locations by the quantization
+factor.
+11.   A non-transitory computer readable medium containing instructions, that when executed
+by a processor, cause:
+         identifying a quantization factor, and coded pixel values for a current location and at
+least two neighboring locations;
+         decoding the coded pixel values to produce reconstructed pixel data at the
+current location and the neighboring locations;
+         scaling the reconstructed pixel data by applying the quantization factor at the
+current location and the neighboring locations;
+         altering the scaled pixel data by applying a function;
+         evaluating the altered pixel data;
+         classifying a reconstructed pixel at the current location into a category based on
+the evaluation;
+         deriving an offset value based on the classification; and
+                                                 32
+
+1002215872
+         performing sample adaptive offset filtering of the reconstructed pixel data at the
+current location according to the derived offset value.
+12.      A system comprising:
+         a video decoder including a sample adaptive offset filter;
+         a processing device; and
+         a memory including instructions, that when executed by the processor cause:
+                identifying a quantization factor, and coded pixel values for a current location
+and at least two neighboring locations;
+                decoding the coded pixel values to produce reconstructed pixel data at the
+current location and the neighboring locations;
+                scaling the reconstructed pixel data by applying the quantization factor at
+the current location and the neighboring locations;
+                altering the scaled pixel data by applying a function at the current location and
+the neighboring locations;
+                evaluating the altered pixel data at the current and neighboring locations;
+                classifying a reconstructed pixel at the current location into a category based
+on the evaluation;
+                deriving an offset value based on the classification; and
+                applying the sample adaptive offset filter to the reconstructed pixel data at
+the current location according to the derived offset value.
+13.      The method of claim 1, wherein the function applied to scaled pixel data is a
+rounding function.
+                                                 33
+
+1002215872
+14.      The method of claim 1, wherein the function applied to scaled pixel data is a floor or
+ceiling calculation function.
+15.      The method of claim 1, wherein evaluating the altered pixel data includes:
+         comparing altered pixel data at the current location to altered pixel data at a
+first neighboring pixel location; and
+         comparing altered pixel data at the current location to altered pixel data at a
+second neighboring pixel location.
+16.      The method of claim 4, wherein the at least two neighboring locations include at
+least:
+         a first neighboring location in a first direction from the current location; and
+         a second neighboring location in a second direction from the current location that
+is opposite the first direction.
+                                                   34
+
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>

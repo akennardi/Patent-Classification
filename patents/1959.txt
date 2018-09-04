@@ -1,0 +1,1236 @@
+                                     ABSTRACT
+A method executed by a processor that schedules tasks in sequence based
+on a dynamic scheduling algorithm. The method includes calculating an
+effective deadline of each of the tasks under real-time constrains, assigning a
+higher priority to a first task with an earlier effective deadline compared with a
+second task, and determining an order of implementation of the tasks based
+on priorities of the tasks. The real-time constrains include an energy
+constraint that allows the tasks to complete before corresponding effective
+deadlines without energy starvation of the tasks during task implementation.
+The real-time constrains also include a resource sharing constraint that
+considers a blocking time caused by sharing resources between two or more
+of the tasks.
+
+                                           TITLE
+        METHOD AND SYSTEM FOR SCHEDULING TASKS IN REAL TIME
+                               FIELD OF THE INVENTION
+ 5 The present invention relates to a real-time system, and more particularly to
+   methods and systems that schedule tasks in real time for ensuring timely
+   execution of the tasks.
+10                                    BACKGROUND
+   Many systems, including real-time systems, have real-time timeliness
+   constraints on their processing. Such systems often interact with the real
+   world and/or users and have specific constraints on when they must respond
+15 to events, produce results, etc. Some examples of such systems include
+   safety-critical systems such as anti-lock brakes in automotive electronics,
+   control systems in telecommunications such as flight control systems,
+   multimedia systems such as video or audio players, sensor networks and so
+   forth. Systems intended to address such real-time situations must be carefully
+20 designed to ensure the timing requirements of the applications they are built
+   to execute.
+   New methods and systems that assist in advancing technological needs and
+   industrial applications in the field of real-time systems are desired.
+25
+                                              1
+
+                             SUMMARY OF THE INVENTION
+   One example embodiment is a method executed by a processor that
+   schedules tasks in sequence based on a dynamic scheduling algorithm. The
+ 5 method includes calculating an effective deadline of each of the tasks under
+   real-time constrains, assigning a higher priority to a first task with an earlier
+   effective deadline compared with a second task, and determining an order of
+   implementation of the tasks based on priorities of the tasks. The real-time
+   constrains include an energy constraint that allows the tasks to complete
+10 before corresponding effective deadlines without energy starvation of the
+   tasks during task implementation. The real-time constrains also include a
+   resource sharing constraint that considers a blocking time caused by sharing
+   resources between two or more of the tasks.
+15 In one example embodiment, the effective deadline of the tasks to be
+   implemented by the processor is calculated by: calculating a first deadline for
+   each of the tasks for a real-time feasibility in any related implementation of the
+   tasks; estimating a required energy and an energy harvesting time to reach
+   the required energy for each of the tasks to be completed; calculating a
+20 second deadline for each of the tasks by adding the energy harvesting time to
+   the first deadline; calculating a third deadline for each of the tasks by adding
+   the blocking time to the first deadline; and determining the effective deadline
+   of each of the tasks to be the maximum among the first deadline, the second
+   deadline, and the third deadline. The effective deadline of each of the tasks is
+25 less than a maximum deadline of each of the tasks that is defined by a user.
+   Another example embodiment is a reconfigurable system that schedules tasks
+   in sequence based on an earliest deadline first (EDF) algorithm. The
+   reconfigurable system includes a uniprocessor and a scheduler. The
+30 uniprocessor determines an effective deadline of each of the tasks under an
+   energy constraint and a resource sharing constraint. The scheduler assigns a
+   higher priority to a first task with an earlier effective deadline compared with a
+   second task and determines an order of implementation of the tasks. The
+   energy constraint allows the tasks to complete before its corresponding
+                                              2
+
+  effective deadlines without energy starvation during task implementation. The
+  resource sharing constraint adds a blocking time for tasks that share
+  resources with one another.
+5 Other example embodiments are discussed herein.
+                                         3
+
+                    BRIEF DESCRIPTION OF THE DRAWINGS
+   FIG. 1 shows a reconfigurable system in accordance with an example
+   embodiment.
+ 5
+   FIG. 2 shows a method of scheduling tasks in sequence in accordance with
+   an example embodiment.
+   FIG. 3 shows an algorithm of calculating effective deadlines for tasks in
+10 accordance with another example embodiment.
+   FIG. 4A shows a task table in accordance with an example embodiment.
+   FIG. 4B shows a table of calculated deadlines for the tasks shown in FIG. 4A
+15 in accordance with an example embodiment.
+   FIG. 5 shows a task schedule in accordance with an example embodiment.
+   FIG. 6 shows a task schedule in accordance with another example
+20 embodiment.
+   FIG. 7 shows schedules based on three solutions in accordance with an
+   example embodiment.
+25 FIG. 8 shows a table of fifty tasks in accordance with another example
+   embodiment.
+   FIG. 9 shows implementation of the tasks shown in FIG. 8 in accordance with
+   an example embodiment.
+30
+   FIG. 10 shows a chart that compares maximum deadlines with calculated
+   effective deadlines in accordance with an example embodiment.
+                                            4
+
+   FIG. 11 shows a chart of deadlines reduction in accordance with an example
+   embodiment.
+   FIG. 12 shows curves of calculation time for calculating the deadlines under
+ 5 different branches in accordance with an example embodiment.
+   FIG.13 shows a variation of the calculation time in accordance with an
+   example embodiment.
+10
+                                          5
+
+                               DETAILED DESCRIPTION
+   Example embodiments relate to reconfigurable systems under real-time and
+ 5 resource sharing constraints.
+   Real-time systems are found in diverse applications, such as avionics,
+   automotive electronics, telecommunications and sensor networks. The real
+   time systems run a set of implementations, each of which is encoded by real
+10 time tasks. The tasks are required to be executed in time to satisfy the
+   timeliness constraints or deadlines. The violation of deadlines leads to
+   breakdowns, data loss, etc., which can be catastrophic for certain
+   applications. Hence, it is important to schedule the tasks and implement the
+   tasks before their corresponding deadlines.
+15
+   Some conventional systems minimize the deadlines without taking into
+   account the job or task energy requirements. They assign new deadlines to
+   periodic tasks in order to achieve a secondary objective. Some other methods
+   manage the tasks of a real-time system by modifying either their periods or
+20 worst case execution times (WCET). This orientation affects the performance
+   of the system, since increasing the periods degrades the quality and
+   decreasing the WCET increases the energy consumption.
+   Example embodiments solve these problems by a reconfigurable system
+25 running an offline methodology or algorithm for calculating effective deadlines
+   under energy and resource sharing constraints and minimizing context
+   switchings. This methodology provides deadlines without affecting the load or
+   the processor speed, while reducing the calculation time of the processor.
+   Moreover, it calculates the deadlines to be respected without spending time
+30 on doing the schedulability tests.
+   In one example embodiment, the reconfigurable system operates under a run
+   time flexible scenario that adapts the system's implementation to any related
+   environment evolution under well-defined conditions described in user
+                                            6
+
+   requirements. The reconfigurable system assigns a set of deadlines to each
+   task and runs the task with the earliest deadline first under real-time and
+   resource sharing constraints. The reconfigurable system further calculates
+   effective deadlines of different periodic tasks in different implementations to
+ 5 guarantee the system's feasibility without applying a schedulability analysis.
+   By way of example, each task is associated with a release time, a period, a
+   maximum deadline defined in user requirements, which can be less or higher
+   than the period, an effective calculated deadline, a required computation time,
+10 a required energy, and a blocking time. As one example, the reconfigurable
+   system has a uniprocessor. Therefore, at a given moment and under well
+   defined conditions, only one subset of these tasks is executed. As another
+   example, the reconfigurable uniprocessor system is powered by a renewable
+   energy source. Renewable energy is generated from natural resources such
+15 as sunlight, wind, tides, geothermal heat, etc., that are naturally replenished.
+   In one example embodiment, the tasks share hardware and software
+   resources, which engenders a relationship of dependency between tasks. The
+   deadlines of tasks in the real-time system are provided by users. By way of
+20 example, a task or job is characterized by an effective calculated deadline that
+   is less than a maximum deadline defined by a user. The effective deadlines of
+   the different periodic tasks are calculated in different implementations, such
+   as under a renewable energy source, and the sharing resource constraints.
+25 In one example embodiment, the reconfigurable system implements an offline
+   method based on three solutions to calculate effective deadlines of tasks. The
+   first solution computes a first deadline that ensures the real-time system
+   feasibility and also minimizes the number of context switchings by assigning
+   the highest priority to the task with the smallest maximum deadline. The
+30 second solution computes a second deadline that respects energy
+   constraints. The third solution computes a third deadline that respects the
+   resource sharing constraints. These three solutions calculate the possible
+   deadlines of each task in the hyper-period of the corresponding
+   implementations.
+                                             7
+
+   In one example embodiment, the system calculates deadlines in the context
+   of dynamic-priority, preemptive, uniprocessor scheduling with energy
+   requirement considerations. This methodology allows to find the deadlines
+ 5 that will be respected by the tasks. The calculated deadlines of the tasks are
+   less than the corresponding maximum ones, but may be higher than the
+   related periods. The calculation of deadlines is performed off-line on the
+   hyper-period of each implementation. By way of example, a hyper-period is
+   the lowest common multiple (LCM) of the periods in an implementation.
+10
+   Example embodiments compute the deadlines of reconfigurable real-time
+   devices to run under energy and resource sharing constraints. It reduces the
+   development time by computing the deadlines without any feasibility analysis
+   of the device. The calculation considers the real-time aspects, or both the
+15 energy and resource sharing constraints, giving the user the ability to
+   configure the system under different conditions. The user can reject the
+   generated results if they are not satisfactory. This method can be applied in
+   various industrial areas such as intelligent manufacturing industry, intelligent
+   transportation systems, embedded systems, wireless sensor networks, smart
+20 grids, medical control devices, military platforms, etc.
+   As a matter of convenience, the terms "task" and "job"are used
+   interchangeably within this description. These terms are not intended to have
+   specific meanings herein, other than to reference a general amount of
+25 executable instructions.
+   FIG. 1 shows a reconfigurable system 100 in accordance with an example
+   embodiment. The reconfigurable system 100 includes a uniprocessor 112, a
+   scheduler 114, a under interface 116, a memory 118 and a network interface
+30 120.
+   In one example embodiment, the reconfigurable system 110 schedules tasks
+   in sequence based on an earliest deadline first (EDF) algorithm. The
+   uniprocessor 112 of the reconfigurable system determines an effective
+                                            8
+
+   deadline of each of the tasks under an energy constraint and a resource
+   sharing constraint. The energy constraint allows the tasks to complete before
+   its corresponding effective deadlines without energy starvation during task
+   implementation. The resource sharing constraint adds a blocking time for
+   tasks that share resources with one another.
+   By way of example, the uniprocessor 112 determines the effective deadline in
+   a way that ensures all the tasks complete by a maximum deadline by
+   conducting a number of steps. First, the uniprocessor calculates a first
+ 5 deadline for each of the tasks associated with an arrival time and an
+   execution requirement. Second, the uniprocessor estimates a required energy
+   and an energy harvesting time to reach the required energy for each of the
+   tasks to be completed or implemented before the maximum deadline. Third,
+   the uniprocessor calculates a second deadline for each of the tasks by adding
+10 the energy harvesting time to the first deadline. Forth, the uniprocessor
+   calculates a third deadline for each of the tasks by adding a blocking time to
+   the first deadline, for those tasks that share resources with one another and
+   need to wait when the shared resources are engaged. Finally, the
+   uniprocessor determines the effective deadline of each of the tasks to be the
+15 maximum among the first deadline, the second deadline, and the third
+   deadline. The calculated effective deadline of each of the tasks is less than
+   the maximum deadline of each of the tasks that is defined by a user.
+   In one example embodiment, the uniprocessor 112 of the reconfigurable
+   system calculates the effective deadline of each of the tasks offline in a hyper
+   period of corresponding implementations. The hyper-period is the lowest
+   common multiple of a number of periods in a task implementation. Further,
+   the uniprocessor of the reconfigurable system calculates the effective
+   deadline of each of the tasks without applying a schedulability analysis in
+   order to reduce a calculation time of the reconfigurable system.
+20 The scheduler 114 assigns a higher priority to a first task with an earlier
+   effective deadline compared with a second task, based on a EDF algorithm.
+   The scheduler further determines an order of implementation of the tasks
+                                             9
+
+   based on the priorities of the tasks. The scheduler of the reconfigurable
+   system places tasks in a priority queue and minimizes a number of context
+   switching by assigning a higher priority to a task with an earlier effective
+   deadline. When a first task in the priority queue finishes, the scheduler
+ 5 searches the tasks in the priority queue closest to its effective deadline to be
+   implemented next by the reconfigurable system. Priorities are dynamically
+   reassigned at run-time based on the time still available for each task to reach
+   its next deadline.
+10 By way of example, the scheduler maintains a queue of tasks in ascending
+   order of deadline so that whenever a processor gets free, then by using EDF
+   scheduling, the head of the queue will be assigned to the processor. When
+   new task arrives, its deadline will be compared with the deadline of currently
+   executing task, and in case if deadline of newly arrived task is closer to the
+15 current time, it will be sent to the processor and the old task will be pre
+   empted and placed back in the queue.
+   By way of example, each of the tasks implemented by the reconfigurable
+   system is associated with the effective deadline and the blocking time
+20 calculated by the reconfigurable system, a release time in which the task
+   arrives at the uniprocessor, a period that is a duration of time that the task is
+   undergoing implementation, a required computation time and a required
+   energy to implement the task, and a maximum deadline defined by a user. For
+   example, when the energy or power required for a specific task need more
+25 time to build up, the effective deadline of this specific task is extended to
+   include the power build up time. The effective deadline is less than its
+   corresponding maximum deadline, which is defined by the user.
+   The user interface 116 of the reconfigurable system presents the calculated
+   effective deadlines and an order of implementation of the tasks from the
+   scheduler 114 of the reconfigurable system to a user who defines a maximum
+   deadline of each of the tasks. As one example, the user has an option of
+   rejecting the calculated effective deadlines and the order of implementation of
+   the tasks. In response to the user's rejection, the reconfigurable system
+                                             10
+
+  recalculates effective deadlines of the tasks in real time and reschedules
+  another order of implementation of the tasks until the user approves.
+  The user interface 116 functions as an agent between the user and the
+  reconfigurable system. For example, the user rejects or approves the effective
+  deadlines calculated by the reconfigurable system through the user interface.
+  The user interface can also record data related to user preferences.
+  The memory 118 of the reconfigurable system memory communicates with
+  other components of the system and stores applications, data, programs,
+  algorithms (including software to implement or assist in implementing example
+  embodiments) and other data. The uniprocessor communicates with the
+  memory and other hardware to execute tasks that implement one or more
+  example embodiments discussed herein.
+  The network interface 120 enables the reconfigurable system 100 to
+  exchange information with external devices or systems via a data
+  communication network such as the Personal Area Network (PAN), the Local
+  Area Network (LAN), the Wide Area Network (WAN), metropolitan area
+  network (MAN), the Internet, an intranet, an extranet, a cellular network, and
+  other public or private data communication network architectures. The
+  network interface can include the Ethernet interface, the Wireless LAN
+  interface device, the Bluetooth interfacing device and other networking
+  devices, singly or in combination.
+  In one example embodiment, the reconfigurable system is powered by a
+  renewable energy source. Renewable energy is generated from natural
+  resources such as sunlight, wind, tides, geothermal heat, etc., that are
+5 naturally replenished.
+  FIG. 2 shows a method of scheduling tasks in sequence in accordance with
+  an example embodiment.
+                                          11
+
+   Consider an example in which a computer system includes a uniprocessor, a
+   scheduler, and a user interface. The uniprocessor determines an effective
+   deadline of each of the tasks to be implemented by the uniprocessor under an
+   energy constraint and a resource sharing constraint. The scheduler assigns
+ 5 priorities to each task based on the effective deadline of each task calculated
+   by the uniprocessor and schedules the tasks in sequence based on an
+   earliest deadline first (EDF) algorithm. By way of example, the method shown
+   in FIG. 2 is executed by the computer system. Other embodiments of the
+   method shown in FIG. 2 may be implemented with other types of computer
+10 systems.
+   The energy constraint allows the tasks to complete before its corresponding
+   effective deadlines without energy starvation during task implementation. The
+   resource sharing constraint adds a blocking time for tasks that share
+   resources with one another.
+   By way of example, a system is denoted by Sys, as a task set T containing n
+   periodic tasks, i.e., T = {T   ... Tn }, which  is the set of all tasks that can implement
+   Sys. It is supposed that all of the tasks are activated at t = 0. At any time t and
+15 under well-defined conditions, only one subset of T is executed. Let -rr be the
+   superset of m the subsets of T, i.e.,       T=   {li, ..., Im}. Each element /k, k E[1,...,m],
+   from   Tr represents an implementation of Sys. Thus, the system applies a
+   reconfiguration scenario at ti, then the implementation before ti is denoted by
+   Sys(ti-) = /pand after ti is denoted by           Sys(tl+) = /k, with p E[1,..., m], and p
+20 #k.
+   Each task Ti, ie [1,..., n] in T is characterized by: a release time R;, a worst-case
+   execution time (WCET) C;, a period Pi, a relative deadline Di , which is the
+   parameter to be calculated to guarantee the respect of real-time, energy and
+25 resources sharing constraints in any implementation /k, a maximum relative
+   deadline Dmax; that is defined by users, a required energy Ei expressed in
+   joule, and a maximum blocking time Bi that can delay                Ti in any implementation
+   lk. This blocking time results from any resource sharing. R denotes the set of
+                                                  12
+
+   shared resources and SRe denotes a shared resource in R (e E [1,...,X], where
+   X is the number of the shared resources of the system.
+   Each task r; in implementation Ik is denoted by         Tik. It is characterized by related
+ 5 deadline dik and by blocking time bik, by:
+                                   Di= max{dik}                                                  (1)
+   and,
+10
+                                   Bi= max{bik}                                                  (2)
+   where i e [1,...,n], and k E[1,...,m].
+15 Each periodic task     Tik in Ikproduces an infinite sequence of jobs           Tik, where j is
+   a positive integer. Each job      Tk  is described by a release time riand by a
+   relative deadline dik,. Each job ri has also two parameters y;;k and #ijk, which
+   represent successively the start and the end of execution time. HPk
+   represents the hyper-period which is the lowest common multiple (LCM) of the
+20 tasks' periods in  1k.
+   By way of example, the system Sys is powered by a renewable energy source.
+   For example, the system Sys is powered by a battery with a capacity C which
+   is enormously large in such a way that it prevents the battery overload when
+25 the energy production rate is high.
+   An energy model is characterized by the quantity of energy Eavb which is
+   available in the battery at time t=O, and an instantaneous charging                  Eunit which
+   represents the worst case energy production per unit of time. The produced
+30 energy, between t=O and the end execution time of job                    Tijk,  is denoted by
+   Efod(0, #P11K), with       E prod(0, #1JK) = fe*ijk Eunit = Eunit   x(#ijk  -0). The energy
+   consumed between t=0 and the end execution time of job                      Tik is denoted by
+   Effkns(0,PIJK). In what follows, it is considered that i E [1,...,n], and k e [1,...,m]
+                                                13
+
+   and j e [1,...,    ], where L denotes the number of jobs produced by task        Tik on
+                   Pi            P
+   hyper-period HPk.
+   To ensure that Sys runs correctly, it is necessary to check whether it respects
+ 5 the following constraints:
+              (i) Real-time constraint: each job has to be completed before the
+   absolute deadline using the EDF scheduling algorithm. This constraint is given
+   by:
+10                        V i,j and k, #ijk 5 rijk + Di                                 (3)
+   If the system Sys has shared resources, a second condition will be evaluated,
+   which is the resource sharing constraint. It must guarantee that each job,
+   blocked because of a resource sharing, has to be completed before the
+15 absolute deadline. This constraint is given by Equation (3).
+           (ii) Energy constraint: each task has to get a required energy for
+   execution that should be finished before the related deadline, i.e., each task
+   has to be completed before the absolute deadline. This constraint is given by
+20 (3) and:
+                    V ij and k, Eavb(O) + Eprodijk(O, Oijk) - Econcijk(O, pijk) < 0     (4)
+   The system deals with the calculation of the tasks' deadlines that allow the
+   system feasibility.
+25
+   Block 210 states calculating a first deadline for each of the tasks for a real
+   time feasibility in any related implementation of the tasks.
+   By way of example, the first deadline is calculated by a solution for real-time
+30 feasibility. The solution is represented by RT Computing and allows the
+   calculation of deadlines for a feasible behavior of the system. This solution
+   calculates the effective deadlines for the respect of real-time constraints by
+   tasks. Moreover, this approach tries to minimize the number of context
+                                              14
+
+   switchings. In fact, the first solution RT Computing minimizes the number of
+   context switchings by assigning the highest priority to the task with the
+   smallest maximum deadline. Then, if one of the other solutions is executed, it
+   always tries to keep the same ordering of tasks.
+ 5
+   ACijk represents the maximum cumulative execution time requested by jobs in
+   implementation whosee (i) absolute maximum deadlines are less than the
+   maximum absolute deadline of job            Tijk. This condition is denoted by D-lessl,
+   (ii) absolute maximum deadlines are equal to the maximum absolute deadline
+10 of job  Tijk and arrival times are less than the arrival time of job          Tijk or their index
+   are less than i, i.e., we apply the strategy of first in first out (FIFO) by
+   assuming that the task with the smallest index is the one that comes at the
+   beginning. This condition is denoted by D-equal.                  ACijk is given by:
+              ACijk =    Tl1kCIk(Ci x     ik                                                       (5)
+15
+               iik
+   where alk is the number of jobs produced by task rik in implementation /k,
+   represented by:
+                            j  -   1)P 1 + Draxi        -D        ]if (D- less = true
+                           and D- equal 1 = false),
+                ijk     (j - 1)Pi + Dnaxi - Dmaxi
+            alk =                                               I + 1 if (D- lessl = true
+                           and D- equal = true),
+                              1 if (D- less 1 =    false and D-     equal1 = true),
+                                                        0 else.
+                                                                                                  (6)
+20
+   Three examples are discussed herein.
+   Example 1: D-lessl = true and D-equal1 = false.
+   Let q be the number of jobs of task             Tik that verify D-lessl= true. Then job rTgq
+25 has an absolute deadline less than that of job rijk, i.e.,
+                                       rq + Dmax, < r+ Dmaxi
+                             (q-1) x P + Dmax, < U-1) x Pi + Dmaxi
+                                                     15
+
+   As D-equal = false, job           T of    task   Tik   has an absolute deadline higher than or
+   equal to that of job    Tijk but its arrival time is not less than that of job         Tijk or its
+   index is not less than i. then:
+                           rI(q+1)   + Dmax, > ri;+ Dmaxi
+ 5                         <=>     ((q+1) -1) x P + Dmax, 2 (-1) x Pi + Dmaxi
+                           <=>     q x P, + Dmax, 2 (-1) x Pi + Dmaxi
+                           <=>     q x P, > ri;j6-1) x Pi + Dmaxi - Dmaxi
+                           <=>      q          (j- 1) x Pi + Dmaxi -Dmaxl
+                                                              P1
+10                                                                                                (7)
+   Since q is an nonnegative integer,
+                                     (j - 1) x Pi + Dnaxi - Dmaxl
+                                                              Pi
+                                                                                                  (8)
+15
+   The value of   alk    when D-lessl = true and D-equal = false is equal to q,
+   i.e.,
+                       ijk             (j - 1) x Pi + Dmaxi - Dnaxl
+20
+   Example 2: D-lessl = true and D-equal1 = true.
+   As D-less1 = true, q =                -)   XPi+Dmaxi Dmaxl        , and since D-equall = true,
+   the job number (q + 1) is the unique job that verifies:
+                                    ((q+1) -1) x P, + Dmax,          = (-1)  x Pi + Dmaxi         (9)
+25 then,
+                                                        i    =q  +1                             (10)
+                         a ijk
+                                    1
+                                       [    (j-1) x Pi+Dmaxi -Dmaxl
+                                                           PI
+                                                                          +1                    (11
+30 Example 3: D-lessl = false and D-equal = true.
+                                                          16
+
+   As D-lessl= false, q is equal to 0. Since D-equal = true, the job number (q +
+    1) is the only one that verifies the following equality given by:
+                         ((q+1) -1) x P, + Dmax, = (-1)       x Pi + Dmaxi        (12)
+ 5
+   and,
+                                 a = q + 1=0 + 1= 1                               (13)
+   Example 4: None of the previous three examples is verified.
+10 In this case, there is no job that verifies one from the previous examples, i.e.,
+                                                  a 1jkik= 0
+   The value dijkthat guarantees the feasibility of this job takes the form
+                                 dijk     Ci + ACijk - ri; if ACiik >?4           (14)
+                                                          Ci else.
+15
+   The deadline dikof task     Tik is expressed by
+                                           dik = max{dijk}                        (15)
+20
+   After executing RT Computing, the function Sel-D is executed to calculate D;
+   of task Ti. This function is used to calculate the Di according to the solution
+   executed before it. This function starts by assigning to each Di the maximum
+   value among dik, i.e.,
+25                                          Di = max{dik}                         (16)
+   Finally, Di is the fixed deadline for   Ti in all the related implementations.
+   Block 220 states estimating a required energy and an energy harvesting time
+   to reach the required energy for each of the tasks to be completed
+30
+   Block 230 states calculating a second deadline for each of the tasks by
+   adding the energy harvesting time to the first deadline.
+                                                 17
+
+    By way of example, the second deadline is calculated by a solution for energy
+    feasibility. The solution is represented by EComputing and calculates
+    effective deadlines to prevent any energy starvation. This solution allows the
+    calculation of deadlines to be respected by tasks under energy constraints. It
+ 5  uses the resulting deadlines from RT Computing and Sel-D. In other words, it
+    allows the calculation of the portion of time which will be added to the
+    deadlines coming from RT_Computing to respect the tasks' energy
+    requirement. In fact, this portion of time serves to give more time for energy
+    production such that there is no any energy starvation.
+10
+    Let AEijk be the          maximum        cumulative energy requested by jobs in
+    implementation      Ik whose (i) absolute deadlines, calculated in Equation (16), are
+    less than that of job      Ti
+                                1k. This condition is denoted by D-less2, or (ii) absolute
+    deadlines, calculated in Equation (16), are equal to that of job                Tijk and their
+15  arrival times are less than that of job        Tijk or their indices are less than i, i.e., we
+    apply the strategy of first in first out (FIFO) by assuming that the task with the
+    smallest index is the one that comes at the beginning. This condition is denoted
+    by     D-equal2, i.e.,
+20                                       /AEik -   EXTIkElk(El x # il)                         (17)
+    where pfkis the number of jobs produced by task                   rlk in implementation /k. It
+    verifies one of the following cases given by:
+                            [(j   -  1)i
+                                       PT+ Di    -    D Iif   (D- less2 = true and
+                            D- equal2 = false),
+25 25              i-1) =<
+                 p11k         (
+                              0i-           + Di -DI
+                                     1)P 1 +D      - D,
+                                               1            + I if (D- less2 = true
+                             and D- equal2 = true,
+                             1 if (D- less2 = false and D- equal2 = true),
+                                                        0 else.
+                                                                                               (18)
+                                                    18
+
+   The calculation of #ik is based on    Ik
+                                              the same principle that calculates a&i,
+                                                                                    1k
+   with the only difference that, instead of using the Dmaxi and Dmaxi, we use
+   the deadlines Di and D, resulting from RT_Computing and the function Sel-D.
+ 5 To calculate        (0,1JA     and   EifjkS(0,#JK),       we use respectively Equation
+   (19) and Equation (20) as represented below:
+                          (E""     -n,Eavb (0)
+        E  rd(0,#OIJK) =
+              E~dO~J)        (Eunit   -  Evb()     xljP19)
+                              = (Eunit       Ea         x (Ci +     keIk(Ci X    1k
+10 Eajv 0) is subtracted from Eunit to reserve the same amount of energy at the
+   beginning of the next hyper- period:
+                                      Efk(0, OIJK) = AEijk + Ei                         (20)
+   Let wOijk be a portion of time to be added to job Tik to prevent the energy
+15 starvation. During this portion of time, the processor will be idle, i.e., the energy
+   is produced without any consumption. o0 ijk is given by:
+                           ojjk     {- ( E        (0, Pijk) + Eavb (0))
+                           Ef,4,ns(0, #IJK)    -    (E I4od (0, IJK) + Eavb (0))
+                   ijk   if Ef,"o"s(0, #I)       >    (E,",d(0, PlJK) + Eavb(0))
+                                                     0 else.
+20                                                                                      (21)
+   Let  Mk   be the maximum of otjk given by:
+                                           (Oik=   max{(ijk}                            (22)
+25 Then:
+                                           Ok= max{oik}                                 (23)
+                                                  19
+
+   After executing E Computing, the function Sel-D is executed to calculate Di, to
+   be respected by tasks under energy constraints. This function starts by adding
+   to each Di the maximum value among ok, i.e.,
+                                            Di := Di + o                              (24)
+ 5 where o = max{Ok}.
+   Finally, Di is the fixed task deadline in all the related implementations.
+   Block 240 states calculating a third deadline for each of the tasks to the first
+10 deadline by adding a blocking time caused by sharing resources between two
+   or more of the tasks.
+   By way of example, the third deadline is calculated by a solution for resource
+   sharing feasibility. The solution is represented by RSComputing and
+15 calculates deadlines which take into consideration the blocking time coming
+   from the resource sharing. This solution calculates the deadlines to be
+   respected by tasks under resource sharing constraints. Depending on the
+   branch in which it is running, this solution uses the resulting deadlines from
+   RTComputing and Sel-D or from EComputing and Sel-D.
+20
+   Let bik be the blocking time of task         Tik resulting from the resource sharing in
+   implementation /k. It is given by:
+                                  bik = ZkEIk(CI -     1) olik                        (25)
+25 where
+                aik      1 if Tik  and Tlk have a common resource and i # 1,
+                                                    0 else.
+                                                                                      (26)
+   The blocking time of each task is calculated by:
+30
+                                           Bi = max{bik}                              (27)
+                                                  20
+
+   After executing RSComputing, the function Sel-D is executed to calculate Di
+   to be respected by task Tiunder energy and resource sharing constraints. This
+   function starts by adding to each Di the maximum blocking time, i.e.,
+                                          Di:= Di + Bi                                  (28)
+ 5
+   Let f2 be a variation that presents the decrease rate of deadlines, i.e., showing
+   the difference between the maximum deadlines and the calculated effective
+   deadlines. It is given by
+                                              =1-                                       (29)
+10
+   The complexity of the solutions applied in a single implementation is O(n log n).
+   Taking all the implementations of the system, the complexity of the psolutions
+   is O(n 2 log n).
+15 Let Sys be a reconfigurable real-time system powered by a renewable
+   energy source and T = {T1 ... rn } be the set of all periodic software tasks that
+   can implement Sys.
+   By applying successively (RTComputing + Sel-D), (EComputing + Sel-D) and
+20 (RS_Computing + Sel-D), the inequality below will be verified:
+                                       <Pik < rij + Di
+   where each job    Tijk completes before the related absolute deadline.
+   Let Qijk be the work quantity to be executed after ri and before the execution
+25 of Tgyk expressed per unit of time. Assume that T ik violates the related real
+   time constraint even we applied the proposed methodology, i.e., there exists
+   job Tijk such that #;;k> ri;+ dik. In this case, #ijk is calculated as follows: #;;k= ri;
+   + Qiik+ Ci. Since dik = max{ dik}, ri; + Qik+ Ci > ri; + dijk iff
+                           Qiik+ Ci > dik                            (a)
+30
+   According to Equation (14), if ACik> ri, then:
+                                               21
+
+                             dik = Ci +ACijk- rii                          (b)
+   Since Qik is the work quantity to be executed after ri; and before the execution
+   of   Tyk, and since ACijk is the work quantity to be executed from rn until the
+ 5 instant before the execution of rjk ,          Qik =ACgik    - (rij - rii). Since all tasks are
+   activated at t = 0, ril = 0. Thus,
+                             Qiuk = ACiik - ri                              (c)
+10 By (a), (b) and (c), we have C         + ACijk - ri >  C; + ACik    - ri;<=>       Ci> C;, absurd.
+   Therefore, <pijk    <   ri+ dik. According to Equation (14), if ACijk< ri;, then:
+                           Qijk =0                                            (d)
+   and,
+                          dyk =   Ci                                           (e)
+15
+   By (a), (d) and (e), we have Ci + 0 > Ci <=> Ci> Ci, absurd. Then, #ijk                      < rij +
+   dik. We have Di = max{dik}, then #k< ri + Di.
+   We assume that Tik violates the energy constraint, i.e., there exists job                  Tijk
+20 such that ru + Qik + C; + & > ri+ D;. In this case, #j is calculated as follows:
+                            k = ri + Qik + Ci+ (                                 (f)
+   Since Di is the sum of Di of the first solution and w,
+                       D;:= Di + w                                               (g)
+25
+   Based on the observations previously collected,
+                   rj+    Qik + Ci< r + Di                                       (h)
+   Based on (g) and (h),
+30                     ri;+ Qik + C;+ & < rij + Di                                 (i)
+   Based on (f) and (i), it is concluded that          ;uk < ri + Di.
+                                                  22
+
+   Assume that     Tik  violates the resource sharing constraint, i.e., there exists job
+   Tijk such that rij + Qijk + C; + bik > rij + D;. In this case, #ijk is calculated as
+   follows:
+                        pijk = ri; + Qik + Ci + Bi                          (j)
+ 5
+   Since Di is the sum of D; of the first solution and B; then:
+                       D;:= Di + Bi                                        (k)
+   Based on the observations previously collected,
+10                     r + Qjk + Ci < r+Di                                   (I)
+   By (k) and (1), rij+ Qijk + C;+ Bi< rij + Di
+   As Bi = max{ bik }, then :
+15                     i + Qjk + Ci + bk < r + Di                          (im)
+   By (j) and (m), it is concluded that pijk            rij + Di
+   Block 250 states determining an effective deadline of each of the tasks by
+   taking the maximum among the first deadline, the second deadline, and the
+20 third deadline.
+   The three solutions described above calculate, for each task and in each
+   related implementation, the deadlines of its jobs that occur on the hyper
+   period. Then, take the maximum among them as the effective deadline of the
+25 task in this implementation. Once the deadline of a task has been computed
+   in each related implementation, it is enough to take the maximum among
+   them as the deadline of this task, allowing the respect of all the three
+   constraints on any related implementation. The solutions and algorithms
+   discussed herein deals with parametrizing the tasks of a real-time system by
+30 calculating their deadlines under energy and resource sharing constraints.
+   This algorithm affects neither the load nor the processor speed and it has a
+   reduced calculation time. Moreover, it calculates the deadlines to be certainly
+   respected without spending time and resource on doing the schedulability
+   tests.
+                                                   23
+
+   Block 260 states assigning a higher priority to a first task with an earlier
+   effective deadline compared with a second task.
+ 5
+   By way of example, the system executes a deadline-based scheduling
+   algorithm known as earliest deadline first (EDF). The system runs the task
+   with the earliest deadline. The system assigns a higher priority to a task with
+   an earlier effective deadline. When a first task in the priority queue finishes,
+10 the scheduler of the system searches the tasks in the priority queue closest to
+   its effective deadline to be implemented next. An advantage of EDF is that
+   100% of the CPU utilization may be guaranteed.
+   FIG. 3 shows an algorithm of calculating effective deadlines for tasks in
+15 accordance with another example embodiment.
+   By way of example, the algorithm as shown in FIG. 3 includes four branches
+   310, 320, 330, and 340. The first branch 310 occurs when the system Sys is
+   powered by a permanent energy source and it has no shared resource. The
+20 second branch 320 occurs when the system Sys is powered by a green
+   energy source and it has no shared resource. The third branch 330 occurs
+   when Sys is powered by a green energy source and it has one or more
+   shared resources. The fourth branch 340 occurs when Sys is powered by a
+   permanent energy source and it has one or more shared resources.
+25
+   According to FIG. 3, RTComputing, EComputing and RSComputing are
+   subprograms. Each is used for a well-defined function. RTComputing allows
+   the calculation of deadlines dik that guarantees the real-time feasibility in any
+   related implementation /k. EComputing allows the calculation of deadlines dik
+30 for the respect of energy constraints in any related implementation /k.
+   RSComputing allows the calculation of deadlines dik for the respect of
+   resource sharing constraints in any related implementation /k. After the
+   execution of each of them, the function Sel-D is executed to calculate Di, which
+   is the fixed task deadline in all the related implementations.
+                                             24
+
+   FIG. 4A shows a task table 400A in accordance with an example
+   embodiment.
+ 5 By way of example, the system Sys can be implemented by five tasks
+   presented in table 400A, i.e., T = {r1', 2z rs, -c4, rs}. Three implementations of Sys
+   are considered, i.e., n-={/, 12, 13}, with I = { rc,     13 },  12 = { rC, C2} and 13 = { r1, T4,
+   15}. Consider an example in which the system Sys is powered by a renewable
+   energy source such that Eavb(0) = 1j and Eunit         =  0,73j. We consider two shared
+10 resources: SRI used by r, and r3, and SR 2 by ri and           -4.
+   FIG. 4B shows a table 400B of calculated deadlines for the tasks shown in
+   FIG. 4A in accordance with an example embodiment.
+15 After completing the execution of (RTComputing+ Sel-D) as well as
+   (EComputing+ Sel-D) and (RSComputing + Sel-D), the calculated effective
+   deadlines are listed in table 400B for the different tasks in table 400A.
+   Table 400B shows a decrease rate of deadlines of Q = 0,23.
+20 FIG. 5 shows a task schedule 500 in accordance with an example
+   embodiment. The task schedule shown in FIG. 5 is implemented by
+   considering the maximum deadlines for the tasks.
+   FIG. 6 shows a task schedule 600 in accordance with another example
+25 embodiment. The task schedule shown in FIG. 6 is implemented by
+   considering the calculated deadlines after the execution of RTComputing.
+   The real-time constraints are respected by the solutions described above.
+   Moreover, the context switching is reduced by 1 on the hyper-period HPI which
+   is equal to 20 seconds. If there is a delay of five hours, then the context
+30 switchings can be further reduced to       ( 5>360) x 1      =   90.
+   FIG. 7 shows schedules 700A, 700B and 700C, based on three solutions in
+   accordance with an example embodiment.
+                                              25
+
+   The first schedule 700A is obtained with the deadlines delivered by
+   EComputing. In the first schedule, the real-time and energy constraints are
+   respected.
+ 5
+   The second schedule 700B is obtained with the deadlines delivered by the
+   RTComputing (i.e., before the execution of E Computing), taking into
+   account two units of time during which there is a harvest of energy. As shown
+   in 700B, iiu and T15 have violated their real-time constraints.
+10
+   The third schedule 700C is obtained with the deadlines delivered by the
+   RTComputing, without taking into account two units of time during which
+   there is a harvest of energy. As shown in 700C, there is an energy starvation
+   (-0,92) at the sixth unit of time. Therefore, the first schedule guarantees the
+15 respect of both real-time and the energy constraints. The methodology that
+   considers both real-time and energy constrains allows the deadlines
+   calculation of the system by guaranteeing its feasibility under energy and
+   resource sharing constraints. Moreover, this methodology changes neither the
+   periods (i.e., quality of services) nor the WCETs of the tasks (i.e., energy
+20 consumption).
+   FIG. 8 shows a table 800 of fifty tasks in accordance with another example
+   embodiment.
+25 FIG. 9 shows implementation of the tasks shown in FIG. 8 in accordance with
+   an example embodiment.
+   By way of example, the system Sys includes 50 tasks presented in table 800.
+   Sys has four implementations that are presented in table 900 of FIG. 9. As
+30 one example, Sys is powered by a renewable energy source such that         Eav-b
+   25j and Eufit = 1,4j, and it has three shared resources, i.e., SRI is used by ri
+   and r22, SR2 by r and -7, and SR3 by ri and rg.
+                                             26
+
+   FIG. 10 shows a chart 1000 that compares maximum deadlines with
+   calculated effective deadlines in accordance with an example embodiment.
+   The x-axis shows tasks and the y-axis shows the deadlines.
+ 5 FIG. 10 reflects the difference between the maximum deadlines and the
+   calculated effective deadlines. As shown in FIG. 10, all of the effective
+   deadlines are less than their maximum deadlines, which are defined by users.
+   FIG. 11 shows a chart 1100 of deadlines reduction in accordance with an
+10 example embodiment. The x-axis shows the number of total tasks and the y
+   axis shows rates of deadlines reduction.
+   FIG. 11 compares the rates of deadlines reduction of the proposed approach
+   1110 with that of another approach 1120 that applies the critical scaling factor
+15 (CSF) algorithm. The CSF algorithm deals only with the real-time constraints
+   (the energy and resource constraints are not considered). As shown in FIG.
+   11, the reduction rates of deadlines by using the CSF algorithm are smaller
+   than those by using the proposed approach.
+20 FIG. 12 shows curves 1200 of calculation time for calculating the deadlines
+   under different branches in accordance with an example embodiment. The x
+   axis shows number of tasks and the y-axis shows the calculation time.
+   As shown in FIG. 12 and with reference to FIG. 3, the calculation time in
+25 branches 1, 2, 3 and 4 depends on the number of tasks. More tasks take
+   longer calculation time. Branch 3, in which the system is powered by a green
+   energy source and with one or more shared resources, takes the highest
+   amount of calculation time among the four branches.
+30 FIG.13 shows a variation of the calculation time 1300 in accordance with an
+   example embodiment. The x-axis shows number of tasks, the y-axis shows
+   number of implementations, and the z-axis shows the calculation time. As
+   shown in FIG. 13, the variation of the deadlines calculation time depends on
+                                          27
+
+   the number of tasks and the number of implementations. The more the
+   number of tasks and implementations are, the longer the calculation time is.
+   It should also be noted that some of the operations for the methods may be
+ 5 implemented using software instructions stored on a computer useable
+   storage medium for execution by a computer. As an example, an embodiment
+   of a computer program product for inserting jobs into a scheduler, which
+   implements an EDF scheduling protocol, of a processor includes a computer
+   useable storage medium to store a computer readable program that, when
+10 executed on a computer, causes the computer to perform operations. In one
+   embodiment, the operations include receiving a plurality of jobs from an
+   earliest deadline first (EDF) schedule. The operations also include receiving a
+   separate job from a source other than the EDF schedule. The separate job
+   has a fixed scheduling requirement. The operations also include determining
+15 an amount of available utilization capacity of the processor. The operations
+   also include inserting the separate job into an execution plan of the processor
+   in response to a determination that the available utilization capacity of the
+   processor is sufficient to execute the separate job according to the fixed
+   scheduling requirement associated with the separate job.
+20
+   The methods and systems in accordance with example embodiments are
+   provided as examples, and examples from one method or apparatus should
+   not be construed to limit examples from another method or apparatus.
+   Further, methods and apparatus discussed within different figures can be
+25 added to or exchanged with methods and apparatus in other figures. Further
+   yet, specific numerical data values (such as specific quantities, numbers,
+   categories, etc.) or other specific information should be interpreted as
+   illustrative for discussing example embodiments.
+30 The system and method of the present disclosure may be implemented in the
+   form of a software application running on a computer system. Further,
+   portions of the methods may be executed on one such computer system,
+   while the other portions are executed on one or more other such computer
+   systems. Examples of the computer system include a mainframe, personal
+                                            28
+
+   computer, handheld computer, server, etc. The software application may be
+   stored on a recording media locally accessible by the computer system and
+   accessible via a hard wired or wireless connection to a network, for example,
+   a local area network, or the Internet.
+ 5
+   The computer system may include, for example, a processor, random access
+   memory (RAM), a printer interface, a display unit, a local area network (LAN)
+   data transmission controller, a LAN interface, a network controller, an internal
+   bus, and one or more input devices, for example, a keyboard, mouse etc. The
+10 computer system can be connected to a data storage device.
+   The processor can be a central processing unit (CPU), microprocessor,
+   microcontrollers, digital signal processor (DSP), field programmable gate
+   arrays (FPGA), application-specific integrated circuits (ASIC), etc., for
+15 controlling the overall operation of memory (such as random access memory
+   (RAM) for temporary data storage, read only memory (ROM) for permanent
+   data storage, and firmware). One or more processors can communicate with
+   each other and memory and perform operations and tasks that implement one
+   or more blocks of the flow diagrams discussed herein. The memory, for
+20 example, stores applications, data, programs, algorithms (including software
+   to implement or assist in implementing example embodiments) and other
+   data.
+   In some example embodiments, the methods illustrated herein and data and
+25 instructions associated therewith are stored in respective storage devices,
+   which are implemented as computer-readable and/or machine-readable
+   storage media, physical or tangible media, and/or non-transitory storage
+   media. These storage media include different forms of memory including
+   semiconductor memory devices such as DRAM, or SRAM, Erasable and
+30 Programmable Read-Only Memories (EPROMs), Electrically Erasable and
+   Programmable Read-Only Memories (EEPROMs) and flash memories;
+   magnetic disks such as fixed and removable disks; other magnetic media
+   including tape; optical media such as Compact Disks (CDs) or Digital
+   Versatile Disks (DVDs). Note that the instructions of the software discussed
+                                           29
+
+   above can be provided on computer-readable or machine-readable storage
+   medium, or alternatively, can be provided on multiple computer-readable or
+   machine-readable storage media distributed in a large system having possibly
+   plural nodes. Such computer-readable or machine-readable medium or media
+ 5 is (are) considered to be part of an article (or article of manufacture). An
+   article or article of manufacture can refer to any manufactured single
+   component or multiple components.
+   Blocks and/or methods discussed herein can be executed and/or made by a
+10 user, a user agent (including machine learning agents and intelligent user
+   agents), a software application, an electronic device, a computer, firmware,
+   hardware, a process, a computer system, and/or an intelligent personal
+   assistant. Furthermore, blocks and/or methods discussed herein can be
+   executed automatically with or without instruction from a user.
+15
+   The exemplary embodiments of the present invention are thus fully described.
+   Although the description referred to particular embodiments, it will be clear to
+   one skilled in the art that the present invention may be practiced with variation
+   of these specific details. Hence this invention should not be construed as
+20 limited to the embodiments set forth herein.
+   An application of the current method is wireless sensor network (WSN). The
+   wireless sensor networks adapt to their environment in order to minimize the
+   energy consumption during the communication among nodes and
+25 consequently to maximize the lifetime of the network as much as possible. In
+   WSN, most of the tasks are appeared dynamically over the network, with the
+   help of available scheduling techniques. The life of sensor nodes depends on
+   their battery support. The sensor node has limited battery energy and thus the
+   sensor node must use available resources effectively and manage the energy
+30 to extend the lifetime of the network as much as it can. Therefore, managing
+   energy is crucial while building a WSN. The scheduling algorithm in this
+   application can be applied to wireless sensor networks to schedule tasks
+   dynamically and enhance the throughput, reduce the overload and also helps
+   to decrease energy consume in data transmission and routing.
+                                            30
+
+   As used herein, "comprising" means including the following elements but not
+   excluding others.
+ 5 As used herein, a "uniprocessor" has a single central processing unit that is
+   used to execute tasks. Operations are thus done sequentially on the
+   uniprocessor.
+   As used herein, a "scheduler" is what carries out the scheduling activity by
+10 which work specified by some means is assigned to resources that complete
+   the work.
+   As used herein, a "earliest deadline first (EDF)" algorithm is a dynamic priority
+   scheduling algorithm that schedule tasks with earlier deadline to be
+15 implemented sooner than a task with a later deadline.
+   As used herein, a "reconfigurable system" is a system that reconfigures
+   parameters of the system based on the needs of the user.
+20
+                                           31
+
+                                      CLAIMS
+What is claimed is:
+1. A method of scheduling tasks in sequence based on a dynamic scheduling
+algorithm executed by a processor, the method comprising:
+        calculating, by the processor, an effective deadline of each of the tasks
+under real-time constrains;
+        assigning, by the processor, a higher priority to a first task with an
+earlier effective deadline compared with a second task; and
+        determining, by the processor, an order of implementation of the tasks
+based on priorities of the tasks,
+        wherein the real-time constrains include an energy constraint that
+allows the tasks to complete before corresponding effective deadlines without
+energy starvation of the tasks during task implementation, and
+        wherein the real-time constrains include a resource sharing constraint
+that considers a blocking time caused by sharing resources between two or
+more of the tasks.
+2. The method of claim 1, wherein the effective deadline is calculated by:
+        calculating, by the processor, a first deadline for each of the tasks for a
+real-time feasibility in any related implementation of the tasks;
+        estimating, by the processor, a required energy and an energy
+harvesting time to reach the required energy for each of the tasks to be
+completed;
+        calculating, by the processor, a second deadline for each of the tasks
+by adding the energy harvesting time to the first deadline;
+        calculating, by the processor, a third deadline for each of the tasks by
+adding the blocking time to the first deadline; and
+        determining, by the processor, the effective deadline of each of the
+tasks to be the maximum among the first deadline, the second deadline, and
+the third deadline,
+                                         32
+
+        wherein the effective deadline of each of the tasks is less than a
+maximum deadline of each of the tasks that is defined by a user.
+3. The method of claim 1, wherein the processor minimizes a number of
+context switching by assigning a higher priority to a task with a smaller
+maximum deadline.
+4. The method of claim 1, wherein each of the tasks is associated with the
+effective deadline calculated by the processor, a release time, a period, a
+maximum deadline defined by a user, a required computation time, and a
+required energy, and wherein the effective deadline of each of the tasks is
+less than its corresponding maximum deadline.
+5. The method of claim 1, wherein the effective deadline of each of the tasks
+is calculate off-line by the processor in a hyper-period of corresponding
+implementations, wherein the hyper-period is the lowest common multiple of a
+number of periods in a task implementation.
+6. The method of claim 1 further comprising:
+        presenting, by the processor, the effective deadlines to a user who
+defines a maximum deadline of each of the tasks; and
+        recalculating, by the processor, another effective deadline in real time
+for the tasks whose effective deadlines are rejected by the user.
+7. The method of claim 1, wherein the effective deadline of each of the tasks
+is calculate by the processor without applying a schedulability analysis in
+order to reduce a calculation time.
+8. The method of claim 1, wherein the tasks include two or more dependent
+takes that share resources of the processor, the calculated effective deadlines
+of the dependent tasks including the blocking time caused by sharing
+resources.
+                                         33
+
+9. A reconfigurable system that schedules tasks in sequence based on an
+earliest deadline first (EDF) algorithm, comprising:
+        a uniprocessor that determines an effective deadline of each of the
+tasks under an energy constraint and a resource sharing constraint; and
+        a scheduler that assigns a higher priority to a first task with an earlier
+effective deadline compared with a second task and determines an order of
+implementation of the tasks,
+        wherein the energy constraint allows the tasks to complete before its
+corresponding effective deadlines without energy starvation during task
+implementation,
+        wherein the resource sharing constraint adds a blocking time for tasks
+that share resources with one another, and
+        wherein the reconfigurable system is powered by a renewable energy
+source.
+10. The reconfigurable system of claim 9, wherein the uniprocessor
+determines the effective deadline in a way that ensures all the tasks complete
+by a maximum deadline by:
+        calculating a first deadline for each of the tasks, each task associated
+with an arrival time and an execution requirement;
+        estimating a required energy and an energy harvesting time to reach
+the required energy for each of the tasks to be completed;
+        calculating a second deadline for each of the tasks by adding the
+energy harvesting time to the first deadline;
+        calculating a third deadline for each of the tasks by adding the blocking
+time to the first deadline; and
+        determining the effective deadline of each of the tasks to be the
+maximum among the first deadline, the second deadline, and the third
+deadline,
+        wherein the effective deadline of each of the tasks is less than the
+maximum deadline of each of the tasks that is defined by a user.
+11. The reconfigurable system of claim 9, wherein the scheduler of the
+reconfigurable system places tasks in a priority queue and minimizes a
+                                          34
+
+number of context switching by assigning a higher priority to a task with an
+earlier effective deadline, and wherein when a first task in the priority queue
+finishes, the scheduler searches the tasks in the priority queue closest to its
+effective deadline to be implemented next by the reconfigurable system.
+12. The reconfigurable system of claim 9, wherein each of the tasks is
+associated with the effective deadline and the blocking time calculated by the
+reconfigurable system, a release time, a period, a required computation time
+and a required energy to implement the task, and a maximum deadline
+defined by a user, and wherein the effective deadline is less than its
+corresponding maximum deadline.
+13. The reconfigurable system of claim 9, wherein the uniprocessor of the
+reconfigurable system calculates the effective deadline of each of the tasks in
+a hyper-period of corresponding implementations, and wherein the hyper
+period is the lowest common multiple of a number of periods in a task
+implementation.
+14. The reconfigurable system of claim 9 further comprising:
+        a user interface that presents the calculated effective deadlines and a
+first order of implementation of the tasks from the scheduler of the
+reconfigurable system to a user who defines a maximum deadline of each of
+the tasks,
+        wherein the scheduler of the reconfigurable system recalculates
+effective deadlines of the tasks reschedules a second order of implementation
+of the tasks in real time when the user rejects the first order of implementation
+of the tasks.
+15. The reconfigurable system of claim 9, wherein the uniprocessor of the
+reconfigurable system calculates the effective deadline of each of the tasks
+without applying a schedulability analysis in order to reduce a calculation time
+of the reconfigurable system.
+                                         35
+
+16. The reconfigurable system of claim 9, wherein the tasks include two or
+more dependent takes that share resources of the reconfigurable system, the
+calculated effective deadlines of the dependent tasks including the blocking
+time caused by sharing resources.
+17. A method of scheduling tasks to enhance a calculation speed based on an
+earliest deadline first algorithm executed by a computer system having a
+uniprocessor, the method comprising:
+         calculating, by the uniprocessor of the computer system, a first
+deadline for each of the tasks for a real-time feasibility in any related
+implementation of the tasks;
+         estimating, by the uniprocessor of the computer system, a required
+energy and an energy harvesting time to obtain the required energy for each
+of the tasks to be completed;
+         calculating, by the uniprocessor of the computer system, a second
+deadline for each of the tasks by adding the energy harvesting time to the first
+deadline;
+         calculating, by the uniprocessor of the computer system, a third
+deadline for each of the tasks to the first deadline by adding a blocking time
+caused by sharing resources between two or more of the tasks;
+         determining, by the uniprocessor of the computer system, an effective
+deadline of each of the tasks by taking the maximum among the first deadline,
+the second deadline, and the third deadline;
+         assigning, by a scheduler of the computer system, a higher priority to a
+first task with an earlier effective deadline compared with a second task; and
+         determining, by the scheduler of the computer system, an order of
+implementation of the tasks,
+         wherein the effective deadline of each of the tasks is less than a
+maximum deadline of each of the tasks that is defined by the user.
+18. The method of claim 17, wherein the scheduler of the system minimizes a
+number of context switching by assigning a higher priority to a task with a
+smaller maximum deadline, and presents the calculated effective deadlines of
+                                          36
+
+the tasks to the user and recalculates the effective deadlines for the tasks
+whose calculated effective deadlines are rejected by the user.
+19. The method of claim 17, wherein the effective deadline of each of the
+tasks is calculate by the computer system without applying a schedulability
+analysis in order to reduce a calculation time.
+20. The method of claim 17, wherein the tasks include two or more dependent
+takes that share resources of the computer system, the calculated effective
+deadlines of the dependent tasks including the blocking time caused by
+sharing resources.
+                                        37
+
+<removed-date>
+                               1/10
+<removed-apn>
+                 Reconfigurable system 100
+              Uniprocessor              Scheduler
+                  112                      114
+              User interface            Memory
+                   116                   118
+                     Network interface
+                           120
+                               FIG. 1
+
+<removed-date>
+                                                2/10
+                 Calculating a first deadline for each of the tasks for a real-time
+<removed-apn>
+                      feasibility in any related implementation of the tasks
+                                                 210
+              Estimating a required energy and an energy harvesting time to reach
+                   the required energy for each of the tasks to be completed
+                                              220
+                Calculating a second deadline for each of the tasks by adding the
+                           energy harvesting time to the first deadline
+                                              230
+              Calculating a third deadline for each of the tasks to the first deadline
+              by adding a block time caused by sharing resources between two or
+                                        more of the tasks
+                                                240
+               Determining an effective deadline of each of the tasks by taking the
+              maximum among the first deadline, the second deadline, and the third
+                                           deadline
+                                               250
+                 Assigning a higher priority to a first task with an earlier effective
+                             deadline compared with a second task
+                                                260
+                                              FIG. 2
+
+<removed-date>
+                     3/10
+              300
+<removed-apn>
+                                               No
+                                   340
+                                         310
+                                   320
+                             330
+                    FIG. 3
+
+<removed-date>
+                                    4/10
+              400A
+<removed-apn>
+                     Task     Ci      Pi      Dmaxi       Ei
+                      <U+2701>1      3       10       18         2
+                      <U+2701>2      7       12       15         5
+                      <U+2701>3      4       20       15         5
+                      <U+2701>4      2        7        8         2
+                      <U+2701>5      2        5        9         1
+                                   FIG. 4A
+              400B
+                 Di after each computing
+                                          1    2      3   4    5
+                             (S)
+                    Di after executing
+                                         11    7      8   3    4
+                 RT_Computing and Sel-D
+                     Di after executing
+                                         13    9   10     5    6
+                 E_Computing and Sel-D
+                     Di after executing
+                                         16    9   10     7    8
+                 RS_Computing and Sel-D
+                                   FIG. 4B
+
+<removed-date>
+                     5/10
+              500
+<removed-apn>
+                    FIG. 5
+              600
+                    FIG. 6
+
+<removed-date>
+                      6/10
+              700A
+<removed-apn>
+              700B
+              700C
+                     FIG. 7
+
+<removed-date>
+                                           7/10
+              800
+              Task   C    P    D max   E      Task     C   P     D max   E
+<removed-apn>
+               1     2   150    152    4       26      3   50      53    3
+               2     3   50     40     3          27   1   150    152    2
+               3     4   150    142    2          28   4   300    296    3
+               4     1   200    202    4          29   3   200    191    4
+               5     4   300    250    3          30   3   600    530    4
+               6     2   100    101    3          31   3   150    140    2
+               7     1    50     46    4          32   3    50     47    4
+               8     1   300    286    3          33   4   150    140    4
+               9     2   200    205    4          34   2   100    108    2
+              10     2   600    567    3          35   4   600    537    3
+              11     2   100    100    4          36   2    50     53    2
+              12     1   100    100    2          37   2   100     95    3
+              13     4   150    138    4          38   1   150    149    2
+              14     1   100    109    2          39   1   200    209    2
+              15     1   600    527    3          40   3   300    280    2
+              16     1    50     51    2          41   2   100    102    3
+              17     1   150    145    4          42   2   150    149    3
+              18     1   150    143    2          43   4   150    143    4
+              19     4   200    191    4          44   2   200    199    3
+              20     3   600    550    2          45   2   600    544    3
+              21     2   150    148    4          46   3   150    154    2
+              22     1    50     54    4          47   3   100     98    2
+              23     3   150    145    3          48   2   300    300    3
+              24     4   200    206    4          49   3   100    107    4
+              25     1   300    291    2          50   3   600    525    4
+                                       FIG. 8
+
+<removed-date>
+                                                   8/10
+              900
+<removed-apn>
+               Implementation                                      Tasks
+                                 1    2        3        4     5         6     7        8     9        18,
+                     I1          19       20        21        22
+                                 20       21        22        23        24        25        26        27     28,
+                     I2
+                                 29       40
+                                 10    11          12       13      14        15           16     17         47,
+                    sI3         <U+2701>48<U+2702> <U+2701>49<U+2702> <U+2701>50
+                                 1    2        30        31        32        33        34        35        36,
+                     I4          37    38           39        40        41        42        43        44,
+                                 45    46           47        48
+                                               FIG. 9
+
+<removed-date>
+                                        9/10
+              1000
+<removed-apn>
+                                      FIG. 10
+                                                             1120
+                                                   1120
+              1100                                        1110
+                                                1110
+                                         1120
+                                      1110
+                                  1120
+                               1110
+                        1120
+                     1110
+                            Number of total tasks
+                                      FIG. 11
+
+<removed-date>
+                      10/10
+              1200
+<removed-apn>
+                     FIG. 12
+              1300
+                     FIG. 13
+

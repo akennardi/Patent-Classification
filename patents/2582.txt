@@ -1,0 +1,1269 @@
+                                           ABSTRACT
+The invention is directed to a signal processing device for filtering and processing an audio
+signal, the signal processing device comprising: an analysis filter bank that receives real
+valued time domain input audio samples and generates complex valued subband samples;
+a high frequency reconstructor or parametric stereo processor that generates modified
+complex valued subband samples; and a synthesis filter bank that receives the modified
+complex valued subband samples and generates time domain output audio samples, wherein
+the analysis filter bank comprises analysis filters (hk(n)) that are complex exponential
+modulated versions of a prototype filter (po(n)) according to:
+        hk(n) = po(n) exp{i - (k +i         (n -   -A) ,                0n<N,     O k<M
+where A is a phase shift, the analysis filter bank has M channels, the prototype filter (po(n))
+has a length N, and the analysis filter bank and synthesis filter bank have a system delay of D
+samples, wherein one or more of the analysis filter bank, the high frequency reconstructor,
+the parametric stereo processor, and the synthesis filter bank is implemented, at least in part,
+by one or more hardware elements of the signal processing device.
+
+                                 1/5
+                           101          102
+        Analysis bank                          Synthesis bank
+X(z) --    Hooz)                                     F z      -zV
+                   H1(z))t                   U~z     F1(z)
+          HXMi(z)M              V~1(z)FM1(z)                      X(Z)
+                               Fig. 1
+
+      COMPLEX EXPONENTIAL MODULATED FILTER BANK FOR HIGH FREQUENCY
+                           RECONSTRUCTION OR PARAMETRIC STEREO
+                                        RELATED APPLICATIONS
+ 5 This application is a divisional application of Australian patent application nos. <removed-apn> and
+   <removed-apn>, the entire contents of each of which are incorporated herein by reference.
+   This application is also related to U.S. Patent Application S.N. 15/478,797 filed on April 4, 2017,
+   now U.S. Pat. No. 9,715,881 issued on July 25, 2017, which is a divisional application of U.S.
+ 0 Patent Application S.N. 14/810,174 filed on July 27, 2015, which is a continuation of U.S. Patent
+   Application S.N. 14/306,495 filed on June 17, 2014, now U.S. Pat. No. 9,449,608 issued on
+   September 20, 2016, which is a continuation of U.S. Patent Application S.N. 13/201,572 filed on
+   August 15, 2011, now U.S. Pat. No. 8,880,572 issued on November 4, 2014, which is a national
+   application of PCT application PCT/EP2010/051993 filed on February 17, 2010 which claims the
+ 5 benefit of the filing date of U.S. Provisional Patent Application S.N. 61/257,105 filed on November
+   2, 2009 and Sweden application 0900217-1 filed on February 18, 2009, all of which are hereby
+   incorporated by reference.
+                                            TECHNICAL FIELD
+ 0 The present document relates to modulated sub-sampled digital filter banks, as well as to methods
+   and systems for the design of such filter banks. In particular, it provides a new design method and
+   apparatus for a near-perfect reconstruction low delay cosine or complex-exponential modulated
+   filter bank, optimized for suppression of aliasing emerging from modifications of the spectral
+   coefficients or subband signals. Furthermore, a specific design for a 64 channel filter bank using a
+25 prototype filter length of 640 coefficients and a system delay of 319 samples is given.
+   The teachings of this document may be applicable to digital equalizers, as outlined e.g. in "An
+   Efficient 20 Band Digital Audio Equalizer" A. J. S. Ferreira, J. M. N. Viera, AES preprint,   9 8 th
+   Convention 1995 February 25-28 Paris, N.Y., USA; adaptive filters, as outlined e.g. in Adaptive
+30 Filtering in Subbands with Critical Sampling: Analysis, Experiments, and Application to Acoustic
+   Echo Cancellation" A. Gilloire, M. Vetterli, IEEE Transactions on Signal Processing, vol. 40, no. 8,
+                                                       1
+
+   August, 1992; multiband companders; and to audio coding systems utilizing high frequency
+   reconstruction (HFR) methods; or audio coding systems employing so-called parametric stereo
+   techniques. In the two latter examples, a digital filter bank is used for the adaptive adjustment of the
+   spectral envelope of the audio signal. An exemplary HFR system is the Spectral Band Replication
+ 5 (SBR) system outlined e.g. in WO 98/57436, and a parametric stereo system is described e.g. in
+   EP1410687.
+   Throughout this disclosure including the claims, the expressions "subband signals" or "subband
+   samples" denote the output signal or output signals, or output sample or output samples from the
+ 0 analysis part of a digital filter bank or the output from a forward transform, i.e. the transform
+   operating on the time domain data, of a transform based system. Examples for the output of such
+   forward transforms are the frequency domain coefficients from a windowed digital Fourier
+   transform (DFT) or the output samples from the analysis stage of a modified discrete cosine
+   transform (MDCT).
+ 5
+   Throughout this disclosure including the claims, the expression "aliasing" denotes a non-linear
+   distortion resulting from decimation and interpolation, possibly in combination with modification
+   (e.g. attenuation or quantization) of the subband samples in a sub-sampled digital filter bank.
+ 0 A digital filter bank is a collection of two or more parallel digital filters. The analysis filter bank
+   splits the incoming signal into a number of separate signals named subband signals or spectral
+   coefficients. The filter bank is critically sampled or maximally decimated when the total number of
+   subband samples per unit time is the same as that for the input signal. A so called synthesis filter
+   bank combines the subband signals into an output signal. A popular type of critically sampled filter
+25 banks is the cosine modulated filter bank, where the filters are obtained by cosine modulation of a
+   low-pass filter, a so-called prototype filter. The cosine modulated filter bank offers effective
+   implementations and is often used in natural audio coding systems. For further details, reference is
+   made to "Introduction to Perceptual Coding" K. Brandenburg, AES, Collected Papers on Digital
+   Audio Bitrate Reduction, 1996.
+30
+                                                         2
+
+   A common problem in filter bank design is that any attempt to alter the subband samples or spectral
+   coefficients, e.g. by applying an equalizing gain curve or by quantizing the samples, typically
+   renders aliasing artifacts in the output signal. Therefore, filter bank designs are desirable which
+   reduce such artifacts even when the subband samples are subjected to severe modifications.
+ 5
+   A possible approach is the use of oversampled, i.e. not critically sampled, filter banks. An example
+   of an oversampled filter bank is the class of complex exponential modulated filter banks, where an
+   imaginary sine modulated part is added to the real part of a cosine modulated filter bank. Such a
+   complex exponential modulated filter bank is described in EP1374399 which is incorporated
+ 0 herewith by reference.
+   One of the properties of the complex exponential modulated filter banks is that they are free from
+   the main alias terms present in the cosine modulated filter banks. As a result, such filter banks are
+   typically less prone to artifacts induced by modifications to the subband samples. Nevertheless,
+ 5 other alias terms remain and sophisticated design techniques for the prototype filter of such a
+   complex exponential modulated filter bank should be applied in order to minimize the impairments,
+   such as aliasing, emerging from modifications of the subband signals. Typically, the remaining alias
+   terms are less significant than the main alias terms.
+ 0 A further property of filter banks is the amount of delay which a signal incurs when passing through
+   such filter banks. In particular for real time applications, such as audio and video streams, the filter
+   or system delay should be low. A possible approach to obtain a filter bank having a low total system
+   delay, i.e. a low delay or latency of a signal passing through an analysis filter bank followed by a
+   synthesis filter bank, is the use of short symmetric prototype filters. Typically, the use of short
+25 prototype filters leads to relatively poor frequency band separation characteristics and to large
+   frequency overlap areas between adjacent subbands. By consequence, short prototype filters usually
+   do not allow for a filter bank design that suppresses the aliasing adequately when modifying the
+   subband samples and other approaches to the design of low delay filter banks are required.
+30 It is therefore desirable to provide a design method for filter banks which combine a certain number
+   of desirable properties. Such properties are a high level of insusceptibility to signal impairments,
+                                                        3
+
+   such as aliasing, subject to modifications of the subband signals; a low delay or latency of a signal
+   passing through the analysis and synthesis filter banks; and a good approximation of the perfect
+   reconstruction property. In other words, it is desirable to provide a design method for filter banks
+   which generate a low level of errors. Sub-sampled filter banks typically generate two types of errors,
+ 5 linear distortion from the pass-band term which further can be divided into amplitude and phase
+   errors, and non-linear distortion emerging from the aliasing terms. Even though a "good
+   approximation" of the PR (perfect reconstruction) property would keep all of these errors on a low
+   level, it may be beneficial from a perceptual point of view to put a higher emphasis on the reduction
+   of distortions caused by aliasing.
+ 0
+   Furthermore, it is desirable to provide a prototype filter which can be used to design an analysis
+   and/or synthesis filter bank which exhibits such properties. It is a further desirable property of a
+   filter bank to exhibit a near constant group delay in order to minimize artifacts due to phase
+   dispersion of the output signal.
+ 5
+                                    SUMMARY OF THE INVENTION
+   The present document shows that impairments emerging from modifications of the subband signals
+   can be significantly reduced by employing a filter bank design method, referred to as improved alias
+   term minimization (IATM) method, for optimization of symmetric or asymmetric prototype filters.
+ 0
+   The present document teaches that the concept of pseudo QMF (Quadrature Mirror Filter) designs,
+   i.e. near perfect reconstruction filter bank designs, may be extended to cover low delay filter bank
+   systems employing asymmetric prototype filters. As a result near perfect reconstruction filter banks
+   with a low system delay, low susceptibility to aliasing and/or low level of pass band errors including
+25 phase dispersion can be designed. Depending on the particular needs, the emphasis put on either one
+   of the filter bank properties may be changed. Hence, the filter bank design method according to the
+   present document alleviates the current limitations of PR filter banks used in an equalization system
+   or other system modifying the spectral coefficients.
+30
+                                                        4
+
+        According to one aspect of the invention, there is provided a signal processing device for
+        filtering and processing an audio signal, the signal processing device comprising:
+             an analysis filter bank that receives real valued time domain input audio samples and
+        generates complex-valued subband samples;
+ 5           a high frequency reconstructor or a parametric stereo processor that generates modified
+        complex-valued subband samples; and
+             a synthesis filter bank that receives the modified complex-valued subband samples and
+        generates time domain output audio samples,
+             wherein the analysis filter bank comprises analysis filters (hk(n)) and the synthesis filter bank
+ 0      comprises synthesis filters (fk(n)) that are complex exponential modulated versions of a
+        prototype filter (po(n)) according to:
+             hku) =    fk (n)= po(n)expi _(k+             (n- L),           On<N,0         k<M
+             where M is a number of channels, the prototype filter (po(n)) has a length N, and the analysis
+        filter bank and synthesis filter bank have a system delay of D samples,
+ 5           wherein the signal processing device is implemented, at least in part, by one or more
+        hardware elements.
+   The prototype filter (po(n)) may be a symmetric low pass prototype filter or an asymmetric low pass
+   prototype filter. The analysis filter bank may be a pseudo QMF bank. An order of the prototype
+ 0 filter (po(n)) may equal the system delay. The high frequency reconstructor may perform spectral
+   band replication (SBR). A value of the arbitrary phase shift constant may be chosen to reduce a
+   complexity of an implementation of the apparatus. The one or more hardware elements may
+   comprise a digital signal processor, a microprocessor, or a memory.
+25 According to another aspect of the invention, there is provided method performed by a signal
+   processing device for filtering and processing an audio signal, the method comprising:
+        receiving real-valued time domain input audio samples;
+        filtering the real-valued time domain input audio samples with an analysis filter bank to generate
+   complex valued subband samples;
+                                                          5
+
+       generating modified complex valued subband samples through a high frequency reconstruction
+   process or a parametric stereo process;
+       receiving the modified complex valued subband samples;
+       filtering the modified complex valued subband samples with a synthesis filter bank to generate
+ 5 time domain output audio samples,
+       wherein the analysis filter bank comprises analysis filters (hk(n)) that are complex exponential
+   modulated versions of a prototype filter (po(n)) according to:
+        hk (n) =po(n)exp{i          (k+    (n-       A)J,         On<N,0:k<M
+       where A is a phase shift, the analysis filter bank has M channels, the prototype filter (po(n)) has a
+ 0 length N, and the analysis filter bank and synthesis filter bank have a system delay of D samples,
+       wherein the signal processing device comprises one or more hardware elements.
+   One embodiment of the invention provides a non-transitory computer readable medium containing
+   instructions that when executed by a processor perform the method above.
+ 5
+   There is also disclosed herein, the design of a low delay complex-exponential modulated filter bank,
+   which may comprise the steps:
+     *    a design of an asymmetric low-pass prototype filter with a cutoff frequency of 7[/2M,
+          optimized for desired aliasing and pass band error rejections, further optimized for a system
+ 0        delay D; M being the number of channels of the filter bank; and
+     *    a construction of an M-channel filter bank by complex-exponential modulation of the
+          optimized prototype filter.
+   Furthermore, the operation of such a low delay complex-exponential modulated filter bank
+25 according to the present document may comprise the steps:
+     *    a filtering of a real-valued time domain signal through the analysis part of the filter bank;
+     *    a modification of the complex-valued subband signals, e.g. according to a desired, possibly
+          time-varying, equalizer setting;
+     *    a filtering of the modified complex-valued subband samples through the synthesis part of the
+30        filter bank; and
+                                                        6
+
+     *   a computation of the real part of the complex-valued time domain output signal obtained from
+         the synthesis part of the filter bank.
+   In addition to presenting a new filter design method, the present document describes a specific
+ 5 design of a 64 channel filter bank having a prototype filter length of 640 coefficients and a system
+   delay of 319 samples.
+   The teachings of the present document, notably the proposed filter bank and the filter banks
+   designed according to the proposed design method may be used in various applications. Such
+ 0 applications are the improvement of various types of digital equalizers, adaptive filters, multiband
+   companders and adaptive envelope adjusting filter banks used in HFR or parametric stereo systems.
+   A method for determining N coefficients of an asymmetric prototype filter po for usage for building
+   an M-channel, low delay, subsampled analysis/synthesis filter bank is described. The
+ 5 analysis/synthesis filter bank may comprise M analysis filters hk and M synthesis filtersfi, wherein k
+   takes on values from 0 to M-1 and wherein typically M is greater than 1. The analysis/synthesis filter
+   bank has an overall transfer function, which is typically associated with the coefficients of the
+   analysis and synthesis filters, as well as with the decimation and/or interpolation operations.
+ 0 The method comprises the step of choosing a target transfer function of the filter bank comprising a
+   target delay D. Typically a target delay D which is smaller or equal to N is selected. The method
+   comprises further the step of determining a composite objective function euto comprising a pass band
+   error term et and an aliasing error term ea. The pass band error term is associated with the deviation
+   between the transfer function of the filter bank and the target transfer function, and the aliasing error
+25 term ea is associated with errors incurred due to the subsampling, i.e. decimation and/or
+   interpolation of the filter bank. In a further method step, the N coefficients of the asymmetric
+   prototype filterpo are determined that reduce the composite objective function eot.
+   Typically, the step of determining the objective error function etot and the step of determining the N
+30 coefficients of the asymmetric prototype filter po are repeated iteratively, until a minimum of the
+   objective error function etot is reached. In other words, the objective function etot is determined on
+                                                        7
+
+   the basis of a given set of coefficients of the prototype filter, and an updated set of coefficients of the
+   prototype filter is generated by reducing the objective error function. This process is repeated until
+   no further reductions of the objective function may be achieved through the modification of the
+   prototype filter coefficients. This means that the step of determining the objective error function etot
+ 5 may comprise determining a value for the composite objective function etot for given coefficients of
+   the prototype filter po and the step of determining the N coefficients of the asymmetric prototype
+   filter po may comprise determining updated coefficients of the prototype filter po based on the
+   gradient of the composite objective function erto associated with the coefficients of the prototype
+   filter po.
+ 0
+   The composite objective error function ett may be given by:
+                                         eo (a)= a e, + (1- a) e,
+   with et being the pass band error term, ea being the aliasing error term and c being a weighting
+   constant taking on values between 0 and 1. The pass band error term et may be determined by
+ 5 accumulating the squared deviation between the transfer function of the filter bank and the target
+   transfer function for a plurality of frequencies. In particular, the pass band error term et may be
+   calculated as
+                                rr                                             2
+                       et       f I(A0(eJ) + AO (e-          ))- p( 0 )ejoD do),
+   with P(co)e-jwD being the target transfer function, and
+                                                  M-1
+20                                       A0 (z) = IH,(z)F,(z),
+                                                  k =0
+   wherein Hk(z) and Fk(z) are the z-transforms of the analysis and synthesis filters hk(n) andfi(n),
+   respectively.
+   The aliasing error term ea is determined by accumulating the squared magnitude of alias gain terms
+25 for a plurality of frequencies. In particular, the aliasing error term ea is calculated as
+                                                         8
+
+                                                1  M -1    7.         2
+                                         ea = 7               l(eic )    dco,
+                                                    l=1
+             -      1
+   with Al(z)= -(A(z)+ AM_q*(z)),               =l I ... M-1, for z = e '" and with
+                    2
+                                                    M-1
+                                           A,(z)= X Hk(zW )Fk(z)
+                                                     k=O
+   being the   1th alias gain term evaluated on the unit circle with W = e-i"'", wherein Hk(z) and Fk(z)
+ 5 are the z-transforms of the analysis and synthesis filters hk(n) andfk(n), respectively. The notation
+    A1*(z) is the z-transform of the complex-conjugated sequence al (n) .
+   The step of determining a value for the composite objective function eror may comprise generating
+   the analysis filters hk(n) and the synthesis filters fk(n) of the analysis/synthesis filter bank based on
+ 0 the prototype filter po(n) using cosine modulation, sine modulation and/or complex-exponential
+   modulation. In particular, the analysis and synthesis filters may be determined using cosine
+   modulation as
+                              hk (n) =    ffPo(n) cos     -(k   +)(n --       TiF
+                                                          M       2        2    2
+   with n = 0 ... N-1, for the M analysis filters of the analysis filter bank and;
+                                             Po(n)cos
+                                        Sfk(n)=           -(k   +)(n -k±L+ ) ,
+   with n = 0 ... N-1, for the M synthesis filters of the synthesis filter bank.
+   The analysis and synthesis filters may also be determined using complex exponential modulation as
+                                 hk (n) =  p0 (n) exp {i - (k +    )(n -   2A),
+20 with n = 0 ... N-1, and A being an arbitrary constant, for the M analysis filters of the analysis filter
+   bank and;
+                                                              9
+
+                               f () f,= pn)=p.(
+                                          0 (n) exp i M- (k +-)(n - -+ A),
+                                                              2 )n-2         f
+   with n   = 0 ... N-1, for the M synthesis filters of the synthesis filter bank.
+   The step of determining a value for the composite objective function ett may comprise setting at
+ 5 least one of the filter bank channels to zero. This may be achieved by applying zero gain to at least
+   one analysis and/or synthesis filter, i.e. the filter coefficients hk and/orfi may be set to zero for at
+   least one channel k. In an example a predetermined number of the low frequency channels and/or a
+   predetermined number of the high frequency channels may be set to zero. In other words, the low
+   frequency filter bank channels k-- 0 up to C,,; with Clo, greater than zero may be set to zero.
+ 0 Alternatively or in addition, the high frequency filter bank channels k-- Chigh up to M-1, with     Chigh
+   smaller than M-1 may be set to zero.
+   In such a case, the step of determining a value for the composite objective function etot may
+   comprise generating the analysis and synthesis filters for the aliasing terms C,      and M-C., and/or
+ 5 Chigh and M-Chigh using complex exponential modulation. It may further comprise generating the
+   analysis and synthesis filters for the remaining aliasing terms using cosine modulation. In other
+   words, the optimization procedure may be done in a partially complex-valued manner, where the
+   aliasing error terms which are free from main aliasing are calculated using real valued filters, e.g.
+   filters generated using cosine modulation, and where the aliasing error terms which carry the main
+ 0 aliasing in a real-valued system are modified for complex-valued processing, e.g. using complex
+   exponential modulated filters.
+   The analysis filter bank may generate M subband signals from an input signal using the M analysis
+   filters hk. These M subband signals may be decimated by a factor M, yielding decimated subband
+25 signals. Typically, the decimated subband signals are modified, e.g. for equalization purposes or for
+   compression purposes. The possibly modified decimated subband signals may be upsampled by a
+   factor M and the synthesis filter bank may generate an output signal from the upsampled decimated
+   subband signals using the M synthesis filtersfi.
+                                                          10
+
+   An asymmetric prototype filter po(n) comprising coefficients derivable from the coefficients of
+   Table 1 by any of the operations of rounding, truncating, scaling, subsampling or oversampling is
+   described. Any combination of the operations rounding, truncating, scaling, subsampling or
+   oversampling are possible.
+ 5
+   The rounding operation of the filter coefficients may comprise any one of the following: rounding to
+   more than 20 significant digits, more than 19 significant digits, more than 18 significant digits, more
+   than 17 significant digits, more than 16 significant digits, more than 15 significant digits, more than
+   14 significant digits, more than 13 significant digits, more than 12 significant digits, more than 11
+ 0 significant digits, more than 10 significant digits, more than 9 significant digits, more than 8
+   significant digits, more than 7 significant digits, more than 6 significant digits, more than 5
+   significant digits, more than 4 significant digits, more than 3 significant digits, more than 2
+   significant digits, more than 1 significant digits, 1 significant digit.
+ 5 The truncating operation of the filter coefficients may comprise any one of the following: truncating
+   to more than 20 significant digits, more than 19 significant digits, more than 18 significant digits,
+   more than 17 significant digits, more than 16 significant digits, more than 15 significant digits, more
+   than 14 significant digits, more than 13 significant digits, more than 12 significant digits, more than
+   11 significant digits, more than 10 significant digits, more than 9 significant digits, more than 8
+ 0 significant digits, more than 7 significant digits, more than 6 significant digits, more than 5
+   significant digits, more than 4 significant digits, more than 3 significant digits, more than 2
+   significant digits, more than 1 significant digits, 1 significant digit.
+   The scaling operation of the filter coefficient may comprise up-scaling or down-scaling of the filter
+25 coefficients. In particular, it may comprise up- and/or down-scaling scaling by the number M of
+   filter bank channels. Such up- and/or down-scaling may be used to maintain the input energy of an
+   input signal to the filter bank at the output of the filter bank.
+   The subsampling operation may comprise subsampling by a factor less or equal to 2, less or equal to
+30 3, less or equal to 4, less or equal to 8, less or equal to 16, less or equal to 32, less or equal to 64,
+   less or equal to 128, less or equal to 256. The subsampling operation may further comprise the
+                                                         11
+
+   determination of the subsampled filter coefficients as the mean value of adjacent filter coefficient. In
+   particular, the mean value of R adjacent filter coefficients may be determined as the subsampled
+   filter coefficient, wherein R is the subsampling factor.
+ 5 The oversampling operation may comprise oversampling by a factor less or equal to 2, less or equal
+   to 3, less or equal to 4, less or equal to 5, less or equal to 6, less or equal to 7, less or equal to 8, less
+   or equal to 9, less or equal to 10. The oversampling operation may further comprise the
+   determination of the oversampled filter coefficients as the interpolation between two adjacent filter
+   coefficients.
+ 0
+   A filter bank comprising M filters is described. The filters of this filter bank are based on the
+   asymmetric prototype filters described in the present document and/or the asymmetric prototype
+   filters determined via the methods outlined in the present document. In particular, the M filters may
+   be modulated version of the prototype filter and the modulation may be a cosine modulation, sine
+ 5 modulation and/or complex-exponential modulation.
+   A method for generating decimated subband signals with low sensitivity to aliasing emerging from
+   modifications of said subband signals is described. The method comprises the steps of determining
+   analysis filters of an analysis/synthesis filter bank according to methods outlined in the present
+ 0 document; filtering a real-valued time domain signal through said analysis filters, to obtain
+   complex-valued subband signals; and decimating said subband signals. Furthermore, a method for
+   generating a real valued output signal from a plurality of complex-valued subband signals with low
+   sensitivity to aliasing emerging from modifications of said subband signals is described. The method
+   comprises the steps of determining synthesis filters of an analysis/synthesis filter bank according to
+25 the methods outlined in the present document; interpolating said plurality of complex-valued
+   subband signals; filtering said plurality of interpolated subband signals through said synthesis filters;
+   generating a complex-valued time domain output signal as the sum of the signals obtained from said
+   filtering; and taking the real part of the complex-valued time domain output signal as the real-valued
+   output signal.
+30
+                                                          12
+
+   A system operative of generating subband signals from a time domain input signal are described,
+   wherein the system comprises an analysis filter bank which has been generated according to
+   methods outlined in the present document and/or which is based on the prototype filters outlined in
+   the present document.
+ 5
+   It should be noted that the features of the methods and systems including its preferred embodiments
+   as outlined in the present patent application may be used stand-alone or in combination with the
+   other features of the methods and systems disclosed in this document. Furthermore, all features of
+   the methods and systems outlined in the present patent application may be arbitrarily combined. In
+ 0 particular, the features of the claims may be combined with one another in an arbitrary manner.
+                               BRIEF DESCRIPTION OF THE DRAWINGS
+   The present invention will now be described by way of illustrative examples, not limiting the scope,
+   with reference to the accompanying drawings, in which:
+ 5
+   Fig. 1 illustrates the analysis and synthesis sections of a digital filter bank;
+   Fig.2 shows the stylized frequency responses for a set of filters to illustrate the adverse effect when
+   modifying the subband samples in a cosine modulated, i.e. real-valued, filter bank;
+ 0 Fig. 3 shows a flow diagram of an example of the optimization procedure;
+   Fig.4 shows a time domain plot and the frequency response of an optimized prototype filter for a
+   low delay modulated filter bank having 64 channels and a total system delay of 319 samples; and
+25 Fig.5 illustrates an example of the analysis and synthesis parts of a low delay complex-exponential
+   modulated filter bank system.
+   It should be understood that the present teachings are applicable to a range of implementations that
+   incorporate digital filter banks other than those explicitly mentioned in this patent. In particular, the
+30 present teachings may be applicable to other methods for designing a filter bank on the basis of a
+   prototype filter.
+                                                        13
+
+                DETAILED DESCRIPTION OF THE PREFERRED EMBODIMENT(S)
+   In the following, the overall transfer function of an analysis/synthesis filter bank is determined. In
+   other words, the mathematical representation of a signal passing through such a filter bank system is
+   described. A digital filter bank is a collection of M, M being two or more, parallel digital filters that
+ 5 share a common input or a common output. For details on such filter banks, reference is made to
+   "Multirate Systems and Filter Banks" P.P. Vaidyanathan Prentice Hall: Englewood Cliffs, NJ, 1993.
+   When sharing a common input the filter bank may be called an analysis bank. The analysis bank
+   splits the incoming signal into M separate signals called subband signals. The analysis filters are
+   denoted Hk(z), where k   =  0, ..., M-1. The filter bank is critically sampled or maximally decimated
+ 0 when the subband signals are decimated by a factor M. Thus, the total number of subband samples
+   per time unit across all subbands is the same as the number of samples per time unit for the input
+   signal. The synthesis bank combines these subband signals into a common output signal. The
+   synthesis filters are denoted Fk(z), for k  = 0, ..., M- 1.
+ 5 A maximally decimated filter bank with M channels or subbands is shown in Fig. 1. The analysis
+   part 101 produces from the input signal X(z) the subband signals Vk (z), which constitute the signals
+   to be transmitted, stored or modified. The synthesis part 102 recombines the signals Vk(z) to the
+   output signalZ(z).
+ 0 The recombination of Vk (z) to obtain the approximation Z(z) of the original signal X(z) is subject to
+   several potential errors. The errors may be due to an approximation of the perfect reconstruction
+   property, and includes non-linear impairments due to aliasing, which may be caused by the
+   decimation and interpolation of the subbands. Other errors resulting from approximations of the
+   perfect reconstruction property may be due to linear impairments such as phase and amplitude
+25 distortion.
+   Following the notations of Fig. 1, the outputs of the analysis filters Hk(z) 103 are
+                                      Xk (z) = Hk (z)X(z),                                 (1)
+                                                          14
+
+   where k = 0,  ... , M-1. The decimators 104, also referred to as down-sampling units, give the outputs
+                         M-1                       M-1
+           Vk (z)=             Xk(z         )=           Hk(z/W )X(z             )       (2)
+                       M 1=0                    M    =0
+ 5
+   where W = e- 2 ''". The outputs of the interpolators 105, also referred to as up-sampling units, are
+   given by
+                                                 M-1
+                         Uk(z)=Vk(zM            IX    Hk(zWI)X(ZWI),                     (3)
+                                             M 1=0
+ 0
+   and the sum of the signals obtained from the synthesis filters 106 can be written as
+                       M-1                 M-1          1 M-1
+            X(z)= I         Fk(z)Uk(z)= I       Fk(z) -       Hk(zW')X(zW      )=
+                       k=0                 k=0         M1=0
+                                                                                         (4)
+                  -1    M-1                                  M-1
+             =      I X(zW) I Hk(zW')Fk(z)= I I X(zW)Al(z)
+               M 1=0                k=0                   M 1=0
+15 where
+                                           M-1
+                                    Al(z)= I Hk(zW)Fk(z)                                 (5)
+                                           k=0
+   is the gain for the   th alias term X(z W'). Eq.(4) shows that X(z) is a sum of M components consisting
+   of the product of the modulated input signal X(z W') and the corresponding alias gain term A, (z) .
+20 Eq.(4) can be rewritten as
+                                                          15
+
+                                                  M-1
+                       Z(z)= M1     X(z)A(z)+          X(zWl)Al(z).                       (6)
+   The last sum on the right hand side (RHS) constitutes the sum of all non-wanted alias terms.
+ 5 Canceling all aliasing, that is forcing this sum to zero by means of proper choices of Hk(z) and Fk(z),
+   gives
+                        1                1        M-1
+              X(z) =      X(z)AO(z) =       X(z) I Hk(z)Fk(z) = X(z)T(z),                 (7)
+                      M                 M         k=0
+ 0 where
+                                            M-1
+                                 T(z)=
+                                          1
+                                             Y   Hk(z)Fk(z)                               (8)
+                                         M k=O
+   is the overall transfer function or distortion function. Eq.(8) shows that, depending on Hk(z) and
+   Fk(z), T(z) could be free from both phase distortion and amplitude distortion. The overall transfer
+ 5 function would in this case simply be a delay of D samples with a constant scale factor c, i.e.
+                                         T(z) = CZ                                        (9)
+   which substituted into Eq.(7) gives
+20
+                                      Z(z)  = CZ -DX(z)                                 (10)
+                                                        16
+
+    The type of filters that satisfy Eq.(10) are said to have the perfect reconstruction (PR) property. If
+    Eq.(10) is not perfectly satisfied, albeit satisfied approximately, the filters are of the class of
+    approximate perfect reconstruction filters.
+ 5  In the following, a method for designing analysis and synthesis filter banks from a prototype filter is
+    described. The resulting filter banks are referred to as cosine modulated filter banks. In the
+    traditional theory for cosine modulated filter banks, the analysis filters hk(n) and synthesis filters
+   fk(n) are cosine modulated versions of a symmetric low-pass prototype filter po(n), i.e.
+ 0          hk (n)= lPo(n)cos ) (k + )(n -             T )},    0s ni N N,    !k <M         (11)
+                                     M       2      2    2
+            fk (n)=NEPO(n)cos           (k +-)(n    N    M) ,   0: n: N, 0      k<M         (12)
+                                    fM       2      2    2 f
+    respectively, where M is the number of channels of the filter bank and N is the prototype filter
+    order.
+ 5
+    The above cosine modulated analysis filter bank produces real-valued subband samples for real
+    valued input signals. The subband samples are down sampled by a factor M, making the system
+    critically sampled. Depending on the choice of the prototype filter, the filter bank may constitute an
+    approximate perfect reconstruction system, i.e. a so called pseudo QMF bank described e.g. in
+20  US5436940, or a perfect reconstruction (PR) system. An example of a PR system is the modulated
+    lapped transform (MLT) described in further detail in "Lapped Transforms for Efficient
+    Transform/Subband Coding" H.S. Malvar, IEEE Trans ASSP, vol. 38, no. 6, 1990. The overall
+    delay, or system delay, for a traditional cosine modulated filter bank is N.
+25  In order to obtain filter bank systems having lower system delays, the present document teaches to
+    replace the symmetric prototype filters used in conventional filter banks by asymmetric prototype
+    filters. In the prior art, the design of asymmetric prototype filters has been restricted to systems
+    having the perfect reconstruction (PR) property. Such a perfect reconstruction system using
+                                                          17
+
+   asymmetric prototype filters is described in EP0874458. However, the perfect reconstruction
+   constraint imposes limitations to a filter bank used in e.g. an equalization system, due to the
+   restricted degrees of freedom when designing the prototype filter. It should be noted that symmetric
+   prototype filters have a linear phase, i.e. they have a constant group delay across all frequencies. On
+ 5 the other hand, asymmetric filters typically have a non-linear phase, i.e. they have a group delay
+   which may change with frequency.
+   In filter bank systems using asymmetric prototype filters, the analysis and synthesis filters may be
+   written as
+ 0
+           hk(n) = d     (n) co s     (k + 2)(n -    T    )F ,   0:! n < Nh, 0:! k < M       (13)
+                                           M0n<NfO:k<M                                       (13)
+                        f,
+                 fk()=40(n    Ef~n
+                             coo M "(k(k+2 A)n
+                                                   2 _+2
+                                                        M     ,O   sn <Nf ,0 sk <M           (14)
+ 5 respectively, where h0 (n) and     fo (n) are the analysis  and synthesis prototype filters of lengths Nh
+   and Nf, respectively, and D is the total delay of the filter bank system. Without limiting the scope,
+   the modulated filter banks studied in the following are systems where the analysis and synthesis
+   prototypes are identical, i.e.
+20                      f(n)=h 0 (n)= p 0 (n), 0! n < N = N, = N                             (15)
+   where N is the length of the prototype filter po(n).
+   It should be noted, however, when using the filter design schemes outlined in the present document,
+25 that filter banks using different analysis and synthesis prototype filters may be determined.
+                                                          18
+
+   One inherent property of the cosine modulation is that every filter has two pass bands; one in the
+   positive frequency range and one corresponding pass band in the negative frequency range. It can be
+   verified that the so-called main, or significant, alias terms emerge from overlap in frequency
+   between either the filters negative pass bands with frequency modulated versions of the positive
+ 5 pass bands, or reciprocally, the filters positive pass bands with frequency modulated versions of the
+   negative pass bands. The last terms in Eq.(13) and (14), i.e. the terms - k + 1,       are selected so as
+                                                                              2      2)
+   to provide cancellation of the main alias terms in cosine modulated filter banks. Nevertheless, when
+   modifying the subband samples, the cancelation of the main alias terms is impaired, thereby
+   resulting in a strong impact of aliasing from the main alias terms. It is therefore desirable to remove
+ 0 these main alias terms from the subband samples altogether.
+   The removal of the main alias terms may be achieved by the use of so-called Complex-Exponential
+   Modulated Filter Banks which are based on an extension of the cosine modulation to complex
+   exponential modulation. Such extension yields the analysis filters hk(n) as
+ 5
+            k(n) =po(n)exp if-(k+-)(n--T-)                 ,  O n<N,0s k <M              (16)
+                               fM        2      2     2
+   using the same notation as before. This can be viewed as adding an imaginary part to the real-valued
+   filter bank, where the imaginary part consists of sine modulated versions of the same prototype
+20 filter. Considering a real-valued input signal, the output from the filter bank can be interpreted as a
+   set of subband signals, where the real and the imaginary parts are Hilbert transforms of each other.
+   The resulting subbands are thus the analytic signals of the real-valued output obtained from the
+   cosine modulated filter bank. Hence, due to the complex-valued representation, the subband signals
+   are over-sampled by a factor two.
+25
+   The synthesis filters are extended in the same way to
+                                                        19
+
+                                  /r    1      D   M
+              fn) = p.(n)exp   i-(k   +-)(n --       -)    ,0!    n<N, O! k<M.           (17)
+   Eq.(16) and (17) imply that the output from the synthesis bank is complex-valued. Using matrix
+   notation, where Ca is a matrix with the cosine modulated analysis filters from Eq.(13), and Sa is a
+ 5 matrix with the sine modulation of the same argument, the filters of Eq.(16) are obtained as Ca +j
+   Sa. In these matrices, k is the row index and n is the column index. Analogously, the matrix Cs has
+   synthesis filters from Eq.(14), and Ss is the corresponding sine modulated version. Eq.(17) can thus
+   be written Cs + j Ss, where k is the column index and n is the row index. Denoting the input signal x,
+   the output signal y is found from
+ 0
+           y = (CS +j S) (Ca +j Sa)     X = (CsCa - SsSa)     X +j (CsSa + SsCa) x       (18)
+   As seen from Eq.(18), the real part comprises two terms; the output from the cosine modulated filter
+   bank and an output from a sine modulated filter bank. It is easily verified that if a cosine modulated
+   filter bank has the PR property, then its sine modulated version, with a change of sign, constitutes a
+ 5 PR system as well. Thus, by taking the real part of the output, the complex-exponential modulated
+   system offers the same reconstruction accuracy as the corresponding cosine modulated version. In
+   other words, when using a real-valued input signal, the output signal of the complex-exponential
+   modulated system may be determined by taking the real part of the output signal.
+-0 The complex-exponential modulated system may be extended to handle also complex-valued input
+   signals. By extending the number of channels to 2M, i.e. by adding the filters for negative
+   frequencies, and by keeping the imaginary part of the output signal, a pseudo QMF or a PR system
+   for complex-valued signals is obtained.
+25 It should be noted that the complex-exponential modulated filter bank has one pass band only for
+   every filter in the positive frequency range. Hence, it is free from the main alias terms. The absence
+   of main alias terms makes the aliasing cancellation constraint from the cosine (or sine) modulated
+   filter bank obsolete in the complex-exponential modulated version. The analysis and synthesis filters
+   can thus be given as
+                                                        20
+
+                                  7c      1     D
+            h, n)= p. (n)exp i       (k +-)(n -    _A)1-,    0   n < N, 0! k < M          (19)
+                                  M      2      2
+   and
+ 5          f(n))=po (n)exp     i    (k +-)(n - -+A),        0! n<N, O k<M                (20)
+                                fM        2     2       f
+   where A is an arbitrary (possibly zero) constant, and as before, M is the number of channels, N is
+   the prototype filter length, and D is the system delay. By using different values of A, more efficient
+   implementations of the analysis and synthesis filter banks, i.e. implementations with reduced
+ 0 complexity, can be obtained.
+   Before presenting a method for optimization of prototype filters, the disclosed approaches to the
+   design of filter banks are summarized. Based on symmetric or asymmetric prototype filters, filter
+   banks may be generated e.g. by modulating the prototype filters using a cosine function or a
+ 5 complex-exponential function. The prototype filters for the analysis and synthesis filter banks may
+   either be different or identical. When using complex-exponential modulation, the main alias terms of
+   the filter banks are obsolete and may be removed, thereby reducing the aliasing sensitivity to
+   modifications of the subband signals of the resulting filter banks. Furthermore, when using
+   asymmetric prototype filters the overall system delay of the filter banks may be reduced. It has also
+20 been shown that when using complex-exponential modulated filter banks, the output signal from a
+   real valued input signal may be determined by taking the real part of the complex output signal of
+   the filter bank.
+   In the following a method for optimization of the prototype filters is described in detail. Depending
+25 on the needs, the optimization may be directed at increasing the degree of perfect reconstruction, i.e.
+   at reducing the combination of aliasing and amplitude distortion, at reducing the sensitivity to
+   aliasing, at reducing the system delay, at reducing phase distortion, and/or at reducing amplitude
+   distortion. In order to optimize the prototype filter po(n) first expressions for the alias gain terms are
+                                                       21
+
+   determined. In the following, the alias gain terms for a complex exponential modulated filter bank
+   are derived. However, it should be noted that the alias gain terms outlined are also valid for a cosine
+   modulated (real valued) filter bank.
+ 5  Referring to Eq.(4), the z-transform of the real part of the output signal k(n) is
+                           Z{Re ((n))}  = ZR (z)= Z)+ Z*(z)         .(21)
+   The notation X*(z) is the z-transform of the complex-conjugated sequence i(n) . From Eq.(4), it
+ 0 follows that the transform of the real part of the output signal is
+                               M-1
+                  XR(z)    =    I-I    X(zW')A(z)+X(zW                     ,)A1*(z)     (22)
+                             M 1=0_
+   where it was used that the input signal x(n) is real-valued, i.e. X*(zW)= X(zW       1 ) . Eq.(22) may
+ 5 after rearrangement be written
+    ZR(z)=       -X(z)M(A(z)+A0*(z))+M              1   X(zW±)A(z)+X(zWM-l)A*(z)=
+            =      X(z)I(A(z)+A0*(z))+               X(zW')     (A,(z)+AM-l*(z))       =(23)
+                                  M-1
+                S      (z)A (z) +      X (zW )A z)
+   where
+20
+                                                       22
+
+                         AI(z)=-(Al(z)+AM-l*(z)),          0!l  <M                       (24)
+                                 2
+   are the alias gain terms used in the optimization. It can be observed from Eq.(24) that
+ 5                       AM-1 (z) = -(AM-     (z) + A1*(z)) = A1 *(z).                   (25)
+                                     2
+   Specifically, for real-valued systems
+                                    AM _1z= A((z)                                        (26)
+ 0
+   which simplifies Eq.(24) into
+                                 A(z)=A/(z),      0 !l <M.                               (27)
+ 5 By inspecting Eq.(23), and recalling the transform of Eq.(21), it can be seen that the real part of
+   ao(n) must be a Dirac pulse for a PR system, i.e. Ao(z) is on the form Ao(z)=c Z-D. Moreover, the real
+   part of aM2(n) must be zero, i.e. AM/2(z) must be zero, and the alias gains, for 1# 0, M12 must satisfy
+                                    AM _(z) = -Al*(z),                                   (28)
+20
+   which for a real-valued system, with Eq.(26) in mind, means that all al(n), I = 1.. .M-l must be zero.
+   In pseudo QMF systems, Eq.(28) holds true only approximately. Moreover, the real part of ao(n) is
+   not exactly a Dirac-pulse, nor is the real part of aM/2(n) exactly zero.
+                                                       23
+
+   Before going into further details on the optimization of the prototype filters, the impact of
+   modifications of the subband samples on aliasing is investigated. As already mentioned above,
+   changing the gains of the channels in a cosine modulated filter bank, i.e. using the analysis/synthesis
+   system as an equalizer, renders severe distortion due to the main alias terms. In theory, the main
+ 5 alias terms cancel each other out in a pair wise fashion. However, this theory of main alias term
+   cancellation breaks, when different gains are applied to different subband channels. Hence, the
+   aliasing in the output signal may be substantial. To show this, consider a filter bank where channel p
+   and higher channels are set to zero gain, i.e.
+                                             fgk=1     ,0sk~p
+ 0                      v(n)= gk vk(n),       9        ,p!k<                             (29)
+                                              gk =0    ,p:!k <M -1
+   The stylized frequency responses of the analysis and synthesis filters of interest are shown in Fig. 2.
+   Fig. 2(a) shows the synthesis channel filters Fpl(z) and Fp(z), highlighted by reference signs 201 and
+   202, respectively. As already indicated above, the cosine modulation for each channel results in one
+ 5 positive frequency filter and one negative frequency filter. In other words, the positive frequency
+   filters 201 and 202 have corresponding negative frequency filters 203 and 204, respectively.
+   The pth modulation of the analysis filter Hpj(z), i.e. Hpl(zW)    indicated by reference signs 211 and
+   213, is depicted in Fig. 2(b) together with the synthesis filter Fpj(z), indicated by reference signs
+_0 201 and 203. In this Figure, reference sign 211 indicates the modulated version of the originally
+   positive frequency filter Hpj(z) and reference sign 213 indicates the modulated version of the
+   originally negative frequency filter Hpj(z). Due to the modulation of order p, the negative frequency
+   filter 213 is moved to the positive frequency area and therefore overlaps with the positive synthesis
+   filter 201. The shaded overlap 220 of the filters illustrates the energy of a main alias term.
+25
+   In Fig. 2(c) the pth modulation of Hp(z),i.e. Hp(zW) indicated by reference signs 212 and 214, is
+   shown together with the corresponding synthesis filter Fp(z), reference signs 202 and 204. Again the
+   negative frequency filter 214 is moved into the positive frequency area due to the modulation of
+   order p. The shaded area 221 again pictorially shows the energy of a main alias term and would un
+                                                       24
+
+   cancelled typically result in significant aliasing. To cancel the aliasing, the term should be the
+   polarity reversed copy of the aliasing obtained from the intersection of filters Hw(zW), 213, and Fp_
+   j(z), 201, of Fig. 2(b), i.e. the polarity reversed copy of the shaded area 220. In a cosine modulated
+   filter bank, where the gains are unchanged, these main alias terms will usually cancel each other
+ 5 completely. However, in this example, the gain of the analysis (or synthesis) filter p is zero, so the
+   aliasing induced by filters p-1 will remain un-cancelled in the output signal. An equally strong
+   aliasing residue will also emerge in the negative frequency range.
+   When using complex-exponential modulated filter banks, the complex-valued modulation results in
+ 0 positive frequency filters only. Consequently, the main alias terms are gone, i.e. there is no
+   significant overlap between the modulated analysis filters Hp(zWP) and their corresponding synthesis
+   filters Fp(z) and aliasing can be reduced significantly when using such filter bank systems as
+   equalizers. The resulting aliasing is dependent only on the degree of suppression of the remaining
+   alias terms.
+ 5
+   Hence, even when using complex-exponential modulated filter banks, it is crucial to design a
+   prototype filter for maximum suppression of the alias gains terms, although the main alias terms
+   have been removed for such filter banks. Even though the remaining alias terms are less significant
+   than the main alias terms, they may still generate aliasing which causes artifacts to the processed
+ 0 signal. Therefore, the design of such a prototype filter can preferably be accomplished by
+   minimizing a composite objective function. For this purpose, various optimization algorithms may
+   be used. Examples are e.g. linear programming methods, Downhill Simplex Method or a non
+   constrained gradient based method or other nonlinear optimization algorithms. In an exemplary
+   embodiment an initial solution of the prototype filter is selected. Using the composite objective
+25 function, a direction for modifying the prototype filter coefficients is determined which provides the
+   highest gradient of the composite objective function. Then the filter coefficients are modified using
+   a certain step length and the iterative procedure is repeated until a minimum of the composite
+   objective function is obtained. For further details on such optimization algorithms, reference is made
+   to "Numerical Recipes in C, The Art of Scientific Computing, Second Edition" W. H. Press, S. A.
+30 Teukolsky, W. T. Vetterling, B. P. Flannery, Cambridge University Press, NY, 1992, which is
+   incorporated by reference.
+                                                         25
+
+   For improved alias term minimization (IATM) of the prototype filter, a preferred objective function
+   may be denoted
+                                    e,,,,(a) = a e, + (1- a) e,                         (30)
+ 5
+   where the total error e,,, (a) is a weighted sum of the transfer function error e, and the aliasing error
+    e,. The first term on the right hand side (RHS) of Eq.(23) evaluated on the unit circle, i.e. for
+    z = e", can be used to provide a measure of the error energy et of the transfer function as
+    01e                   272     (e J)+2          (-        -- (G      WD do,          (31)
+   where P(w) is a symmetric real-valued function defining the pass band and stop band ranges, and D
+   is the total system delay. In other words, P(c) describes the desired transfer function. In the most
+   general case, such transfer function comprises a magnitude which is a function of the frequency
+ 5 o. For a real-valued system Eq.(3 1) simplifies to
+                                 1                                  2o
+                          et = 2          40(e t)- P()e         CjD  d co               (32)
+   The target function P(o) and the target delay D may be selected as an input parameter to the
+20 optimization procedure. The expression P(co)e-jiwD may be referred to as the target transfer function.
+   A measure of the energy of the total aliasing ea may be calculated by evaluating the sum of the alias
+   terms on the right hand side (RHS) of Eq.(23), i.e. the second term of Eq.(23), on the unit circle as
+                                                           26
+
+                                     1 M- 1 )              d2,
+                               ea = 2          JA(e 1o) dc,                               (33)
+                                        1=1  -x
+   For real-valued systems this translates to
+ 5
+                                     1 M-            .2
+                               ea =         J   A(e1jo)    do.                            (34)
+   Overall, an optimization procedure for determining a prototype filter po (n) may be based on the
+   minimization of the error of Eq. (30). The parameter a may be used to distribute the emphasis
+ 0 between the transfer function and the sensitivity to aliasing of the prototype filter. While increasing
+   the parameter a towards 1 will put more emphasis on the transfer function error et, reducing the
+   parameter a towards 0 will put more emphasis on the aliasing error ea. The parameters P( O) and D
+   may be used to set a target transfer function of the prototype filter po (n), i.e. to define the pass band
+   and stop band behavior and to define the overall system delay.
+ 5
+   According to an example, a number of the filter bank channels k may be set to zero, e.g. the upper
+   half of the filter bank channels are given zero gain. Consequently, the filter bank is triggered to
+   generate a great amount of aliasing. This aliasing will be subsequently minimized by the
+   optimization process. In other words, by setting a certain number of filter bank channels to zero,
+20 aliasing will be induced, in order to generate an aliasing error ea which may be minimized during the
+   optimization procedure. Furthermore, computational complexity of the optimization process may be
+   reduced by setting filter bank channels to zero.
+   According to an example, a prototype filter is optimized for a real valued, i.e. a cosine modulated,
+25 filter bank which may be more appropriate than directly optimizing the complex-valued version.
+   This is because real-valued processing prioritizes far-off aliasing attenuation to a larger extent than
+                                                      27
+
+   complex-valued processing. However, when triggering aliasing as outlined above, the major part of
+   the induced aliasing in this case will typically origin from the terms carrying the main alias terms.
+   Hence, the optimization algorithm may spend resources on minimizing the main aliasing that is
+   inherently non-present in the resulting complex-exponential modulated system. In order to alleviate
+ 5 this, the optimization may be done on a partially complex system; for the alias terms which are free
+   from main aliasing, the optimization may be done using real-valued filter processing. On the other
+   hand, the alias terms that would carry the main alias terms in a real-valued system would be
+   modified for complex-valued filter processing. By means of such partially complex optimization,
+   the benefits of performing the processing using real-valued processing may be obtained, while still
+ 0 optimizing the prototype filter for usage in a complex modulated filter bank system.
+   In an exemplary optimization where exactly the upper half of the filter bank channels are set to zero,
+   the only alias term calculated from complex valued filters is the term I = M/2 of Eq.(33). In this
+   example, the function P(co) of Eq.(3 1), may be chosen as a unit magnitude constant ranging from
+ 5 ,r/2+g to 7d2-E, where F is a fraction of i/2, in order to cover the frequency range constituting the
+   pass band. Outside the pass band the function P(co) may be defined to be zero or be left undefined.
+   In the latter case, the error energy of the transfer function Eq.(3 1) is only evaluated between -;t/2+c
+   and ;/ 2 -E.Alternatively and preferably, the pass band error et could be calculated over all channels k
+   =  0, ... , M-1, from -;rto 1r with P(o) being constant, while the aliasing is still calculated with a
+ 0 plurality of the channels set to zero as described above.
+   Typically the optimization procedure is an iterative procedure, where given the prototype filter
+   coefficients po(n) (n   = 0, ... , N-1) at a certain iteration step, the target delay D, the number of
+   channels M, the numbers of low band channels set to zero loCut, the number of high band channels
+25 set to zero hiCut, and the weighting factor a, a value for the objective function for this iteration step
+   is calculated. Using semi-complex operations, this comprises the steps:
+             1. To obtain the pass band error et, evaluate Eq.(32) with P(ao) being a constant, using
+                                                            28
+
+                                    M-1
+                      20(eo) = I         Hk(elc)Fk(eJ"),                           (35)
+                                    k=O
+      where Hk(e") and Fk(e") are the DFT transforms of the analysis and synthesis filters hk(n)
+      andfi(n) as generated from the prototype filters coefficients at this iteration step from Eq.
+ 5    (13) to (15), respectively.
+   2. To obtain the aliasing error ea, for aliasing terms not subject to significant aliasing,
+        evaluate
+                                 1 M-1                     2
+                                               JaReal
+                                                  Al(ej"')   dco
+ 0                              l#loCut,hiCut,                                     (36)
+                                   M -loCut,
+                                   M -hiCut
+       where A,(e") is calculated as
+                           M -1-hiCut                x
+                                              AM-y 27r1
+               A (e!")=          I       Hk(e       M )Fk (e                       (37)
+                             k=loCut
+15
+      and Hk(el(O) and Fk(e!,")) are the DFT transforms, i.e. the z-transforms evaluated on the unit
+      circle, of the analysis and synthesis filters hk(n) andfi(n) from Eq. (13) to (15).
+   3.   For the terms subject to significant aliasing, evaluate
+20
+                                                  29
+
+                                                                 2
+                          eaCplx
+                                      1
+                                            Z        Jf
+                                                     7r
+                                                         l(e")     dco                      (38)
+                                         l=loCut,
+                                          hiCut,
+                                        M -loCut,
+                                        M-hiCut
+              where A(ei") is given by Eq.(24), with AI(d") as Eq.(37), with Hk(e'") and Fk(e7") being the
+              DFT transforms of hk(n) andfk(n) from Eq.(19) and (20).
+ 5
+           4. The error is subsequently weighted with a as
+                            e,, (a) = ae, + (1 - a)(eaReal + eaCpx).                        (39)
+ 0 Using any of the nonlinear optimization algorithms referred to above, this total error is reduced by
+   modifying the coefficients of the prototype filter, until an optimal set of coefficients is obtained. By
+   way of example, the direction of the greatest gradient of the error function eot is determined for the
+   prototype filter coefficients at a given iteration step. Using a certain step size the prototype filter
+   coefficients are modified in the direction of the greatest gradient. The modified prototype filter
+ 5 coefficients are used as a starting point for the subsequent iteration step. This procedure is repeated
+   until the optimization procedure has converged to a minimum value of the error function eor.
+   An exemplary embodiment of the optimization procedure is illustrated in Fig. 3 as a flow diagram
+   300. In a parameter determination step 301 the parameters of the optimization procedure, i.e. notably
+20 the target transfer function comprising the target delay D, the number of channels M of the target
+   filter bank, the number N of coefficients of the prototype filter, the weighting parameter a of the
+   objective error function, as well as the parameters for aliasing generation, i.e. loCut and/or hiCut, are
+   defined. In an initialization step 302, a first set of coefficients of the prototype filter is selected.
+25 In the pass band error determination unit 303, the pass band error term er is determined using the
+   given set of coefficients of the prototype filter. This may be done by using Eq.(32) in combination
+                                                         30
+
+   with Eqs.(35) and (13) to (15). In the real valued aliasing error determination unit 304, a first part
+   eaReal of the aliasing error term ea may be determined using Eqs.(36) and (37) in combination with
+   Eqs.(13) to (15). Furthermore, in the complex valued aliasing error determination unit 305, a second
+   part eacpix of the aliasing error term ea may be determined using Eq.(38) in combination with
+ 5 Eqs.(19) and (20). As a consequence, the objective function ett may be determined from the results
+   of the units 303, 304 and 305 using Eq.(39).
+   The nonlinear optimization unit 306 uses optimization methods, such as linear programming, in
+   order to reduce the value of the objective function. By way of example, this may be done by
+ 0 determining a possibly maximum gradient of the objective function with regards to modifications of
+   the coefficients of the prototype filter. In other words, those modifications of the coefficients of the
+   prototype filter may be determined which result in a possibly maximum reduction of the objective
+   function.
+ 5 If the gradient determined in unit 306 remains within predetermined bounds, the decision unit 307
+   decides that a minimum of the objective function has been reached and terminates the optimization
+   procedure in step 308. If on the other hand, the gradient exceeds the predetermined value, then the
+   coefficients of the prototype filter are updated in the update unit 309. The update of the coefficients
+   may be performed by modifying the coefficients with a predetermined step into the direction given
+ 0 by the gradient. Eventually, the updated coefficients of the prototype filter are reinserted as an input
+   to the pass band error determination unit 303 for another iteration of the optimization procedure.
+   Overall, it can be stated that using the above error function and an appropriate optimization
+   algorithm, prototype filters may be determined that are optimized with respect to their degree of
+25 perfect reconstruction, i.e. with respect to low aliasing in combination with low phase and/or
+   amplitude distortion, their resilience to aliasing due to subband modifications, their system delay
+   and/or their transfer function. The design method provides parameters, notably a weighting
+   parameter a, a target delay D, a target transfer function P(c), a filter length N, a number of filter
+   bank channels M, as well as aliasing trigger parameters hiCut, loCut, which may be selected to
+30 obtain an optimal combination of the above mentioned filter properties. Furthermore, the setting to
+   zero of a certain number of subband channels, as well as the partial complex processing may be used
+                                                       31
+
+   to reduce the overall complexity of the optimization procedure. As a result, asymmetric prototype
+   filters with a near perfect reconstruction property, low sensitivity to aliasing and a low system delay
+   may be determined for usage in a complex exponential modulated filter bank. It should be noted that
+   the above determination scheme of a prototype filter has been outlined in the context of a complex
+ 5 exponential modulated filter bank. If other filter bank design methods are used, e.g. cosine
+   modulated or sine modulated filter bank design methods, then the optimization procedure may be
+   adapted by generating the analysis and synthesis filters hk(n) andfi(n) using the design equations of
+   the respective filter bank design method. By way of example, Eqs.(13) to (15) may be used in the
+   context of a cosine modulated filter bank.
+ 0
+   In the following, a detailed example of a 64 channel low delay filter bank is described. Using the
+   proposed aforementioned optimization method, a detailed example of an alias gain term optimized,
+   low delay, 64-channel filter bank (M     = 64) will be outlined. In this example the partially complex
+   optimization method has been used and the uppermost 40 channels have been set to zero during the
+ 5 prototype filter optimization, i.e. hiCut = 40, whereas the loCut parameter remained unused. Hence,
+   all alias gain terms, except J7, where I = 24, 40, are calculated using real-valued filters. The total
+   system delay is chosen as D    = 319, and the prototype filter length is N = 640. A time domain plot of
+   the resulting prototype filter is given in Fig.4(a), and the frequency response of the prototype filter is
+   depicted in Fig.4(b). The filter bank offers a pass band (amplitude and phase) reconstruction error of
+ 0 -72 dB. The phase deviation from a linear phase is smaller than ±0.020, and the aliasing suppression
+   is 76 dB when no modifications are done to the subband samples. The actual filter coefficients are
+   tabulated in Table 1. Note that the coefficients are scaled by a factor M   = 64 in respect to other
+   equations in this document that are dependent on an absolute scaling of the prototype filter.
+25 While the above description of the design of the filter bank is based on a standard filter bank
+   notation, an example for operating the designed filter bank may operate in other filter bank
+   descriptions or notations, e.g. filter bank implementations which allow a more efficient operation on
+   a digital signal processor.
+30
+                                                        32
+
+   In an example, the steps for filtering a time domain signal using the optimized prototype filter may
+   be described as follows:
+       *   In order to operate the filter bank in an efficient manner, the prototype filter, i.e. po(n) from
+ 5         Table 1, is first arranged in the poly-phase representation, where every other of the poly
+           phase filter coefficients are negated and all coefficient are time-flipped as
+            p'(639-128m-n)= (-1)n2p 0 (128m+n),                 0   n <128, 0  m <5         (40)
+ 0     0   The analysis stage begins with the poly-phase representation of the filter being applied to the
+           time domain signal x(n) to produce a vector xi(n) of length 128 as
+                        4
+            X1_,(n)=   jp'(128m +l)x(128m+l+64n), 0</l<128, n = 0,1,...                     (41)
+                       m=O
+ 5     e  x,(n) is subsequently multiplied with a modulation matrix as
+                          127                 /1
+                  v,(n)=1x,(n)exp j              (k+-)(2/+129)j,       0 s k <64,           (42)
+                          1=o               128       2           )
+           where Vk(n), k     = 0 ...63, constitute the subband signals. The time index n is consequently
+20         given in subband samples.
+       *   The complex-valued subband signals can then be modified, e.g. according to some desired,
+           possibly time-varying and complex-valued, equalization curve gk(n), as
+25                              vl") (n)= gk, y(n), 0         k <64.                        (43)
+                                                           33
+
+        * The synthesis stage starts with a demodulation step of the modified subband signals as
+                    1 63                               1
+          u,(n)= 6 IRe v-)"(n)exp (j '            (k + )(21 -255)      0 /I<128.         (44)
+ 5         It should be noted that the modulation steps of Eqs.(42) and (44) may be accomplished in a
+           computationally very efficient manner with fast algorithms using fast Fourier transform
+           (FFT) kernels.
+        * The demodulated samples are filtered with the poly-phase representation of the prototype
+ 0         filter and accumulated to the output time domain signalU(n) according to
+              i(128m +I+ 64n) = k(128m +I+ 64n) +p'(639 -128m -l)u,(1),
+                                                                  0                      (45)
+                                       0< I <128, 0! m <5, n = 0,1,...
+           where k(n) is set to 0 for all n at start-up time.
+ 5
+   It should be noted that both floating point and fixed point implementations might change the
+   numerical accuracy of the coefficients given in Table 1 to something more suitable for processing.
+   Without limiting the scope, the values may be quantized to a lower numerical accuracy by rounding,
+   truncating and/or by scaling the coefficients to integer or other representations, in particular
+20 representations that are adapted to the available resources of a hardware and/or software platform on
+   which the filter bank is to operate.
+   Moreover, the example above outlines the operation where the time domain output signal is of the
+   same sampling frequency as the input signal. Other implementations may resample the time domain
+25 signal by using different sizes, i.e. different number of channels, of the analysis and synthesis filter
+   banks, respectively. However, the filter banks should be based on the same prototype filter, and are
+   obtained by resampling of the original prototype filter through either decimation or interpolation. As
+                                                          34
+
+    an example, a prototype filter for a 32 channel filter bank is achieved by resampling the coefficients
+    po(n) as
+                          Po(32(i)= [po(2i+1)+po(2i)], 0 s i <320
+                                     2
+5
+    The length of the new prototype filter is hence 320 and the delay is D =L319/2            =159,   where the
+    operator   L-i  returns the integer part of its argument.
+                            Table 1. Coefficients of a 64 channel low delay prototype filter
+  n             Po(n)             n            Po(n)            n           Po(n)          n            Po(n)
+   0   -7.949261005955764e-4    160    8.968337036455653e-1    320 -1.210755701624524e-1  480   4.764720830452409e-3
+   1   -1.232074328145439e-3    161    9.023985431182168e-1    321 -1.185237142283346e-1  481   4.666469548192818e-3
+   2   -1.601053942982895e-3    162    9.075955881221292e-1    322 -1.159184450952715e-1  482   4.565946029127366e-3
+   3   -1.980720409470913e-3    163    9.124187296760565e-1    323 -1.132654367461266e-1  483   4.463150894014690e-3
+   4   -2.397504953865715e-3    164    9.168621399784253e-1    324 -1.105698782276963e-1  484   4.358150755039186e-3
+   5   -2.838709203607079e-3    165    9.209204531389191e-1    325 -1.078369135648348e-1  485   4.250967471708103e-3
+   6   -3.314755401090670e-3    166    9.245886139655739e-1    326 -1.050716118804287e-1  486   4.141634861746089e-3
+   7   -3.825180949035082e-3    167    9.278619263447355e-1    327 -1.022789198651472e-1  487   4.030165355928349e-3
+   8   -4.365307413613105e-3    168    9.307362242659798e-1    328 -9.946367410320074e-2  488   3.916597675997815e-3
+   9   -4.937260935539922e-3    169    9.332075222986479e-1    329 -9.663069107327295e-2  489   3.800994685405442e-3
+  10   -5.537381514710146e-3    170    9.352724511271509e-1    330 -9.378454802679648e-2  490   3.683451012833619e-3
+  11   -6.164241937824271e-3    171    9.369278287932853e-1    331 -9.092970207094843e-2  491   3.563914929838276e-3
+  12   -6.816579194002503e-3    172    9.381709878904797e-1    332 -8.807051083640835e-2  492   3.442490007998456e-3
+  13   -7.490102145765528e-3    173    9.389996917291260e-1    333 -8.521107266503664e-2  493   3.319256438897666e-3
+  14   -8.1837114507081 10e-3   174    9.394121230559878e-1    334 -8.235562752947133e-2  494   3.194250476422174e-3
+  15   -8.894930051379498e-3    175    9.394068064126931e-1    335 -7.950789957683559e-2  495   3.067525877056119e-3
+  16   -9.620004581607449e-3    176    9.389829174860432e-1    336 -7.66717798975511 Oe-2 496   2.939139106182801e-3
+  17   -1.035696814015217e-2    177    9.381397976778112e-1    337 -7.385092587441364e-2  497   2.809151898728351e-3
+  18   -1.110238617202191e-2    178    9.368773370086998e-1    338 -7.104866702770536e-2  498   2.677703006241942e-3
+  19   -1 .185358556146692e-2   179    9.351961242404785e-1    339 -6.826847016140082e-2  499   2.544830774162231e-3
+  20   -1.260769256679562e-2    180    9.330966718935136e-1    340 -6.551341011471171e-2  500   2.410617950987095e-3
+  21   -1.336080675156018e-2    181    9.305803205049067e-1    341 -6.278658929544248e-2  501   2.275190768887402e-3
+  22   -1.411033176541011 e-2   182    9.276488080866625e-1    342 -6.009091369370080e-2  502   2.138586519570023e-3
+  23   -1.485316243134798e-2    183    9.243040558859498e-1    343 -5.742919825387360e-2  503   2.000881763033976e-3
+                                                            35
+
+n          Po(n)           n         Po(n)            n           Po(n)         n           Po(n)
+24 -1.558550942227883e-2 184 9.205488097488350e-1    344 -5.480383115198150e-2 504  1.862161137529843e-3
+25 -1.630436835497356e-2 185 9.163856478189402e-1    345 -5.221738078737957e-2 505  1.722850651410707e-3
+26 -1.700613959422392e-2 186 9.118180055332041e-1    346 -4.967213638808988e-2 506  1.583005323492318e-3
+27 -1.768770555992799e-2 187 9.068503557855540e-1    347 -4.717023345307148e-2 507  1.442635273572746e-3
+28 -1.834568069395711e-2 188 9.014858673099563e-1    348 -4.471364025371278e-2 508  1.301735673138880e-3
+29 -1.897612496482356e-2 189 8.957295448806664e-1    349 -4.230438144160113e-2 509  1.160531184883257e-3
+30 -1.957605813345359e-2 190 8.895882558527375e-1    350 -3.994384828552555e-2 510  1.018710154718430e-3
+31 -2.014213322475170e-2 191 8.830582442418677e-1    351 -3.763371362431132e-2 511  8.753658738743612e-4
+32 -2.067061748933033e-2 192 8.761259906419252e-1    352 -3.537544041600725e-2 512  7.250868879948704e-4
+33 -2.115814831921453e-2 193 8.688044201931157e-1    353 -3.317035188016126e-2 513  5.901514303345345e-4
+34 -2.160130854695980e-2 194 8.611140376567749e-1    354 -3.101971215825843e-2 514  4.571251178344833e-4
+35 -2.199696217022438e-2 195 8.530684188588082e-1    355 -2.892453070357571e-2 515  3.254504484897777e-4
+36 -2.234169110698344e-2 196 8.446723286380624e-1    356 -2.688575425197388e-2 516  1.951832637892118e-4
+37 -2.263170795250229e-2 197 8.359322523144003e-1    357 -2.490421725219031e-2 517  6.661818101906931e-5
+38 -2.286416556008894e-2 198 8.268555005748937e-1    358 -2.298058501129975e-2 518 -6.002729636107936e-5
+39 -2.303589449043864e-2 199 8.174491260941859e-1    359 -2.111545692324888e-2 519 -1.845163192347697e-4
+40 -2.314344724218223e-2 200 8.077214932837783e-1    360 -1.930927680100128e-2 520 -3.065712811761140e-4
+41 -2.318352524475873e-2 201 7.976809997929416e-1    361 -1.756239270089077e-2 521 -4.259661821125124e-4
+42 -2.315297727620401e-2 202 7.873360271773119e-1    362 -1.587511449869362e-2 522 -5.424773586381941e-4
+43 -2.304918234544422e-2 203 7.766956604639097e-1    363 -1.424750749465213e-2 523 -6.558084462274315e-4
+44 -2.286864521420490e-2 204 7.657692341138960e-1    364 -1.267955527855867e-2 524 -7.659101269870789e-4
+45 -2.260790764376614e-2 205 7.545663748526984e-1    365 -1.117125833414906e-2 525 -8.724859431432570e-4
+46 -2.226444264459477e-2 206 7.430967641354331e-1    366 -9.722405440999532e-3 526 -9.753531169034512e-4
+47 -2.183518667784246e-2 207 7.313705248813991e-1    367 -8.332704660914712e-3 527 -1.074300123306481e-3
+48 -2.13169<removed-apn>e-2 208 7.193979757178656e-1    368 -7.001789872901951e-3 528 -1.169143931350576e-3
+49 -2.070614962636994e-2 209 7.071895814695481e-1    369 -5.729226040772489e-3 529 -1.259725653234229e-3
+50 -1.999981321635736e-2 210 6.947561322714310e-1    370 -4.514503359783591e-3 530 -1.345834916989234e-3
+51 -1.919566223498554e-2 211 6.821083135331770e-1    371 -3.356946762357950e-3 531 -1.427339710937440e-3
+52 -1.828936158524688e-2 212 6.692573319585476e-1    372 -2.255849987026407e-3 532 -1.504079803740054e-3
+53 -1.727711874492186e-2 213 6.562143182387809e-1    373 -1.210459261524451e-3 533 -1.575880973843057e-3
+54 -1.615648494779686e-2 214 6.429904538706975e-1    374 -2.199474640570699e-4 534 -1.642633580824677e-3
+55 -1.492335807272955e-2 215 6.295973685335782e-1    375  7.167268627887994e-4 535 -1.704200291375062e-3
+56 -1.357419760297910e-2 216 6.160464554756299e-1    376  1.600440185590357e-3 536 -1.760514312756149e-3
+57 -1.210370330110896e-2 217 6.023493418727370e-1    377  2.432366605744087e-3 537 -1.811458673156579e-3
+58 -1.050755164953818e-2 218 5.885176369189331e-1    378  3.213605482343768e-3 538 -1.856981580032126e-3
+59 -8.785746151726750e-3 219 5.745630487304467e-1    379  3.945301462616821e-3 539 -1.897029046447624e-3
+60 -6.927329556345040e-3 220 5.604973280717471e-1    380  4.628665378925932e-3 540 -1.931585942699363e-3
+61 -4.929378450735877e-3 221 5.463322649085826e-1    381  5.264976586624488e-3 541 -1.960627084932276e-3
+62 -2.800333941149626e-3 222 5.320795532569365e-1    382  5.855653555178131e-3 542 -1.984178530495641e-3
+                                                  36
+
+ n           Po(n)          n         Po(n)            n           Po(n)         n            Po(n)
+ 63 -4.685580749545335e-4 223 5.177509557831821e-1    383 6.401634331453516e-3  543 -2.002288840866127e-3
+ 64  2.210315255690887e-3 224 5.033582842235876e-1    384 6.903046246257517e-3  544 -2.014916352347506e-3
+ 65  5.183294908090526e-3 225 4.889131973708936e-1    385 7.364537203059431 e-3 545 -2.022189226793424e-3
+ 66  8.350964449424035e-3 226 4.744274511088447e-1    386 7.785917436812734e-3  546 -2.024254777335021e-3
+ 67  1.166118535611788e-2 227 4.599125196114154e-1    387 8.168780818165564e-3  547 -2.021156706871573e-3
+ 68  1.513166797475777e-2 228 4.453800290341801e-1    388 8.514510536234886e-3  548 -2.013111787438794e-3
+ 69  1.877264877027943e-2 229 4.308413090599260e-1    389 8.824526581578384e-3  549 -2.000212633130633e-3
+ 70  2.258899222368603e-2 230 4.163077444128621e-1    390 9.100444687042341e-3  550 -1.982687042477966e-3
+ 71  2.659061474958830e-2 231 4.017905891818764e-1    391 9.343819821939981e-3  551 -1.960693892404943e-3
+ 72  3.078087745385930e-2 232 3.873008819361793e-1    392 9.556089247587111 e-3 552 -1.934407806173517e-3
+ 73  3.516391224752870e-2 233 3.728496914938361e-1    393 9.738929904236388e-3  553 -1.904123563599214e-3
+ 74  3.974674893613862e-2 234 3.584479879275654e-1    394 9.893728065983530e-3  554 -1.870072199436830e-3
+ 75  4.453308211110493e-2 235 3.441060828393923e-1    395 1.002221842309897e-2  555 -1.832519954023970e-3
+ 76  4.952626097917320e-2 236 3.298346836739700e-1    396 1.012567516563336e-2  556 -1.791756667369466e-3
+ 77  5.473026727738295e-2 237 3.156442070098094e-1    397 1.020575952382967e-2  557 -1. 747978720577777e-3
+ 78  6.014835645056577e-2 238 3.015447421741344e-1    398 1.026389875785943e-2  558 -1.701541033746949e-3
+ 79  6.578414516120631e-2 239 2.875462383794429e-1    399 1.030162959448537e-2  559 -1.652689459435072e-3
+ 80  7.163950999489413e-2 240 2.736584401802921e-1    400 1.032037849566083e-2  560 -1.601690868666912e-3
+ 81  7.771656494569829e-2 241 2.598909819775319e-1    401 1.032154667898522e-2  561 -1.548954090992685e-3
+ 82  8.401794441130064e-2 242 2.462531686198759e-1    402 1.030658039367325e-2  562 -1.494709797777335e-3
+ 83  9.054515924487507e-2 243 2.327540108460799e-1    403 1.027682791880806e-2  563 -1.439190571857024e-3
+ 84  9.729889691289549e-2 244 2.194025590645563e-1    404 1.023360327572998e-2  564 -1.382763830841281e-3
+ 85  1.042804039148369e-1 245 2.062071988727463e-1    405 1.017821017226088e-2  565 -1.325642967049430e-3
+ 86  1.114900795290448e-1 246 1.931765200055820e-1    406 1.011 195224927225e-2 566 -1.26818423687421 le-3
+ 87  1.189284254931251e-1 247 1.803186073942884e-1    407 1.003602653649432e-2  567 -1.210596701555163e-3
+ 88  1.265947532678997e-1 248 1.676410590306998e-1    408 9.951564927254814e-3  568 -1.153025111297160e-3
+ 89  1.344885599112251e-1 249 1.551517472268748e-1    409 9.859735321541087e-3  569 -1.095962010293130e-3
+ 90  1.426090972422485e-1 250 1.428578337203540e-1    410 9.761689935477358e-3  570 -1.039553843860894e-3
+ 91  1.509550307914161e-1 251 1.307662172525294e-1    411 9.658335268268776e-3  571 -9.838346246983619e-4
+ 92  1.595243494708706e-1 252 1.188837988250476e-1    412 9.550506541750015e-3  572 -9.290281181623759e-4
+ 93  1.683151598707939e-1 253 1.072167300568495e-1    413 9.439239790180602e-3  573 -8.749810533387956e-4
+ 94  1.773250461581686e-1 254 9.577112136322552e-2    414 9.325311662898867e-3  574 -8.215803921619577e-4
+ 95  1.865511418631904e-1 255 8.455282024161610e-2    415 9.209571052890813e-3  575 -7.706114369075383e-4
+ 96  1.959902227114119e-1 256 7.355793885744523e-2    416 9.092729858436259e-3  576 -7.240453976226097e-4
+ 97  2.056386275763479e-1 257 6.280513608528435e-2    417 8.975504153186832e-3  577 -6.849432723864428e-4
+ 98  2.154925974105375e-1 258 5.229589453075828e-2    418 8.858564024669505e-3  578 -6.499492788836954e-4
+ 99  2.255475564993390e-1 259 4.203381031272017e-2    419 8.742547510216072e-3  579 -6.169265465797999e-4
+100  2.357989864681126e-1 260 3.202301123728688e-2    420 8.627917215653412e-3  580 -5.864023580206857e-4
+101  2.462418809459464e-1 261 2.226720136600903e-2    421 8.515236113018675e-3  581 -5.585564628691223e-4
+                                                   37
+
+ n          Po(n)           n         Po(n)             n          Po(n)          n           Po(n)
+102 2.568709554604541e-1  262  1.277000586069404e-2    422 8.404834686887089e-3  582 -5.332623456777386e-4
+103 2.676805358910440e-1  263  3.534672952747162e-3    423 8.297046056582970e-3  583 -5.106711356117643e-4
+104 2.786645734207760e-1  264 -5.435672410526313e-3    424 8.192181771808344e-3  584 -4.907668696713635e-4
+105 2.898168394038287e-1  265 -1.413857081863553e-2    425 8.090558375952284e-3  585 -4.734587422398502e-4
+106 3.011307516871287e-1  266 -2.257147752062613e-2    426 7.992340268718087e-3  586 -4.585871522474066e-4
+107 3.125994749246541e-1  267 -3.073254829666290e-2    427 7.897787592331651 e-3 587 -4.460035977692689e-4
+108 3.242157192666507e-1  268 -3.861994968092324e-2    428 7.806979111626161e-3  588 -4.356377129231574e-4
+109 3.359722796803192e-1  269 -4.623245158508806e-2    429 7.720005213599928e-3  589 -4.273247732616044e-4
+110 3.478614117031655e-1  270 -5.356875686113461e-2    430 7.636899169053526e-3  590 -4.208333621911742e-4
+111 3.598752336287570e-1  271 -6.062844791918062e-2    431 7.557692588413262e-3  591 -4.159437129295563e-4
+112 3.720056632072922e-1  272 -6.741087925238425e-2    432 7.482361735247336e-3  592 -4.123958508631197e-4
+113 3.842444358173011 e-1 273 -7.391592258255635e-2    433 7.410882580163479e-3  593 -4.100224176114866e-4
+114 3.965831241942321e-1  274 -8.014393008412193e-2    434 7.343084196594709e-3  594 -4.085466400930828e-4
+115 4.090129566893579e-1  275 -8.609517876186421e-2    435 7.278918614409016e-3  595 -4.077080867389932e-4
+116 4.215250930838456e-1  276 -9.177059647159572e-2    436 7.218206312830178e-3  596 -4.073254606881664e-4
+117 4.341108982328533e-1  277 -9.717118785672957e-2    437 7.160843298305507e-3  597 -4.070933269997811 e-4
+118 4.467608231633283e-1  278 -1.022983899423088e-1    438 7.106600272887440e-3  598 -4.067607615013048e-4
+119 4.594659376709624e-1  279 -1.071535873159799e-1    439 7.055249359796239e-3  599 -4.061488056951641e-4
+120 4.722166595058233e-1  280 -1.117390940373963e-1    440 7.006591539682229e-3  600 -4.050555465493161e-4
+121 4.850038204075748e-1  281 -1.160565563647874e-1    441 6.960450953203489e-3  601 -4.033838274959328e-4
+122 4.978178235802594e-1  282 -1.201089957775325e-1    442 6.916554770130135e-3  602 -4.008810861049167e-4
+123 5.106483456192374e-1  283 -1.238986104503973e-1    443 6.874623603448978e-3  603 -3.973769462134710e-4
+124 5.234865375971977e-1  284 -1.274286534385776e-1    444 6.834443173086539e-3  604 -3.928186163645286e-4
+125 5.363218470709771e-1  285 -1.307022037585206e-1    445 6.795786363014294e-3  605 -3.870561868619109e-4
+126 5.491440356706657e-1  286 -1.337226598624689e-1    446 6.758476537306303e-3  606 -3.799993669990150e-4
+127 5.619439923555571e-1  287 -1.364936502000925e-1    447 6.722125942626111 e-3 607 -3.715971708042990e-4
+128 5.746001351404267e-1  288 -1.390190836588895e-1    448 6.686140904391229e-3  608 -3.617549303005874e-4
+129 5.872559277139351e-1  289 -1.413030335001078e-1    449 6.650228698006217e-3  609 -3.505340232816606e-4
+130 5.998618924353250e-1  290 -1.433497698594264e-1    450 6.614354298921371e-3  610 -3.378810708512397e-4
+131 6.123980151490041e-1  291 -1.451636222445455e-1    451 6.578320578669048e-3  611 -3.237820254163679e-4
+132 6.248504862282382e-1  292 -1.467494079461177e-1    452 6.541865503698597e-3  612 -3.083797394566325e-4
+133 6.372102969387355e-1  293 -1.481116975400198e-1    453 6.504729306516950e-3  613 -2.916580376245428e-4
+134 6.494654463921502e-1  294 -1.492556249421260e-1    454 6.466690242148724e-3  614 -2.737128656378774e-4
+135 6.616044277534099e-1  295 -1.501862836334994e-1    455 6.427556828582072e-3  615 -2.546266898474145e-4
+136 6.736174463977084e-1  296 -1.509089024309573e-1    456 6.387124476277924e-3  616 -2.344785058384558e-4
+137 6.854929931488056e-1  297 -1.514289033634045e-1    457 6.345262303711465e-3  617 -2.134575242388197e-4
+138 6.972<removed-apn>93e-1  298 -1.517517580141857e-1    458 6.301766582696827e-3  618 -1.916264055195752e-4
+139 7.087881675504216e-1  299 -1.518832057448775e-1    459 6.256542736138121e-3  619 -1.692851860592005e-4
+140 7.<removed-apn>92665e-1  300 -1.518289202172233e-1    460 6.209372064970386e-3  620 -1.466953561242506e-4
+                                                    38
+
+    n             Po(n)           n           Po(n)             n          Po(n)         n           Po(n)
+   141    7.314035334082558e-1  301   -1.515947694390820e-1    461 6.160215935384255e-3 621 -1.236855725370398e-4
+   142    7.42429507887431 le-1 302   -1.511866738705995e-1    462 6.108902434484468e-3 622 -1.005737421222391e-4
+   143    7.532534422335129e-1  303   -1.506105955209982e-1    463 6.055355267266873e-3 623 -7.750656629326379e-5
+   144    7.638649113306198e-1  304   -1.498725980913964e-1    464 5.999473903317320e-3 624 -5.466984383016220e-5
+   145    7.742538112450130e-1  305   -1.489787144055076e-1    465 5.941211676077848e-3 625 -3.255925659037227e-5
+   146    7.844095212375462e-1  306   -1.479352185844335e-1    466 5.880495927392625e-3 626 -1.096860208856302e-5
+   147    7.943222347831999e-1  307   -1.467481851768966e-1    467 5.817286139372493e-3 627  9.881411051921578e-6
+   148    8.039818519286321e-1  308   -1.454239120021382e-1    468 5.751536864441650e-3 628  2.951496818998434e-5
+   149    8.133789939828571e-1  309   -1.439685961257477e-1    469 5.683230954033062e-3 629  4.810106298036608e-5
+   150    8.225037151897938e-1  310   -1.423884130127772e-1    470 5.612375999953358e-3 630  6.513783951460106e-5
+   151    8.313468549324594e-1  311   -1.406896926563808e-1    471 5.538957988293047e-3 631  8.051456871678129e-5
+   152    8.398991600556686e-1  312   -1.388785953623746e-1    472 5.462963107291498e-3 632  9.429776656872437e-5
+   153    8.481519810689574e-1  313   -1.369612022106282e-1    473 5.384396217909888e-3 633  1.058298511976110e-4
+   154    8.560963550316389e-1  314   -1.349437727408798e-1    474 5.303337109336215e-3 634  1.155823148740170e-4
+   155    8.637239863984174e-1  315   -1.328323917411932e-1    475 5.219739772898678e-3 635  1.229659417867084e-4
+   156    8.710266607496513e-1  316   -1.306331212230066e-1    476 5.133623037830525e-3 636  1.266886375085138e-4
+   157    8.779965198108476e-1  317   -1.283520431992394e-1    477 5.045046346880483e-3 637  1.279376783418106e-4
+   158    8.846258145496611 e-1 318   -1.259952253813674e-1    478 4.954008597884707e-3 638  1.216914974923773e-4
+   159    8.909071890560218e-1  319   -1.235680807908494e-1    479 4.860588885693231e-3 639  9.386301157644215e-5
+     In the following, different aspects of practical implementations are outlined. Using a standard PC or
+     DSP, real-time operation of a low delay complex-exponential modulated filter bank is possible. The
+     filter bank may also be hard-coded on a custom chip. Fig.5(a) shows the structure for an effective
+ 5   implementation of the analysis part of a complex-exponential modulated filter bank system. The
+     analogue input signal is first fed to an A/D converter 501. The digital time domain signal is fed to a
+     shift register holding 2M samples shifting M samples at a time 502. The signals from the shift
+     register are then filtered through the poly-phase coefficients of the prototype filter 503. The filtered
+     signals are subsequently combined 504 and in parallel transformed with a DCT-IV 505 and a DST
+10   IV 506 transform. The outputs from the cosine and sine transforms constitute the real and the
+     imaginary parts of the subband samples respectively. The gains of the subband samples are modified
+     according to the current spectral envelope adjuster setting 507.
+     An effective implementation of the synthesis part of a low delay complex-exponential modulated
+15   system is shown in Fig.5(b). The subband samples are first multiplied with complex-valued twiddle
+                                                            39
+
+   factors, i.e. complex-valued channel dependent constants, 511, and the real part is modulated with a
+   DCT-IV 512 and the imaginary part with a DST-IV 513 transform. The outputs from the transforms
+   are combined 514 and fed through the poly-phase components of the prototype filter 515. The time
+   domain output signal is obtained from the shift register 516. Finally, the digital output signal is
+ 5 converted back to an analogue waveform 517.
+   While the above outlined implementations use DCT and DST type IV transforms, implementations
+   using DCT type II and III kernels are equally possible (and also DST type II and III based
+   implementations). However, the most computationally efficient implementations for complex
+ 0 exponential modulated banks use pure FFT kernels. Implementations using a direct matrix-vector
+   multiplication are also possible but are inferior in efficiency.
+   In summary, the present document describes a design method for prototype filters used in
+   analysis/synthesis filter banks. Desired properties of the prototype filters and the resulting
+ 5 analysis/synthesis filter banks are near perfect reconstruction, low delay, low sensitivity to aliasing
+   and minimal amplitude/phase distortion. An error function is proposed which may be used in an
+   optimization algorithm to determine appropriate coefficients of the prototype filters. The error
+   function comprises a set of parameters that may be tuned to modify the emphasis between the
+   desired filter properties. Preferably, asymmetric prototype filters are used. Furthermore, a prototype
+ 0 filter is described which provides a good compromise of desired filter properties, i.e. near perfect
+   reconstruction, low delay, high resilience to aliasing and minimal phase/amplitude distortion.
+   While specific embodiments and applications have been described herein, it will be apparent to
+   those of ordinary skill in the art that many variations on the embodiments and applications described
+25 herein are possible without departing from the scope of the invention described and claimed herein.
+   It should be understood that while certain forms of the invention have been shown and described,
+   the invention is not to be limited to the specific embodiments described and shown or the specific
+   methods described.
+30 The filter design method and system as well as the filter bank described in the present document
+   may be implemented as software, firmware and/or hardware. Certain components may e.g. be
+                                                       40
+
+  implemented as software running on a digital signal processor or microprocessor. Other component
+  may e.g. be implemented as hardware and or as application specific integrated circuits. The signals
+  encountered in the described methods and systems may be stored on media such as random access
+  memory or optical storage media. They may be transferred via networks, such as radio networks,
+5 satellite networks, wireless networks or wireline networks, e.g. the Internet. Typical devices making
+  use of the filter banks described in the present document are set-top boxes or other customer
+  premises equipment which decode audio signals. On the encoding side, the filter banks may be used
+  in broadcasting stations, e.g. in video headend systems.
+0 Reference to prior art disclosures in this specification is not an admission that the disclosures
+  constitute common general knowledge.
+                                                      41
+
+    CLAIMS
+     1. A signal processing device for filtering and processing an audio signal, the signal processing
+ 5      device comprising:
+             an analysis filter bank that receives real valued time domain input audio samples and
+        generates complex-valued subband samples;
+             a high frequency reconstructor or a parametric stereo processor that generates modified
+        complex-valued subband samples; and
+ 0           a synthesis filter bank that receives the modified complex-valued subband samples and
+        generates time domain output audio samples,
+             wherein the analysis filter bank comprises analysis filters (hk(n)) and the synthesis filter bank
+        comprises synthesis filters (fk(n)) that are complex exponential modulated versions of a
+        prototype filter (po(n)) according to:
+   5k        ~liI(n)
+           5~~~~       f (n) =po
+                     =fk         p n ep( (k +
+                                    (n)expit 7 (+         (n - L),
+                                                          (n    )}
+                                                                            0:!n < N, 0 s <
+                                                                                n<NO2k2
+             where M is a number of channels, the prototype filter (po(n)) has a length N, and the analysis
+        filter bank and synthesis filter bank have a system delay of D samples,
+             wherein the signal processing device is implemented, at least in part, by one or more
+        hardware elements.
+ 0
+    2. The signal processing device of claim 1 wherein the prototype filter (po(n)) is a symmetric low
+        pass prototype filter or an asymmetric low pass prototype filter.
+    3.  The signal processing device of claim 1 wherein the analysis filter bank is a pseudo QMF bank.
+25
+    4. The signal processing device of claim 1 wherein an order of the prototype filter (po(n)) equals
+        the system delay D.
+    5.  The signal processing device of claim 1 wherein the high frequency reconstructor performs
+30      spectral band replication (SBR).
+                                                         42
+
+   6. The signal processing device of claim 1 wherein the one or more hardware elements comprise a
+      digital signal processor, a microprocessor, or a memory.
+   7. The signal processing device of claim 1 wherein a number of channels in the analysis filter bank
+ 5    is different than a number of channels in the synthesis filter bank.
+   8. The signal processing device of claim 7 wherein the number of channels in the analysis filter
+      bank is 32 and the number of channels in the synthesis filter bank is 64.
+ 0 9. A method performed by an signal processing device for filtering an audio signal, the method
+      comprising:
+           receiving real-valued time domain input audio samples;
+           filtering the real-valued time domain input audio samples with an analysis filter bank to
+      generate complex valued subband samples;
+ 5         generating modified complex valued subband samples through a high frequency
+      reconstruction process or a parametric stereo process;
+           receiving the modified complex valued subband samples;
+           filtering the modified complex valued subband samples with a synthesis filter bank to
+      generate time domain output audio samples,
+ 0         wherein the analysis filter bank comprises analysis filters (hk(n)) and the synthesis filter bank
+      comprises synthesis filters (fk(n)) that are complex exponential modulated versions of a
+      prototype filter (po(n)) according to:
+           hk (n)     fk (n) =po(n) expi      (k + 1)(n - ),              Os n <N,0s k <M
+           where M is a number of channels, the prototype filter (po(n)) has a length N, and the analysis
+25    filter bank and synthesis filter bank have a system delay of D samples,
+           wherein the signal processing device comprises one or more hardware elements.
+           10.      (Original) A non-transitory computer readable medium containing instructions that
+      when executed by a processor perform the method of claim 9.
+30
+                                                      43
+
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>

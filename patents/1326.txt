@@ -1,0 +1,1379 @@
+                                      ABSTRACT
+   One embodiment is a method executed by a computer system that improve
+   fault diagnosability of a discrete event system (DES). The method models the
+ 5 DES as a Petri net that includes transitions. The transitions represent events
+   in the DES. A number of places that can be observed are added to the Petri
+   net. The number of the added places is determined by a number of place
+   faults. An integer linear programming problem is formulated and solved to
+   compute a minimal number of arcs between the added places and the
+10 transitions. The fault diagnosability of the DES is improved by constructing a
+   redundancy to the DES. The construction includes adding a number parts
+   observed by the sensors to the DES according to the added places in the
+   Petri net and connecting the added part with the events in the DES according
+   to the arcs in the Petri net.
+15
+                                           48
+
+                                          TITLE
+        Methods and Systems for Fault Diagnosis in a Discrete Event System
+                              FIELD OF THE INVENTION
+   The present invention relates to methods and systems for constructing a
+ 5 redundancy for a discrete event system to improve fault diagnosability thereof.
+                                     BACKGROUND
+10 Many practical applications can be considered as discrete event systems
+   (DES) whereby one or more upstream events trigger some downstream
+   events. Many manufacturing systems, traffic systems, computer networks,
+   and process control plants can be regarded as DESs. In a manufacturing
+   plant, an event can be a completion of an assembling part, a movement of
+15 certain parts from one work cell to another by an automatic guided vehicle
+   (AGV), or a welding job by a robot, etc. The productivity of the manufacturing
+   plant depends heavily on the smooth transitions of these events in a
+   predictable and permissible manner. However, faults such as equipment
+   breakdowns are unavoidable and often un-controllable in a real-world DES.
+20 Hence, there is a need to detect the faults and monitor the events to ensure
+   that the plant is operating within its permissible specification.
+   Therefore, new methods and systems that diagnose, i.e., detect and identify
+   the faults in the DES, are highly desirable to meet the demanding needs of
+   complex manufacturing, logistics and other industrial operations.
+25
+                                             1
+
+                          SUMMARY OF THE INVENTION
+   One example embodiment is a method executed by a computer system that
+   improve the fault diagnosability of a discrete event system (DES). The method
+ 5 models the DES as a Petri net that includes transitions. The transitions
+   represent events in the DES. A number of places that can be observed are
+   added to the Petri net. The number of the added places is determined by a
+   number of place faults. An integer linear programming problem is formulated
+   and solved to compute a minimal number of arcs between the added places
+10 and the transitions. The fault diagnosability of the DES is improved by
+   constructing a redundancy to the DES. The construction includes adding a
+   number parts observed by the sensors to the DES according to the added
+   places in the Petri net and connecting the added part with the events in the
+   DES according to the arcs in the Petri net.
+15
+   Other example embodiments are discussed herein.
+                                            2
+
+                     BRIEF DESCRIPTION OF THE DRAWINGS
+   Fig. 1 shows a method executed by a computer system that improves fault
+   diagnosability of DES in accordance with an example embodiment.
+   Fig. 2 shows a graph of a partially observed Petri net in accordance with an
+ 5 example embodiment.
+   Fig. 3 shows a graph of a partially observed Petri net in accordance with an
+   example embodiment.
+   Fig. 4 shows a graph of an algorithm of fault diagnosis for a partially observed
+   Petri net in accordance with an example embodiment.
+10 Fig. 5 shows a graph of an algorithm of redundancy construction for a partially
+   observed Petri net in accordance with an example embodiment.
+   Fig. 6 shows a table of weight of arcs in accordance with an example
+   embodiment.
+   Fig. 7 shows a computer system that improve fault diagnosability of DES in
+15 accordance with an example embodiment.
+                                           3
+
+                               DETAILED DESCRIPTION
+   Example embodiments relate to methods and systems that improve fault
+   diagnosability of a discrete event system (DES) by adding an observed
+   redundancy to the DES.
+ 5 As used herein and in the claims, "comprising" means including the following
+   elements but not excluding others.
+   Discrete event systems (DESs) are a class of man-made systems whose
+   evolution is driven by the occurrence of events over time, such as "button
+   pressed", "threshold exceeded", etc.
+10 A fault is an event that changes the state of a DES unexpectedly. For
+   example, a robot suspends or fail to carry out its operation in a manufacturing
+   system. In a real-world system, faults are inevitable. The occurrence of faults
+   changes the state of the DES and may lead to unexpected behavior of the
+   DES. Therefore, fault diagnosis, i.e., detection and identification of faults
+15 occurring in a DES is an important issue of DES as DESs are inevitably fault
+   prone with their increasing complexity.
+   Conventional fault diagnosis methods involve a repeated computation process
+   if the initial state of the DES changes, which leads to prohibitive costs. For
+   example, the methods involving the reachability graph analysis suffer from
+20 extraordinary complexity and are not reusable for different initial states of the
+   DES, which impedes their applications in many practical cases such as
+   flexible manufacturing system.
+   Furthermore, the diagnosability of faults using conventional methods greatly
+   relies on sensor selections. Every node of the DES is assumed to be ideally
+25 observable by employing a sensor. However, in practice some nodes may not
+   be able to be measured or monitored by a sensor. Therefore, in many
+   situations the fault diagnosis problem needs to be considered under a given
+   sensor selection.
+                                           4
+
+   Example embodiments include methods and systems that model the DESs as
+   Petri nets and diagnose faults for the DESs where the nodes are partially
+   measured or monitored by sensors and where the initial states are mutable
+   and solve the problems mentioned above.
+ 5 Petri nets are graphical and mathematical tools for modeling, formal analysis,
+   and design of DESs. A Petri net is a bipartite directed graph with places and
+   transitions as two different types of nodes and directed arcs that connect the
+   nodes of different types. A number of tokens are assigned in each place. The
+   distribution of tokens in a Petri net is called its marking.
+10 In modeling of the DES with a Petri net, the tokens represent parts of DES;
+   the places represent status of the parts of the DES, such as "working", "idle",
+   "queueing", "failed", etc.; the transitions represent events that may occur in
+   the DES, i.e., the passage from one condition to another, such as end of a
+   task, failure, repair, and etc; and directed arcs describe preconditions and/or
+15 postconditions for the transitions.
+   In a DES, a "part" may be a physical object or a portion of a physical object
+   where different conditions can be defined. For example, a robot may be a
+   physical object, but within the robot, then may be to arms that can function
+   separately under separate working conditions. In this case, the physical object
+20 (the robot) would have 2 "parts". In another example, a cutter that has only
+   one function and can be taken as one part.
+   Example embodiments include a method that builds a redundancy by adding
+   places that can be observed and do not affect the behavior of the Petri net to
+   diagnose fault occurrences in the DES based on the obtained observations
+25 under a given sensor selection.
+   Such     example     embodiments      provide     a  significant advantage over
+   conventional solutions. The method computes a minimal redundancy in the
+   sense of the number of added places and thus use less computer resources
+   to execute the computation and speeds up runtime. The computation of
+30 redundancy is independent of the initial state of the DES so that the methods
+   can be reusable for the DES with different initial states, and thus further
+                                             5
+
+   reduces the     resources to execute the computation and the            storage
+   requirement in the respective storage devices of the computer system.
+   Moreover, example embodiments do not require the DES to be fully observed
+   at every node and can be applicable to a partially observed DES with a given
+ 5 sensor selection. Since the method in example embodiments can achieve a
+   maximal fault diagnosability of the DES without the requirement of changing
+   the sensor selection and getting prior knowledge of faults in the DES, it can
+   be applied to large and complex systems that have high robustness demand,
+   such as autopilot, where the initial states are mutable, and some faults cannot
+10 be foreseen.
+   In one example embodiment, a DES is modeled by a computer system into a
+   Petri net.
+   By way of example, the DES is modelled with a Petri net that includes places,
+   transitions, and arcs therebetween, where the places represent status of parts
+15 in the DES, transitions represent events in the DES and the arcs represent
+   the precondition or postcondition of the events.
+   In one example embodiment, places are added to the Petri net by a computer
+   system.
+   By way of example, one or more places are added to the Petri net. The added
+20 places represent parts that are observed by sensors and added in the DES.
+   In one example embodiment, a minimal number of arcs between the added
+   places and the transitions are computed by a computer system by solving an
+   integer linear programming problem.
+   By way of example, the minimal number of arcs between the added places
+25 and the transitions are computed as a solution of an integer linear
+   programming problem.
+   In one example embodiment, the fault diagnosability of the DES is improved
+   by adding the parts observed by the sensors to the DES according to the
+                                            6
+
+   added places in the Petri net and connecting the added part with the events in
+   the DES according to the arcs in the Petri net.
+   By way of example, the fault diagnosability of the DES is improved by adding
+   the observed parts to the DES and relating the parts with the events
+ 5 according to the added places and arcs in the Petri net.
+   Fig. 1 shows a method 100 executed by a computer system that improves
+   fault diagnosability of DES in accordance with an example embodiment.
+   Block 110 states modeling, by the computer system, the DES as a Petri net
+   that includes transitions.
+10 Block 120 states adding, by the computer system, a number of places to the
+   Petri net.
+   Block 130 states computing, by the computer system, a minimal number of
+   arcs between the added places and the transitions by solving an integer linear
+   programming problem.
+15 Block 140 states improving the fault diagnosability of the DES by building a
+   redundancy to the DES.
+   By way of example, Block 140 includes block 141 and block 142.
+   Block 141 states adding a number of parts observed by the sensors to the
+   DES according to the added places in the Petri net.
+20 Block 142 states connecting the added part with the events in the DES
+   according to the arcs in the Petri net.
+   Fig. 2 shows a graph 200 of a partially observed Petri net in accordance with
+   an example embodiment.
+   Petri nets are one of the mathematical modeling language for describing aa
+25 DES and its behavior. Partially observed Petri nets (POPNs) are a special
+   type of Petri nets whose places and transitions are partially observable only.
+                                           7
+
+   By way of example, a net structure N of a POPN is a four-tupleN= (P,T,F,W),
+   where P={pp,,..,p,,}        is a finite and non-empty set of places graphically
+   represented by circles; T        ={t,t2,...,t,,}      is a finite and non-empty set of
+   transitions visualized by rectangles with PnT=0; F _;(PxT)u(TxP) is a
+ 5 flow relation of the net, represented by directed arcs from places to transitions
+   or from transitions to places; W: (P x T) u (T x P) -> N = {0,1, 2,...} is a mapping
+   that assigns a weight to an arc: W(x,y)>0 if (x,y)EF , and W(x,y)=0,
+   otherwise.
+   Let xePuT be a transition or place in N=(P,T,F,W). The preset of x,
+10 denoted by'x, is defined as 'x={yEPuTl(y,x)eF} . The postset of x ,
+   denoted by x', is defined as x'               =  {y ePuTl(x,y)EF} . A POPN is pure if
+    Vp EP, 'p -p'    = 0. Example embodiments consider pure POPNs only and
+   assume Vt e T, ,t # 0.
+   By way of example, a marking of a Petri net is a function M: P -+ N". M(p)
+15 denotes the number of tokens in place p . In the following, n and m
+   represent the number of places and transitions in a net structure, respectively.
+   Tokens in a place p are represented by black dots pictorially or by M(p)
+   numerically. (N,M) is called a Petri net system or a Petri net for the sake of
+   simplicity in the case of no confusion. Since a marking of a Petri net can be
+20 thought of as an element of the free vector space over the whole finite place
+   set P with respect to N"       ,   it is usually described as a column vector for
+   algebraic manipulation. At marking M , a transition t is enabled if Vp (' t ,
+   M(p);; W(p,t) or t is disabled otherwise. En(N,M) is used to denote the set
+   of transitions that are enabled at M . If a transition t is enabled at marking M,
+25  t can fire. A new marking M' is reached after t fires at M with
+   M'(p) = M(p) -W(p,t)+ W(t,p), Vp E P, which is denoted by M[t)M'.
+   By way of example, marking M" is said to be reachable from M if there exist
+   a transition sequence a- = tot,... t, e T* and markings M , M2 ,--,        M. such that
+                                                       8
+
+   M[t0 )M 1 [t 1 )M2... M[t)M" holds. In this case, g is said to be a feasible
+   transition sequence at M, which is denoted by M[u)M" or simply by M[a) if
+   the reachable marking M" after firing a is of no interest. An m -dimensional
+   vector d is called the Parikh vector of the transition sequence a if its i-th
+ 5 entry is the number of occurrences of t, in a. Languages is used to describe
+   the behavior of a POPN.
+   Definition 1 : The language generated by a net system (N,M)                          with
+    N=(P,T,F,W) , denoted by L(N,MJ) , is a set of feasible transition
+   sequences at MO , i.e., L(N,M)       = {r l a EI ,      a0
+10 By way of example, a net structure N         = (P,T,F,W)    is sufficiently represented
+   by two nxm nonnegative integer matrices B- and B* that are called the input
+   and output matrices of N, respectively. The output matrix B* =1[b,] is used to
+   describe the flow relation T x P , where bj     = W(tj, p,) denotes the weight of the
+   arc from t1 to p,. The input matrix B- = [bj] describes the flow relation Px T ,
+15 where b-     =  W(p,,tj) denotes the weight of the arc from p, to tj. If N is pure,
+    N can be completely represented by an incidence matrix B                = B* -B-. Then,
+   the state evolution of a Petri net can be represented as
+                       MA   = Mk +(B- -B-)A     = Mk  +Bk               (1)
+   where d is restricted to have exactly one non-zero entry with value 1. If the
+20  j-th entry ofd, is 1, then t fires. Accordingly, vector     t1 =[o...1...o]with its j-th
+   entry being 1 is used to denote the firing of tj            .   Thus, for each k ,     uk
+   represents the firing of a transition.
+   Remark 1 : This restriction ensures that labels of transitions in a POPN (to
+   be defined) can be observed sequentially by restricting the maximal number
+25 of transition firings at each time epoch. As done in the literature, this
+                                               9
+
+   requirement is common for the practical cases such that the fault-diagnosis
+   scheme developed underlying this restriction can be applied.
+   By way of example, the places in a POPN can be categorized into two classes:
+   observable and unobservable ones, whose sets are denoted by P, and P/,,
+ 5 respectively. Let r=|P1    l. A place configuration VE {0,1}rn is used to describe
+   the projection of a marking M over the set of observable places P, where
+    p(eP   if there is a place sensor (e.g., a counter) associated with p and the
+   sensor can indicate the number of tokens in p, otherwise p           E P, , i.e., p is
+   unobservable. Due to unobservable places, only partial entries of a marking
+10 are measured or observed. For any marking M , the observable entries
+   (observed marking) can be defined as M,        = VM.
+   Analogously, the transitions in a POPN can be categorized into two classes:
+   observable and unobservable ones, whose sets are denoted by T and T,,
+   respectively. Let I be a finite set of labels. A transition t is said to be
+15 observable if there is a sensor associated with t and a label 0 Ey can be
+   observed if t fires. A transition labeling configuration L:T-+ Eu{s} is a
+   function that assigns a label to EE to an observable transition or c to
+   unobservable transitions, where c indicates that no information can be
+   observed, i.e., L(t)=c0E Z if t E T', otherwise L(t) = E . Thus, POPNs are a
+20 special type of Petri nets and can be defined as follows.
+   Definition 2 : A partially observed Petri net (POPN)               is a four-tuple
+    Q =(N,MO,V,L), where (N,M) is a Petri net system, where N= (P,T,F,W)
+   is a Petri net structure with n places and m transitions and MO is the initial
+   marking, Ve {G0,1}"     is a place sensor configuration, and L: T -> YU{c} is a
+25 transition labeling configuration.
+   When building a POPN for a system, the place sensor configuration V and
+   transition    labeling   configuration   L   are   determined   by    the     physical
+   characteristics of the system.
+                                              10
+
+   For the POPN        Q, shown      in Fig. 2, there are four places and five transitions.
+   Its incidence matrix B and place sensor configuration V are as follows:
+                                       '-1    1   -1     0     0
+                                     B 0 -2        0     1     0 ;=(0        1 0 0
+                                         1 0       0     0     1         0   0 1 0
+                                         0    0    2    -1    -2)
+   By way of example, a label a can be observed when t, or t, fires, b can be
+ 5 observed when        t2 fires, and no label can be observed when t, or t, fire, i.e.,
+    P ={P2, P3)    , I   = !P,, P4 }  ,  L(tl)= L(t5)=a , L(t2)= b         and L(t 3 )= L(t 4 )= .
+   Suppose that Q1 is initially marked with [4,1,0,2]y. The observed marking of
+    Q, at the initial state is (1,0)O.     After t, fires, it is (1,1)".
+   The POPN in Definition 2 can model a DES for the ideal case, but cannot
+10 describe some unexpected events that may occur in practice. Faults are such
+   unexpected events that cause abnormal state evolutions in a system.
+   Example embodiments consider two kinds of atom faults such that a fault in
+   real world can be abstracted into an atom fault or the combination of atom
+   faults.
+15 By way of example, a transition fault models a fault that an event occurs
+   without consuming or depositing expected tokens from / to places associated
+   with the transition. Precondition and postcondition faults are used to represent
+   different cases. In a Petri net system, a precondition fault is an unexpected
+   event that a transition t fires without consuming any token from the places in
+20  't and a postcondition fault is the one that a transition t fires without
+   depositing any token to the places in t'. Postcondition and precondition faults
+   associated with t are denoted by f- and f, , respectively. If a precondition
+   fault and a postcondition fault associated with the same transition occur at the
+   same time, their effects should be offset each other and the system runs as
+25 there is no fault.
+                                                     11
+
+   By way of example, a place fault is an unexpected change of the tokens in a
+   single place only. By equation (1), a place fault at time epoch k results in
+   Mkl   incorrectly, which models sensor errors and memory failures. f(p,) is
+   used to denote a place fault associated with p, , whose occurrence is
+ 5 accompanied by the firing of a transition. A place fault affects the place itself
+   only and is independent from other place faults.
+   Note that, by the above fault models, no assumption is made on how faults
+   influence system states. Thus, a fault diagnosis method based on such
+   models requires no priori knowledge of faults such that it is possible to identify
+10 unforeseen faults.
+   By way of example, the above transition and place faults are thought of as
+   atom faults whose occurrences are assumed to be independent, i.e., the
+   occurrence of a fault is not affected by others. A system can be subject to an
+   atom fault or a combination of atom faults. The aim of this work is to identify
+15 the occurrences of atom faults. At each time epoch, a transition can fire
+   normally, and faults (precondition, postcondition, and place faults) can also
+   occur. Then, an event-set Q that can concurrently occur at a time epoch is a
+   proper subset of {t,f ,f-      t e T} u {f(p)|p e P} . Specifically, t e Q means
+   that t fires at a time epoch, f      eQ    (f    EQ  ) indicates that a postcondition
+20 (precondition) fault associated with t occurs, and          f(p) E Q  if the number of
+   tokens in p increases or decreases unexpectedly when t fires. According to
+   the fault model, an event-set Q can be characterized by its characteristic
+   vector, denoted by 6= (,*,       i-, 2") , satisfying
+             6=f if teQ;
+25           6* = f if f*   Q, otherwise 0* =0';
+             6 =I if f - Q, otherwise 0 =0';
+             2" e Z", where Z is the set of integers. 2"(i) represents the number
+             of tokens increased (positive) or decreased (negative) by a place fault
+             associated with p,; and
+30           0" x 0- =0    implies that    a     transition   is  not   subject to   both
+                                               12
+
+               postcondition and precondition faults at the same time.
+   An     event-set         Q with d =(a,         ,0-,-")      is     feasible     at    marking     M    if
+    M'=M+Bd+B-*-B*tj-+2";O0 . Note that, a disabled transition may
+   become enabled due to some place faults. That is to say, event-set Q being
+ 5 feasible at a marking M does not require that transition t                            E   ) should be
+   enabled at M.
+   Similarly, M[Q)M' denotes that Q is feasible at M and M' is reached after
+   the occurrence of Q. Suppose that               (d,A'    ,j    _, eA") is the characteristic vector
+   of an event-set occurring at time epoch k in a system                      Q.  It evolves as follows:
+10                          M-l   =M   +BdA + B -+ -B'v5         -_ +    .          (2)
+   Fig. 3 shows a graph 300 of a partially observed Petri net in accordance with
+   an example embodiment.
+   In POPN         Q2   shown in Fig. 3, P! ={p 1,P2,P 3,P,P,Ps}, L(t,) = L(t 3)=a and
+    L(t2) =    . The transposed matrix B of the incidence matrix of                     Q2  is
+                                          "-1 -1    -1     -1       1      1    1     1    -1"
+15                                  B'= [       1    1      2     -2      -1   -1    -1     0
+                                           '-2 -2   -2      0       0      2    2     2     0,
+   By way of example, suppose that t, fires with a precondition fault and a place
+   fault increases the number of tokens in p, by one at time epoch k, i.e., the
+   event-set QA            can be denoted by           (dAb        ,6 ,2,")     where zik,      =(1,0,0)7  ,
+    0k_ =  (0, 0, 0)'   ,   sk" =(1,0,0,0,0,0,0,0,0)'      and      dA =(1,0,0)'      .  If the current
+20 marking of        Q2   is Mk =(2,2,2,1,1,0,0,0,1)' and             A  occurs, then       Q2  evolves to
+   Mk     =  (3, 2,2,1, 2,1 1,1,1)' .
+   By way of example, given a POPN system Q=(N,M,V,L),                                   if an event-set
+   sequence           a   =  Q0 Q.. Q       occurs       from         marking        MO        such    that
+                                                     13
+
+   Mo [QO)M ...[Q,)M,,, holds, a is said to be feasible from Mo. For an event
+   set sequence a = QIQ,2 ---.       with Q, = (5i,,U _,,i") (i E ,2,...,k),     C(a) is
+   used to denote the corresponding transition sequence o2' ---U
+   Suppose that a transition t fires twice sequentially in a system and a
+ 5 transition fault associated with t occurs. No matter the fault occurs when t
+   fires for the first or second time, the state of the system is the same after the
+   normal firing of t and the occurrence of its fault. However, faults occur in
+   different time epochs may have different physical meanings. Hence, faults
+   associated with a same transition or place but occurring at different time
+10 epochs are considered to be different. To specify what we focus on in this
+   paper, the following assumptions are made.
+   Assumption 1 : For each time epoch, at most 77 place faults can occur.
+   Suppose that (d.,     V k,  _, j,) is the characterisitic vector of an event-set that
+   occurs at time epoch k. For any k e N , 2," is restricted to have at most 17
+15 non-zero entries.
+   This assumption guarantees that the redundancy proposed in the following
+   section can be constructed efficiently. Since faults are a kind of events that
+   occurs with small probability, this assumption does not weaken the application
+   of the method developed. Note that the assumption does not present a
+20 restriction on how many tokens can be changed by a place fault except that
+   the number of tokens in a place should be nonnegative. Thus, the unexpected
+   change of tokens in a single place at a time epoch is regarded as the
+   consequence of one place fault. That is to say, for a place, at most one place
+   fault associated with it occurs per time epoch.
+25 Assumption 2: Deadlocks in a system, i.e., the status of no transition is
+   enabled, are assumed to occur if the system output does not change for a
+   time that is long enough.
+                                              14
+
+   Any enabled transition will eventually fire unless it is disabled. It is reasonable
+   to conclude that a system is deadlocked if there is no output for a time long
+   enough in practice.
+   In a partially observed Petri net, one can observe transition labels from
+ 5 transition sensors and token change in observable places.
+   Definition 3 : Let Q = (N,M 0 ,V,L) be a POPN and Q be a feasible event-set
+    Q at a reachable marking M such that M[Q)M'.                         The observed marking
+   variation from M to M' is expressed as AM, =M -M, =VM -VM , where
+   M      ( M' ) is the observed marking of M ( M' ); The observed label is
+10  1e Eu{s}        with      I = L(t)     ; The      observation     function    is a   mapping
+       :E -+N'rx(Yu{}) with T(Q)=(AM,,), where E is the set of event-sets
+   and r is the number of observable places.
+   Take POPN Q2 shown in Fig. 3 as an example. Suppose that there is an
+   event-set Qk with           6k   =    (   ,I ,,  _,- ") , where  6   = (1,0,0)Y,
+                                                                                 7 ,_  = (0,0,0)' ,
+15  2k" = (1,0, 0, 0, 0, 0, 0, 0, 0)'      and     dk = (1,  0,0)   .    If    Qk    occurs      at
+   Mk    =(2,2,2,1,1,0,0, 0,1)' such that Mkl =(3,2,2,1,2,1,1,1,1)' is reached, then
+    AM =      VM+, -VMk         =     (1,0,0,1,1,1)' and the observed label is a . Thus, the
+   observation T(Qk)= ((1,0,0,1,1,1)T,a).
+   Suppose that a feasible event-set Q with t EQ occurs. By equation (2), the
+20 variation on the observed marking of Q is computed by equation (3):
+                                       V(B*[ +" )
+                       AM =            V(-B-I +j" )
+                                        V(BI +" )
+                                                                                 (3)
+                                        0, + j',   {f* f- } n Q = 0
+                                                        15
+
+   where i is the Parikh vector of t, 2" represents the place faults associated
+   with all n places, a'           = Va"  indicates the place faults associated with
+   observable places only, r is the number of observable places and vectors 0,
+    0,*, and 0,- denote VB1, VBVI, and VB-I, respectively.
+ 5 By way of example, in POPN            Q, shown    in Fig. 3, r =6,        -, -   1
+    0- = (1,1,1,0, 0, 0)' and 0, = (0,0, 0,1,1,1)r.
+   Assumption 3: The observations are obtained from transition and place
+   sensors without delay.
+   This assumption is justified due to the fact that the known regular delays can
+10 be omitted. Under Assumption 3, the observation function can be extended to
+   event-set sequences. An observation sequence is generated by sequentially
+   concatenating the observations at time epochs.
+   Definition 4: Given a POPN system Q=(N,M,V,L)                         , suppose that a
+   sequence of event-sets a= Q,                ... ,Q occurs from marking MO and the
+15 system reaches marking M,l             , i.e., MO[Q)M      ... [QA)Ml  . The observation
+   sequence q/ due to a is expressed as (4):
+                         =     (a)   = T(QO)P(Q,)... T(Q()
+                       =     (AM f,l)(AMA,1)...(AA*,1/
+   If there is no output after time epoch k, by Assumption 2, it can be inferred
+   that Mk,, is a deadlock state. The observation sequence is denoted as (5):
+20                                                                         (5)
+                      =     (AA     ,1)(AMA,1l)...(AM*,lk)                 (
+   where I is the symbol denoting a deadlock.
+   If an event-set Q occurs, there are three possible cases for T(Q)              = (AMO,l) .
+   Case 1: an observable transition fires and the observed marking evolves. In
+                                                   16
+
+   this case, we are informed that a transition has fired. Case 2: an unobservable
+   transition fires and the observed marking evolves. By Assumption 3, the firing
+   of an unobservable transition can be inferred by T(Q), i.e., if the state of
+   observable places evolves without observing a label, an unobservable
+ 5 transition fires necessarily. Case 3: an unobservable transition fires without
+   any observed marking evolution, i.e., AM, = 0' and L(t) = c, no information is
+   observed, or an empty observation (0',c) is obtained. Notice that, in case 3,
+   the occurrence of event-set Q does not influence the sequential observations.
+   That is to say, the observation obtained at one time epoch is concerned with a
+10 single event-set only.
+   By way of example, the concept of diagnosability is extended to four
+   categories: simultaneous diagnosability, structural diagnosability, obstinate
+   diagnosability and casual diagnosability.
+   Definition 5: Given a POPN Q=(N,M,V,L),               let xe=PuT be a node of      Q,
+15  f  denote a fault associated with x and Q be an event-set containing             f
+   Node x is said to be simultaneously diagnosable if for any event-set Q
+   satisfying T(Q) = T(Q'),   f   eQ and T(Q') # (0', c) hold.
+   Simultaneous diagnosability requires the fault occurrences be diagnosed
+   without delay. The following shows that structural diagnosability of a fault with
+20 a finite delay in the framework of POPNs is equivalent to the simultaneous
+   diagnosability, which is independent of initial markings.
+   Definition 6: Let xePuT be a node of Q=(N,M,V,L)                     and   f,  a fault
+   associated with x. Node x is said to be structurally diagnosable if there exists
+   a finite nonnegative integer k such that for arbitrary two event-set sequences
+25  a=QOQI.Q     1 ...Qi-Q and a'  =     ' ... Q ... Q A  and any initial marking MO
+   from which a and a are feasible,      f    e Q, and     (a) = P(a') implies  f  eQ .
+   Proposition 1: Let xe PuT be a node of a POPN Q=(N,MO,V,L). Then, x
+   is structurally diagnosable if and only if it is simultaneously diagnosable.
+                                              17
+
+   Proof: (->)        It is obvious by their definitions.
+    (<:-)   It is done by contradiction. Suppose that x is structurally diagnosable but
+   not simultaneously diagnosable. Let a= Q0 Q.                        .       be an event-set
+   sequence that is feasible from Mo and              f, e Q,, where   f   is a fault associated
+ 5 with x . The structural diagnosability of x implies that there exists a finite
+   nonnegative             integer     k    such   that    for   any     event-set       sequence
+    a     =       Q                satisfying MO[a),   f  e Q is true if T(a) = T(a).
+   There are two cases: k > 0 and k = 0.
+   If k>0, ais splited into a, and a2 with a, =Q0 Q,...Q, and a 2                  =,
+10 Let a        = Q       ... 2Q be     an   event-set   sequence     satisfying    f    eQ     and
+        (al) = T(aj) .Since          x is structurally diagnosable and k>0            ,  event-set
+   sequence a, exists such that MO[a )M , while no event-set sequence
+    a2    =Q     .. .       satisfies M [a2) and T(a2)     = T(a2) . That is to say, no event
+   set sequence a , with T(a2)              = T(a2), is feasible from M' due to the absence
+15 of tokens in certain places. Assume that a2 is infeasible from marking M'
+   owing to the fact that A tokens in some place p are consumed if a2 occurs
+   while there are only #2 tokens in p with #2<4A.               However, by the definition of
+   structural diagnosability, x is also structurally diagnosable if the POPN is
+   initially marked           by Mo such that M (p )=M          0 (p ) , p eP , p         #p    and
+20 M(p)=Mo(p)+                  .  With initial marking M , there exists a2 satisfying
+    T(a2) = T(a2) such that M"[a2), where M" = M-M +Mo. This implies that
+   there exists an event-set sequence a                     such that MO[a) ,,              Q and
+    1(a) = 'P(a'), which contradicts that x is structurally diagnosable.
+   If k=0, let a =Q0 Q            1 .,_Q,      where Q is an event-set satisfying           f  eQ.
+25 Since x is structurally diagnosable, we have T(a) # I(a)                           if   f  eQ,
+   Consider that, from the initial time epoch to k -1, a and a are the same. We
+                                                    18
+
+   have T(Q,)         'P(Q,)    and  P(Q)w      (O',e) , which implies simultaneous
+   diagnosability and contradicts the assumption that x is not simultaneously
+   diagnosable. Then, it can be concluded that x is structurally diagnosable only
+   if it is simultaneously diagnosable.
+ 5 Structural diagnosability implies that the occurrence of a fault can be
+   determined necessarily and immediately based on observations. Under a
+   certain sensor selection, the occurrences of some faults are not able to be
+   decided immediately and necessarily. The faults can be determined if they
+   change the behavior of a system. In this case, the faults are said to be
+10 obstinately diagnosable. In order to formally describe obstinate diagnosability,
+   the behavior-disturbed faults are presented first.
+   By way of example, given a POPN                    Q=(N,M,V,L)       , suppose that
+    a=           *Q.._ is an event-set sequence that occurs from the initial time
+   epoch to k, i.e., C(a) E L(N,MJ). The behavior of Q is said to be disturbed at
+15 time epoch k if any of following two cases holds: one is that event-set Qk is
+   such an event-set that occurs at time epoch k and event-set sequence
+    a'  =  f o.  ..-   lQ   satisfies L(a') e L(N,M)    , and the second is that the
+   system is deadlocked at time epoch k, while 3s           e such that ss EC(N,MO)
+   where C(a) = s.
+20 The behavior-disturbed faults associated with a certain node of a system is
+   defined in definition 7.
+   Definition 7: Given a POPN         Q = (N,M,V,L),     a=Q     ...*Q,, is an event-set
+   sequence that occurs from MO , i.e., MO[a)Mk. Let x ePuT be a node of Q
+   and F the set of faults associated with x. Suppose that event-set sequence
+25  a'  =   0...   Q>    satisfies M[a')M' and Q      =                   , ieN    ,.  The
+   faults associated with x in Q with respect to a is said to be behavior
+   disturbed with respect to event-set sequence a, denoted by Bd(Q, x, a)             = 1, if
+   the system is deadlocked at        M  while En(N,M ) w 0 , or     MkIQk)   t e Qk and
+                                               19
+
+    t o En(N,M ) . Otherwise, the faults associated with x are not behavior
+   disturbed, i.e., Bd(Q,x,a) = 0.
+   There are two cases for faults associated with a node being behavior
+   disturbed. In case 1, an enabled transition is disabled by faults and, in case 2,
+ 5 a disabled transition fires due to the occurrences of faults. The obstinate
+   diagnosability is defined as follows:
+   Definition 8: Given a POPN Q=(N,M,V,L),             let xePuT be a node of Q.
+   Suppose that a is a feasible event-set sequence from M with Bd(Q,x,a)=1.
+   Node x is obstinately diagnosable if for any event-set sequence a satisfying
+10 M[a) and T(a)= T(a'), Bd(Q,x,a')=1.
+   Similarly, casual diagnosability is defined in definition 9.
+   Definition 9: Given a POPN Q=(N,M,V,L),              let xePuT be a node of Q
+   and FaC PuT be a set of nodes of Q. Suppose that a is a feasible event
+   set sequence from MJ with Bd(Q,x,a) =1. Node x is casually diagnosable if
+15 for any event-set sequence a satisfying M0 [a) and 4(a)           = T(a') , there
+   exists yEFa such that Bd(Q,y,a') =1.
+   Based on the definitions of structural, obstinate and casual diagnosability,
+   Property 1 is given below.
+   Property 1: Given a POPN Q = (N,M0, V,L), let xe PuT be a node of Q, x
+20 is obstinately diagnosable if it is structurally diagnosable; x is casually
+   diagnosable if it is obstinately diagnosable.
+   Given a POPN, the occurrences of faults associated with some nodes cannot
+   be determined due to limited observations. However, a redundancy can make
+   the faults diagnosable.
+                                            20
+
+   Definition 10: A redundant embedding of a POPN Q=(N,M,V,L) with n
+   places and m transitions is a POPN Q, =(N',MO,V',L)            with n+z ( z>0 )
+   places and m transitions and the states of POPN Q, evolve as
+                                               B)
+                                  MA'l = M   + B,)
+ 5 For an arbitrary initial marking MO with which    Q  is initialized, there exists
+   M, e N such that L(N',M ) = L(N,MJ), where MO= M
+                                                            (M)
+   By way of example, the z places, added in Q, whose incidence matrix is
+    [BT,B'], are called a redundancy. The added places are observable.
+   According to Property 1, a transition or a place of a POPN is obstinately
+10 diagnosable if it is structurally diagnosable, however, the converse is not
+   always true. So the diagnosability of a transition or a place is improved if it
+   becomes structurally diagnosable from being obstinately diagnosable by
+   employing a redundancy.
+   By way of example, if a place p becomes structurally diagnosable by
+15 employing    redundancy B, while it is only obstinately diagnosable by
+   employing redundancy B2 or without redundancy, then the diagnosability of p
+   is improved by employing B,. Also, there is a similar relationship between
+   obstinate and casual diagnosability. Example embodiments show that at least
+   casual diagnosability can be achieved at all nodes of a POPN.
+20 Definition 11: Given a POPN Q=(N,MJ,V,L),         node x EPuT is said to be
+   maximally structurally diagnosable if one of the following three statements is
+   true:
+   1) x is structurally diagnosable;
+   2) x is obstinately diagnosable and structural diagnosability cannot be
+25 achieved by employing a redundancy;
+                                          21
+
+   3) x is casually diagnosable and obstinate diagnosability cannot be achieved
+   by employing a redundancy.
+   By way of example, Q is said to be maximally structurally diagnosable if each
+   node of Q is maximally structurally diagnosable.
+ 5 Example embodiments achieve maximal structural diagnosability by adding a
+   redundancy of minimal places into the Petri net. Specifically, given a POPN
+    Q=(N,M,V,L)         , example embodiments        find a   redundant embedding
+    Q, =(N,M ,V,        L) with z observable places being added such that Q, is
+   maximally structurally diagnosable; Let Q' be another redundant embedding
+10 of Q with z' places being added. If Q' is also maximally structurally
+   diagnosable, then z' > z holds.
+   The diagnosability conditions of different nodes in a POPN are established in
+   the following.
+   By way of example, for faults associated with transitions, Hamming distance
+15 and Nearest Neighbor Decoding (NND) is used to derive the necessary and
+   sufficient conditions for diagnosability of different nodes in a POPN. The
+   Hamming distance dH(x,y) betweens two vectors x,y e F" (F is a finite field)
+   is defined as the number of different coefficients in the vectors. For example,
+    a=(1,2,3,4,5)' and b=(1,3,2,4,5)' are two 5 -dimensional vectors, then
+20  d (a,b)2.
+   By way of example, a subset of F' is called a code. Let C c F" be a set of n
+   dimensional vectors which are called words. The minimum Hamming distance
+   of code C, denoted by dH(C) , is dH(C)=min( {d(x,y)|x,yeC,xsy}) . If
+   there is only one word x in C , then d, (C) = d, (x,0') . For example, let
+25  a, = (1,2,3, 4,5)', a2 =(1,3,2,4,5)' and a3 =(2,5,6,7,8)' be the three elements
+   of a code C . We have d,,(aa2) =            2 , d,,    a3)=5 , d(a2,a3) =  5 and
+    d (C)=22.
+                                            22
+
+   Lemma          1:      If    x,y,zeF"             ,    then       dH(x,y))dH(z,y) -dH(z,x)
+    dH(x,y)<dH(z,y)+dH(z,x), and dH(x,y)=dH"(xzy~z).
+   Given a code C c F" and a vector y e F", x e C is the nearest neighbour to
+    y if dH(x, y) = min(dH(z, y)| z e C) . Let y be an n -dimensional vector and
+ 5  CcFF" be         a code,      the     nearest        neighbor      decoding      (NND)     function
+    NND: F" -+ C maps an n -dimensional vector to a word in C.
+   By way of example, if x is the nearest neighbour to y, then NND(y)                              =x,
+    xEC . For example, if a,        =  (1,2,3,4,5)',        a 2 =(1,3,2,4,5)', a3     =    (2,5,6,7,8)',
+    C={a,a 2 ,a 3}    and     y=(1, 2 , 3 , 4 , 6 )' , then NND(y)=a, since dH(a,,y)=1,
+10  dH(a2 ,y)=3 and dH(a3 ,y)=5.
+   In a POPN Q=(N,M 0 ,V,L),               transitions can be classified according to the
+   labels to which they map. For example, suppose L(t) = o), transition t can be
+   classified by       1= 1 or |LT> 1, where T             = {t l1(t) = co}  .
+   By way of example, consider the case | T= 1.
+15 Proposition 2: Given a POPN Q=(N,M 0 ,V,L),                          suppose that transition t is
+   the only transition labelled by co              Ieu}     (i.e., L(t)= o ), |T|=1, and Q is an
+   event-set containing f- (i.e., f- e Q ). Then, under Assumption 1, for any
+        E {Q*    T(Q)   =  T(Q*)} , f -EQ               and      P(Q')      (0', &) if and      only   if
+    dH(O;,0' )>2 7 +1 , and dH(6 0 ))> +1                    if   o-=     ,   where O* = VB'i       and
+20  0; = VB-i.
+   Proof: (->)    Suppose that T(Q)= (AM,co). By |T                       |=1, t e Q definitely holds
+   if f- e Q and T(Q)        = T(Q') . According to equation (3), AMO               = -0,- + a', where
+    sr Er     with dH(2',O)Qy is the vector representing faults associated with
+   observable places. If dH (,,0             )>7+1       is true under co=E , then, based on
+25 Lemma 1, dH (AMo,0')= dH (-                 ;r,)=          dH (,-    r)> dH (0t,     )-dH (r,)
+                                                       23
+
+   i7+1-77>0       , which implies T(Q)w(O',e) . Let               e[   eZ' , d, W',0')( i
+   i E{(1,2,3}   .   If   dH(0',0)    20+1    ,   then d(-,       +j,±0,+ 2 )           d(--OO ,)
+   -dH                      )   2   +17-7
+        (ir ,O)  -dH(s2,O                      =1   and d       t     iO±1rI, +   r))> d (-t,   ,
+   -dH(,l',0') -dH (s3r,O')      2q+1-q-7 =1 , which indicates f- E                     if ft  E
+ 5  T(Q)= T(Q) and dH,(O,,0')>21+1. Thus, for any Q'e {Q* T(Q)= T(Q*)},
+   we have ft- e Q and T(Q') # (0T,c) if the conditions hold.
+    (<-) If w = e and dH(,-1       0') < q+1   , there exists s' = 0, such that T(Q)=
+   T(Q') = (0',e), which means that no information is obtained when t fires with
+   a precondition fault. Suppose that dH,(O,,0')<217+1. There exist j, and s;
+10 such that d (--,- + 2',,+         ) = dH(,*+       ,0+, ) = 0 holds, implying that the
+   same observation is obtained no matter a postcondition fault associated with
+   t occurs or not. Thus, for any event-set Q' e {Q*| T(Q)                =   T(Q*)} , we have
+   f- e Q and T(Q ) # (0', e) only if the conditions hold.
+   Corollary 1: Given a POPN Q=(N,MO,V,L), suppose that transition t is the
+15 only transition labelled by o E E u{}           , i.e., L(t)=w     ,  T =1 and Q is an
+   event-set containing ft , i.e., ft e Q. Then, under Assumption 1, for any
+      'e {Q* |()        = T(Q*)}    , f*  E Q     and     T(Q') # (01,e)        if and      only   if
+   dH (O, 0')>2 +1, and dH (O, O')> 17+1 if          0='   .
+   Proof: It can be proved similarly as Proposition 2.
+20 For the case |7 > 1, the firing of a transition cannot be determined by the
+   obtained label only since multiple transition maps to the same label. Thus, to
+   identify the firing of a transition, more information is needed.
+   Proposition 3: Given a POPN           Q = (N, MO,V,L),     suppose that transition t eET
+   satisfies L(t) = co , co E   u {e} and T 1> 1 and Q is an event-set containing
+25 ft-, i.e., f- e Q. Then, under Assumption 1, for any Q' e {Q*I T(Q)                   = T(Q*)},
+                                                 24
+
+    f-eQ and T(Q')#(0',c) if and only if                       d  (O,,0')>2   7  +1 , Vt e T \{t},
+    dH(,    t  -))'2+1, and dH(O',O) r+1 if                 =.
+   Proof: (=>) Let sr E Zr with              dH(j','O)(17   be a vector representing faults
+   associated with observable places. According to equation (3), AM,                      =  -,-   +2'.
+ 5 By         Lemma          1,         dH (AMo, 0') =        dH (-O + j,0')=            dH (OI,) '
+    dH(O,   ,0')-dH(jO')=          77+1-r/>O          if  dH (O, O')-+1        ,   which        implies
+    T()w#(0',c) . Use              ErE       to denote a vector satisfying           dH        0'r)7    ,
+    i E {1, 2,3,4}           .                 Then,            by             Lemma                   1,
+    dH(al +ba     2 +b 2 )> dH(,a      2 ) -dH(b,O')-dH(b 2,O')     ,   which indicates that for
+10 any       tE T \{t}     ,  d,                                  dH(--+        ,-,-+')>1            and
+    d>(-+(r,, +e)>1 if Vt' E T, \{t} , dH (O,-,,)>21                  7 +1 holds. Thus, t E Q is
+   trivial    if  Vt' eT \ {t}   ,      dH(O,-,0,)>2t,+1 ,       and       T(Q)= TP(Q')      .    Since
+    dH(q,,0')     2 7 +1, then dH(-O,+2',,+)1                  and dH(-,-O+       ',*   +s;)1        due
+   to dH(a +bla 2 +b2 )> dH(aj,a 2 )-dH(b,O')-dH(b2,O'), which implies ft-eEQ' if
+15  f- e Q ,      (Q)= T(Q') , dH (O,, 0')277 +1 and Vt E=T- \ {t} , dH(               , 0),)>        1.
+   Thus, the given conditions are sufficient.
+     (e-) Suppose o = E , T(Q) = (0', c) is true if dH (O,-, 0') < r+1 and j' =Q,
+   which implies dH(O,-,O)          1+1       if w=-s and P(Q')w(O',e). If dH(O,,O')>27 +1
+   is not true, there exist 21 and               j;  such that dH(-O,-a,6+s§)=0 , which
+20 means that the same observation may be obtained no matter f- occurs or
+   not. Thus, we show the necessity of dH(,,O')>27 +1 . Suppose that
+    Et' E 1, \ {t} such that d. (O, O, ) < 2r/ +1 . There exist 21 and                2;   such that
+    dH(-8,- + jr, -Ot +J2r)=O. This means that the same observation is obtained
+   no matter t fires with a postcondition fault or t fires with a postcondition fault.
+25 Thus, the given conditions are necessary.
+                                                      25
+
+   Corollary 2 : Given a POPN Q=(N,M 0 ,V,L), suppose that transition t e T
+   satisfies L(t) = o, oe u{s} and IT, > 1, and Q is any event-set containing
+      *,i.e., f* eQ. Then, under Assumption 1, for any Q' e {Q* I(Q) = T(Q*)},
+   f eQ and P(Q)#(0,c) if and only if                              d H,,0)>21I         , Vt e7T, \{t}
+ 5 dH (    t ,t)27      7 +1,   and dH(Q7,o')       j+ 1 ift+  =
+   Proof: It can be proved similarly as Proposition 3.
+   Example embodiments present the necessary and sufficient conditions under
+   which all transitions in POPN Q = (N,MO, V,L) are structurally diagnosable.
+   By way of example, let T ,, denote Tk if L(t) = o .
+10 Theorem          1: Given a POPN Q=(N,M 0 ,V,L) , all transitions in Q are
+   structurally diagnosable under Assumption 1 if and only if Vt E T,
+   1 )d  (t      0')>2 +1 dH(Ot'*,O0)         21+I and
+    2) dH(O                 L(t   )>2+1     dH ({O t     EETL(t)j)277 +1
+   Proof: (->)       For any transition t, |T               1 or |T ) > 1. For the case IT ,,l=1,
+15 obviously if dH (O,0')>21           7 +1 and    dH (O I    )>2q+1, then the conditions given
+   in Proposition 2 and Corollary 1 must hold.
+   For the case Tt,>1,                dH(O , tI                      guarantees that Vt E         \ t}
+   dH(O-,0,)>21        7 +1 holds such that the conditions given in Proposition 3 are met.
+   Similarly,         the        conditions     in     Corollary        2      are guaranteed        by
+20 dH (      I E   e,TL(t)})>±2 +1. Thus, Vt E T, t is structurally diagnosable.
+   (e-)   If t is structurally diagnosable and ITs,,                      1, the conditions given in
+   Proposition 2 and Corollary 1 should be true. Thus, dH (O, 0')>2+1 and
+   dH(Ot,, 0') 2 +1 hold obviously. Since d (OI t e TL()})=                              dH (O, 0')    if
+                                                        26
+
+     T(,)|=1, then d.( O |            TL(,tj)})>2r/ +1. Similarly, dH({O, |/ e TL(,)j),27+1.      If
+    |T) > 1 and Vt' e T)           , t is structurally diagnosable, by Proposition 3,
+    dH ({   li ETL(t) })>2 +1 and dH (Q;O,0)>2q+1 hold necessarily. Similarly, by
+   Corollary 2, dH (O-     |' ETL( ) })>217 +1 and d (O, 0') 2 +1.
+ 5 For a POPN Q=(N,M 0 ,V,L), the following property holds if all transitions in
+    Q are structurally diagnosable.
+   By way of example, suppose that all transitions in POPN Q = (N, MO,V, L) are
+   structurally diagnosable under Assumption 1. Let '(Q)=(AMO,o))                           be an
+   observation and C       =  {,O,t ,-O,       t e T,} be a code. The following results hold:
+10  NND(AM)= -0, , if ft E Q; NND(AMO)= ; , if f* e Q; NND(AMO)= O,                               if
+    teQ and {f',ft}cnQ=0.
+   Proof: Use     are7r,     i e N to denote a combination of faults associated with
+   observable places.          In the case f-<e Q, AM            = -0,- + 2 holds according to
+   equation (3). Under Assumption 1, have dH(AMO,-O-)=                         dH(1',O') <;   . For
+15 any a e C, a # -O-, by Proposition 2, in no case -O-+2 = a+s, holds, which
+   implies   dH (a, A)    >     . Thus, NND(AM)          = -O- if f- e Q.
+   Similarly, it can be proved that NND(AM )= Ot, if f* e Q. In the case that t
+   fires without any transition fault (t           E Q, {fft     n     = 0 ), then AM 0 = Ot + j,".
+   Then, dH(MoO)= dH(j,O')                   r/  holds according to Assumption 1. Suppose
+20 that a e C and a # 0, . Similarly, if a = O                 or a =0     where t' E       , then
+    dH (a,AM)>      7. If a=O,, 0      e T \{t}, then, as in the net is pure, O,=O,*-O,
+   and O;(i)-O-(i)=O, Vie{1,2,...,r}. Thus, dH(O,,O)                      dH(O,,O,),> 2r7+1 and
+    dH(t'OI)dH(t        t ,)      2q+1       ,   leading    to   dH (a,AAO)=     dH(0 t',Ot     r
+    2q+1-     > q. That is to say, NND(AMO)= 0, , if t e Q and {f*,f-} rQ                 = 0 .
+                                                      27
+
+   Example embodiments consider place faults associated with both observable
+   and unobservable places. By Property 2, the transition firings and the
+   occurrences of the pertinent faults can be determined based on observations
+   if all transitions of a POPN are structurally diagnosable. Then, the theorem 2
+ 5 holds.
+   Theorem 2: Given a POPN Q=(N,M,V,L),                   any observable place pE Po is
+   structurally diagnosable under Assumption 1 if all transitions in Q are
+   structurally diagnosable.
+   Proof: Suppose that T(Q)        = (AM,,o, ) is the observation and t is the transition
+10 that fires. Vector    s' E Z'  is used to denote the place faults associated with
+   observable places. As t is structurally diagnosable, by T(Q), one can decide
+   if there is a fault when t fires. Then,    s'  is calculated according to the result of
+   transition fault diagnosis by utilizing equation (3). If      ar(p)+ 0 , a place fault
+   associated with p occurs, otherwise no fault associated with p occurs. Thus,
+15 any observable pe P         is structurally diagnosable if all transitions in Q are
+   structurally diagnosable.
+   For a POPN Q=(N,M,V,L) , the condition given in Theorem 2 is only
+   sufficient but not necessary. For an unobservable place, it cannot achieve
+   structural diagnosability as given by proposition 4.
+20  Proposition 4: Given a POPN Q=(N,MJ,V,L),                   any unobservable place
+    p  E  , is not structurally diagnosable.
+   Proof: Suppose that Q is the event-set that occurs and T(Q)          = (AM,, co) is the
+   observation. For an unobservable place p , no matter if there is a fault
+   associated with p , one obtains the same observation T(Q) . Thus, an
+25 unobservable place is not structurally diagnosable.
+   Proposition 4 indicates that faults associated with an unobservable place p
+   cannot achieve structural diagnosability by employing a redundancy. As a
+                                               28
+
+   result, a place should be monitored by a sensor if faults associated with it
+   need to be structurally diagnosable.
+   Proposition 5: Given a POPN Q=(N,MJ,V,L), an unobservable place p is
+   casually diagnosable under Assumption 1 if all transitions in Q are structurally
+ 5 diagnosable.
+   Proof: Suppose that, for an unobservable place p, its initial marking is MJ(p).
+   Let a be a feasible event-set sequence from MO with Bd(Q,p,a)=1. If all
+   transitions in Q are structurally diagnosable, the firing times of a transition in
+    'p u p', and the occurrences of faults associated with it can be determined
+10 based on 'F(a) when MJ[a)M. By assumption that no fault associated with
+    p occurs, the number of tokens in p e            at each time epoch k can be
+   calculated according to equation (2), which is denoted by Mj(p ).
+   There are two cases if Bd(Q,p,a)=1: one is that an enabled transition is
+   disabled and the other is that a disabled transition is enabled.
+15 In the first case, suppose that transition t is disabled by faults associated with
+    p at time epoch k. A deadlock I, i.e., no output for a time long enough, is
+   observed while Vp E 'trn(        , the number of tokens in p is greater than
+    W(p',t) and Vp' e 'tn ,       M(p')>W(p',t) . This observation indicates that
+     -p' e' t rnIJ such that the faults associated with p disable t. Thus, it can be
+20 concluded that for any event-set sequence a'              satisfying M0 [a') and
+    T(a)= T(a') , there is at least one element yeFa =' trm               such that
+    Bd(Q, y, a') = 1.
+   In the other case, the firing of t with MC(p) < W(p,t) is observed. Since firing
+    t with Mc (p) < W(p,t) implies that t is enabled by faults associated with p at
+25 time epoch k, for any event-set sequence a'           !  IMOIa*),'F(a) = T
+                                            29
+
+   we have Bd(Q,p,a')=1 accordingly. Thus, p is casually diagnosable if all
+   transitions in Q are structurally diagnosable.
+   Proposition 6: Given a POPN Q = (N, MO, V, L), a casually diagnosable place
+    p is obstinately diagnosable under Assumption 1 if for any t E p' satisfying
+ 5  l' t n 1 1>1, there exists t' e p' such that O-0- and 't 'nl = {p}.
+   Proof: Suppose that for any t e p satisfying      I't n    |> 1, there exists t' Ep'
+   such that      ,-O- and 'trmo      ={p}. When t is disabled by faults associated
+   with p, t must be also disabled by faults associated with p. Then, one can
+   decide if the faults associated with p are behavior-disturbed. If any t Ep* is
+10 enabled by faults associated with p, the faults must be behavior-disturbed.
+   Thus, we come to this conclusion.
+   Theorem 3: Given a POPN Q=(N,MJ,V,L),                  Q is maximally structurally
+   diagnosable if and only if Vt e T, dH (O, 0')-2>2 +1, dH (O , 0)>2r+1, and
+    dH({O t     ETL(t)})>2 1 +1, dH({O t      L(t)
+15 Proof: (->)    By Theorem 1, all transitions in Q are structurally diagnosable if
+    Vt e T   , dH (tO t 0)>2+1 , dH (Oti 1,)>2 7 +1 , dH ( Ot     t ETL(t)}).2ii±1  and
+    dH({WOt eTL(t)})>2 1+1 are true. Then, all observable places in Q are
+   structurally diagnosable according to Theorem 2. By Proposition 4, an
+   unobservable place cannot be structurally diagnosable. However, it can be
+20 obstinately or casually diagnosable since all transitions are structurally
+   diagnosable. Let p be an unobservable place that is casually diagnosable but
+   not obstinately diagnosable. Since the transitions and observable places are
+   structurally diagnosable, there exists an unobservable place p # p such that
+   the faults associated with p or p can disable a transition t with the same
+25 firing sequence from the initial marking. Thus, no matter which redundancy is
+   employed, the observations for the faults associated with p and p are the
+                                              30
+
+   same.    Place    p   cannot    be  obstinately diagnosable       by employing         a
+   redundancy. Then, Q is maximally structurally diagnosable if the conditions
+   given in the theorem are true.
+     (e-) Q's maximally structural diagnosability implies that Vt eET is structurally
+ 5 diagnosable, which holds only if Vt e T, d (0, , 0)>2r +1, d, (0,% 0')>2q+1,
+    d(O " 1tETL(,)j)>217+1       and   dH({   |/ ETL(t)    2+1      are   satisfied     by
+   Theorem 1. Thus, the given conditions are necessary.
+   Example embodiments provide procedures to diagnose faults that occur in a
+   POPN Q = (N, MO V, L) with maximal structural diagnosability.
+10 By way of example, suppose that, at time epoch k , the observation is
+    T(Q,)=(AM*,l).       Based on T(Q), the events including the transition that
+   fires, and whether a transition fault occurs or not can be decided by using
+   NND. A place fault associated with observable places can be diagnosed
+   according    to   the   differences    between    AM'     and    NND(AM*)       , i.e.,
+15  s; =AM' -NND(AM*)       . Then, by assumption that no fault associated with an
+   unobservable place occurs, the expected marking M                can be calculated
+   according to
+                           M'   = Mk+B+B-         k -B+6 _+ "
+   where Vpe P     ,  jk(p) = jk(p) and Vpe P, ,       '(p)= 0 ; 2k EEZ' is the vector
+20 indicating the place faults associated with observable places while         sk' e Z"  is
+   the vector denoting the place faults associated with all places.
+   The expected marking M' at the initial time epoch is equal to the initial
+   marking. If a transition enabled by faults associated with an unobservable
+   place p fires, Mj(p) < 0, otherwise, no fault associated with p occurs or the
+25 faults associated with p are not behavior-disturbed. In the case that deadlock
+   information is obtained at time epoch k, the expected marking of Q at time
+                                            31
+
+   epoch k is equal to the expected marking at time epoch k-1, since no event
+   occurs at time epoch k, i.e., M      = Mk    .
+    If the faults associated with an unobservable place p are behavior-disturbed,
+   there exists at least one transition t such that Vp' e 't, Mj(p);W(p',t) holds.
+ 5 If p is the only unobservable place in *t, the occurrences of faults associated
+   with p are unambiguous, otherwise, it can be concluded that only the faults
+   associated with at least one unobservable place in 't are behavior-disturbed.
+   Fig. 4 shows a graph 400 of an algorithm of fault diagnosis for a partially
+   observed Petri net in accordance with an example embodiment.
+10 The algorithm as shown in Fig. 4 provides the procedure to diagnose faults.
+   In Fig. 4, for an unobservable place p , s"(p) is not the actual number of
+   tokens changed by the faults associated with p . 2k"(p)      = 0 indicates that no
+   place fault associated with p occurs or the faults are not behavior-disturbed;
+    ek"(p)=l   means that the faults associated with p increase the number of
+15 tokens in p ; 2k"(p)= -1 denotes that the faults associated with p decrease
+   the number of tokens in p ;       ek"(p) = - 2 represents the case that the place
+   faults associated with at least one unobservable place in P, are behavior
+   disturbed, where P,    = {p'j |k(p') = -2} .
+   Example embodiments provide a method to build a redundancy for achieving
+20 maximal structural diagnosability for a POPN Q=(N,MJ,V,L)               . The net
+   structure of the redundancy and its initial marking are obtained by solving an
+   integer linear programming problem.
+   By way of example, a redundancy is formed by adding places into the original
+   POPN. The added places is called a redundancy as they do not disturb the
+25 behavior of a POPN as a controller. Constraints should be imposed on the
+   weights of arcs between the added places and transitions in the original
+   POPN to achieve the reduncancy.
+                                              32
+
+   By way of example, suppose that POPN Q, =(N',M ,V',L) is a redundant
+   embedding      of POPN Q=(N,M,V,L)                with z places being added. The
+   language generated by Q, is needed to be equal to that generated by Q.
+   This is done by properly determining the weights of the arcs between the
+ 5 added places and transitions and the initial marking of those places.
+   Definition 12: Let Q=(N,M,V,L)             be a POPN and its extended POPN by
+   adding a place p be Q, =(N',M ,V',L).             Place p is said to be no-behavior
+   effect on Q if for any MO , there exists a marking MO such that Vq              E P
+   M (q) = M0 (q), and C(N,MO) = L(N ,M0 ).
+10 By way of example, in order to analyze the effect of an added place on the
+   behavior of POPN Q = (N,M,V,L), a T-increase is introduced in definition 13.
+   Definition 13 A transition sequence rT of Q=(N,MO,V,L) is said to be a T
+   increase if BdT>0' .
+   For example, transition sequences a, and g2 with di =[0,1,1,2,0]' and
+15  d2 =[0,2,2,4,O]' are two T-increases of Q, shown in Fig. 2. A transition t is
+   said to be contained in a T-increase       TT  if C7(t)>     0.
+   Property 3: In a POPN, transition t cannot fire infinitely if it is not contained in
+   any T-increase.
+   Proof: If no T-increase contains t, any transition firing sequence that includes
+20  t necessarily decreases the number of tokens in at least one place. Let p
+   denote such a place. No matter how many tokens are in p at the initial state,
+   the tokens can be exhausted by firing t, which leads to t being disabled
+   finally. Thus, t cannot fire infinitely if t is not contained by any T-increase.
+   Proposition 7: Let Q, =(N',M,V',L) be a redundant embedding of POPN
+25  Q=(N,M,V,        L) and [B",Bj]1 be the incidence matrix of Q,. Then, a T
+   increase    TT of Q is a T-increase of Q, if B,        T' O.
+                                               33
+
+   Proof: By BT       T ' and B,CT7>'O   we have [BT ,B/Y&T
+                                       ,                       =  Bd, +B,7 >0.      Thus,
+     TT is also a T-increase of Q,.
+   Proposition 8: Let Q, =(N',M ,V',L) be a redundant embedding of POPN
+    Q=(N,MJ,V, L). B,(p)         e N" is a vector whose j-th entry denotes the arc
+ 5 weight between the added place p and transition t.., j E N,,. Then, p has no
+   effect on the behavior of Q, if and only if     B,(P)TT, O    holds for all T-increase
+    UT  of Q.
+   Proof: (->)    For any transition sequence a E L(N,MJ) , u can be expressed
+   as a linear combination of several T-increases and a non-T-increase
+10 sequence a,. Since a, is not a T-increase, the number of transitions in it is
+   finite according to Property 3. Therefore, there exists a constant # that is
+   greater than the number of tokens consumed by firing a,. The number of
+   tokens consumed by firing a- is less than # if B,(P)TT70 holds for any T
+   increase    aT   As above, any feasible transition sequence in Q is also feasible
+15 in Q, . Obviously, if a transition sequence is not feasible in Q , it is also
+   prohibited in Q,. Thus, if B,(P)dT0       holds for all T-increases   UT of Q, for any
+   MO , there is a marking M such that VqE P, M (q) = M0 (q), and L(N, MO)
+    IL(N,M ), which means that place p has no effect on the behavior of the           Q.
+    (e-) Suppose that a, is a T-increase satisfying B,(p)d,        = -v < 0, vE N. If U
+20 is a transition sequence constructed by repeating a, K times,          K e N, we have
+    a E 1(N,MJ)     . Obviously, there exists an integer     K e N such that # -vc < 0,
+   which implies that there is no marking M satisfying: Vq E P, M (q) = M0 (q),
+   and L(N,MJ)= L(N,M ). Thus, place p has effect on the behavior of Q if
+   there exists a T-increase u, such that B,(p)d, < 0.
+25 Theorem        4:    Let  Q, =(N',M ,V',L)     be   a    redundant     embedding     of
+    Q =(N,M0,V,L).       Then, an added place p has no effect on the behavior of Q,
+                                              34
+
+   if and only if there exists a nonnegative vector y            such that B,(p)y'B ,
+   where B,(p) is the vector denoting the arc weights between the added place
+    p and transitions in Q.
+   Proof: (->)   Let  TT be a T-increase of Q. y'BdT,0       holds for any nonnegative
+ 5 vector y' . Then, B,(P)dTO is true for any T-increase           UT  if there exists a
+   nonnegative vector y' such that B,(p)vy'B . Thus, by Proposition 8, p has
+   no effect on the behavior of Q.
+     (<-) If there is no nonnegative vector y' satisfying B,(p)>y'B , by setting
+    y'=0', there is at least one negative entry of B,(p) and its corresponding
+10 column of B is nonnegative. Let B,(p,i) be the negative entry and B(:,i)>O.
+   There necessarily exists a vector       C such that BTO'" and B,(p)d < 0, where
+   all entries of 6 are zero except that the i-th entry is one. Thus, place p has
+   effect on the behavior of Q due to Proposition 8.
+   By way of example, let W(p,,,t 1 ) , jeN,, , denotes the weight of the arc
+15 between an added place p, and transition tj , andB,(p,,) denotes the vector
+    [W(p.,0,t),W(p,t21 ),-...W(p,,t.,)]. Based on Theorem 4, if the z added places
+   are a redundancy, then the weights of arcs between the z added places and
+   the transitions should satisfy the constraints in (6):
+                     y'Bs;B, (p,,), Vi E Nz     1, 2,..--'6)
+                               y "0, Vi   E N
+20 Example embodiment formulate the problem of setting the initial marking for
+   the added places as an integer linear programming problem. Since an added
+   place p, should have no effect on the behavior of the POPN, the initial
+   number of tokens in p, should be greater than the sum of tokens that can be
+   consumed. The maximum number of tokens is obtained by the integer linear
+25 programming problem in (7):
+                                              35
+
+                          maximize     -B, (p,) x 6
+                          subject to   M +Bd2O                 (7)
+                                           d)O
+   where MO is the initial marking of Q, B is the incidence matrix of Q and d is
+   a vector with integer variables as entries.
+   Example embodiments define a nonzero counter function to simplify the
+ 5 description of the problem An effective redundancy embedding ensures
+   maximal structural diagnosability.
+   Definition 14: A nonzero counter function is defined as Z,: H -+ N, where H
+   is a set of vectors and Z,(d)=k , deH , denotes that k entries of d are
+   nonzero.
+10 For example, for a vector d=[-1,0,3,-2,0,1], Z,(d)=4 since there are four
+   nonzero entries.
+   By way of example, let Q, =(N',M ,V',L) be a redundant embedding of
+   Q=(N,MO,V,L)         .   To     ensure     that    Vt ET , d (0,O')>2t+1     and
+   d, (,, 0')> 2 7+1 to achieve maximal structural diagnosability, the arc weights
+15 between the added place p,              iEN , and transitions should satisfy the
+   constraints in (8):
+                       Z' (0;' +         2 +1
+                       Z((0,)+       g   27 +1
+                       W(Pai, tj )<Mg , Vi E N                     (8)
+                       W(p,,,tj)>- M(1-g1 )+1,ViE N
+                             ~,,,t)IMg,-,ViEE NZ
+                             W
+                       W(p,, tj )(<M(1 - g,- ) - 1, Vi E N,
+                                                36
+
+   where W(p,,,t.) denotes the arc weight between p,, and tj, M is a positive
+   integer constant that is big enough, and g               E{0,1}    and g, e{0,1}
+                                                                              1        are binary
+   variables corresponding to p,, and t . Let g 1               = g,-+ g+ . Since there is only
+   one arc between a transition and a place, the constraint in (9) should be
+ 5 satisfied:
+                              g. 1 +g1,1 1                            (9)
+   That is, g1, e {0,1} is a binary variable.
+   By way of example, if there exist two transitions t, and                         t2 such that
+    L(t) = L(t 2 )  ,   to  guarantee      that    VteET      ,   dH(Ot | t eTL(t)j})>2i7+1   and
+10  dH(O     t     TL(t))>21 + 1 hold, the constraints in (10) should be satisfied:
+                              Z' (07--,-)+         -_-27+1
+                                              i1
+                              Z, (0   -0,)  +          2q+1
+                                               i=2
+                              W(Piti)-W(Pit 2 )>I           -   M(1-h 2),Vi EN
+                              W(p,,, t1)- W(p,,,t2)<(r,-+ Mh', VicE=Nz                       (10)
+                              W(Pi1ti)-W(Pit 2 )>r, -M(1-h'),Vi E N
+                              W(p,,,t1)-W(p,,,t2)(6 , +Mhal,1Vie N=;
+                                -g,- 1,Vi e Nz
+                                    -g, Vi E-N
+   where h       e {0,1}, h, E{O,1},         E{0,1}     and     - e{0,1} are binary variables.
+   The constraints in (10) on the arc weights between added places and
+   transitions should be satisfied to ensure maximal structural diagnosability.
+15 Fig. 5 shows a graph 500 of an algorithm of redundancy construction for a
+   partially observed Petri net in accordance with an example embodiment.
+   Example embodiments include an algorithm for building a redundancy to
+   diagnose faults with minimum added places and arcs for a POPN.
+                                                   37
+
+   By way of example, if Q, with incidence matrix [B',Br]' is a redundant
+   embedding of Q, B, is the solution of the algorithm in Fig. 5. The resulting
+   redundancy is obtained by adding the minimal number of places.
+   Example embodiments do not use the information of initial marking M, to
+ 5 obtain the matrix B,, i.e., B, is independent of MO . If the initial marking of a
+   POPN changes, the redundancy remains valid by re-marking it as M,, which
+   can be easily obtained by solving (7). Thus, the method in the example
+   embodiment is reusable for different initial markings.
+   In an embodiment for example, suppose the POPN Q, in Fig. 2 is initially
+10 marked with MO    =  (4,1,0,2)', a redundancy is designed for Q, to diagnose
+   faults with the assumption that at most one place fault occurs per time epoch.
+   Since all the places in 't, u t' are unobservable, at least three observable
+   places should be added to 't, and another three to t'. Thus, the minimum
+   number of added places is six, i.e., z = 6.
+15 Every added place can at most connect a transition once and there are at
+   most 30 arcs between the added places and the transitions. To make Q,
+   maximally structurally diagnosable, all arc weights should satisfy the
+   constraints in (6), (8) and (9). For example, since Z,(Q ) =1 and Z,(O )=0,
+   the arc weights between the added places and t, should satisfy the following
+20 constraints according to (8) and (9):
+                                6
+                               i=1
+                           6
+                          i=1
+                         W(p, t1)Mg;, Vi E{1,2,...,6}
+                         W(p'j t ) >- M(1 - g+ ) +1, Vi E {1,2,...,6}
+                         W(p, tj) - Mg,-1,,ViE {1,2,..., 61
+                         W(p,, tl)(<M(1 - g,,) - 1,Vi Ez {1,2, ... , 61
+                              gn gl= oVi E {1,2,...,6}
+                                            38
+
+   where M is a positive integer constant that is big enough, for example, M is
+   set to 100.
+   By L(t) = L(t 5) =a , Z,(0, - 0,O)= 0 and Z,(0, - 0)= 0 , the arc weights
+   between the added places and t, should also satisfy the following constraints
+ 5 according to (10):
+                          6
+                          6
+                         W(pi tI) - W(p,,, t5 )     r- -   M(1 -h)
+                                                           Vi E 11,2,...,6}
+                         W(P~p tI )-W( pai~t )I        +-' Mh5
+                                                           Vi E11, 2,..., 61
+                         W(pa, tI) - W(p,,, t5 )g-     -   M(1 -h-),
+                                                           Vie {1,2,...,6}
+                               W( pt-W( paiIt5)(+          Mh|-,
+                                                           Vi E 11,2,..., 61
+                                     i e 1, 2,..., 6}
+                                 , Vj~
+   Take place p,, as an example, to ensure that the added places form a
+   redundancy of Q, the following constraints on the weights of arcs between
+    Pa, and transitions should be satisfied according to (6):
+                         -1x y +0 x y 2 +1x y 3 +0 x y 4 -W(p,,t)0
+                           x y, + -2x y 2 +0 x y 3 +0 x y 4 -W(Pit 2 )O
+10                          1XYI 0XY     2 +0Y   3  +2y, (PI        3
+     10                     1xy +0lxy 2 + xy +2lxy 4 -W(pait 4 )(0
+                         0 X y, + 1XY2 + 0 X Y3 +-1 Xy4 - W(p,,,ta)(0
+                         Oxy 1 +Oxy 2 +1xy 3 +-2xy4 -W(p,,,t 5 ) O
+                         -y,4O,Vi e {1,2,3,4}
+   By way of example, there are 210 variables and 312 constraints with the
+   following linear objective function:
+                                                 39
+
+                                            65
+                                           1=1 j=1
+   Fig. 6 shows a table 600 of weight of arcs in accordance with an example
+   embodiment.
+   The solution for the integer linear programming problem in (11) is shown the
+ 5 table 600 in Fig. 6.
+   After the structure of the redundancy is determined, the added places should
+   be initialized with tokens. Example embodiments obtain the minimum number
+   of initial tokens for each added place by solving an integer linear programming
+   problem in (7).
+10 By way of example, the integer linear programming problem for the initial
+   marking setting for p,6 is formulated as:
+                            maximize          -[5,-1,-1,1,1]xuT
+                            subject to        [4,1,0,2]' +Ba O
+                                              U 'O
+   The solution for this integer linear programming problem is five. Thus, p,6
+   should be initially marked with at least five tokens. The minimum number of
+15 tokens for the six added places are 6, 6, 2, 5, 4 and 5, respectively.
+   In summary, to make       Q, maximally    structurally diagnosable, six observable
+   places need to be added. The structure of the redundancy can be described
+   by incidence matrix B,, where
+                                       -1  1      1  -1   -2
+                                       -1  1      1  -1   -2
+                                        1  0     2 -1 -1
+                               B=
+                                        2 -1 -1       1    1
+                                       -1  1 -1       0    1
+                                        5 -1 -1       1    1
+20 and the initial marking of the added places is [6,6,2,5,4,5] .
+                                             40
+
+   Fig. 7 shows a data processing device 700 that improve fault diagnosability of
+   DES in accordance with an example embodiment.
+   The data processing device 700 consists of both the hardware 710 and
+   software 720 that can be employed as the computerized control system for
+ 5 the present disclosure. The hardware components in the present embodiment
+   comprises the processor 711,       memory 712, storage 713, and multiple
+   interfaces such as the peripheral interface 714, network interface 715, input
+   interface 716 and output interface 717. In another embodiment, the present
+   disclosure may also be deployed in a distributed computing environment that
+10 includes more than one data processing devices 700 connected together
+   through one or more networks via the network interface 715.
+   Processor 711 can be a central processing unit (CPU), a microprocessor,
+   microcontrollers, a digital signal processor (DSP), field programmable gate
+   arrays (FPGA), or application-specific integrated circuits (ASIC). One or more
+15 processors can communicate with each other and memory and perform
+   operations and tasks that implement one or more blocks of the flow diagrams
+   discussed herein.
+   Memory 712 can include dynamic or static random-access memory (DRAM or
+   SRAM) or read-only memory such as Erasable and Programmable Read-Only
+20 Memories (EPROMs), Electrically Erasable and Programmable Read-Only
+   Memories (EEPROMs)         and flash memories, as well as other memory
+   technologies, singly or jointly combined. The memory, for example, stores
+   applications, data, programs, algorithms (including software to implement or
+   assist in implementing example embodiments) and other data.
+25 Storage 713 includes persistence storage such as magnetic disks such as
+   fixed and removable disks; other magnetic media including tape; optical
+   media such as Compact Disks (CDs) or Digital Versatile Disks (DVDs), and
+   semiconductor storage devices such as flash memory cards, solid-state drive,
+   EPROMs, EEPROMS or other storage technologies, singly or in combination.
+30 Note that the instructions of the software 720 can be provided on computer
+   readable or machine-readable storage medium, or alternatively, can be
+                                          41
+
+   provided on multiple computer-readable or machine-readable storage media
+   distributed in a large system having possibly plural nodes. Such computer
+   readable or machine-readable medium or media is (are) considered to be part
+   of an article (or article of manufacture). An article or articles of manufacture
+ 5 can refer to any manufactured single component or multiple components.
+   Input interface 716 is the interfacing components that connect the data
+   processing device 700 to data inputting devices such as keyboard, or other
+   point devices, voice-input apparatus, scanner or other input technologies.
+   Output interface 717 is the interfacing components for the data processing
+10 device 700 to send data to outputting devices such as CRT or flat panel
+   display monitor, printer or other output technologies. Peripheral interface 714
+   may typically include the serial or parallel interface and the USB (Universal
+   Serial Bus) interfaces, and other interfacing technologies. Network interface
+   715 enables the data processing device 700 to exchange information with
+15 external data-processing devices via a data communication network such as
+   the Personal Area Network (PAN), the Local Area Network (LAN), the Wide
+   Area Network (WAN), metropolitan area network (MAN), the Internet, an
+   intranet, an extranet, a cellular network, and other public or private data
+   communication network architectures. The network interface 715 can include
+20 the Ethernet interface, the Wireless LAN interface device, the Bluetooth
+   interfacing device and other networking devices, singly or in combination.
+   Software 720 further includes the operating system 721, and the redundancy
+   constructor 722. Operating system 721 is to manage all the hardware
+   resources, and schedule executing priorities for all tasks and processes so
+25 that the redundancy constructor 722 can all be executed in an orderly manner.
+   Blocks and/or methods discussed herein can be executed and/or made by a
+   user, a user agent (including machine learning agents and intelligent user
+   agents), a software application, an electronic device, a computer, firmware,
+   hardware, a process, a computer system, and/or an intelligent personal
+30 assistant. Furthermore, blocks and/or methods discussed herein can be
+   executed automatically with or without instruction from a user.
+                                          42
+
+   It should be understood for those skilled in the art that the division between
+   hardware and software is a conceptual division for ease of understanding and
+   is somewhat arbitrary. Moreover, it will be appreciated that peripheral devices
+   in one computer installation may be integrated to the host computer in another.
+ 5 Furthermore,    the application software systems may be executed in a
+   distributed computing environment. The software program and its related
+   databases can be stored in a separate file server or database server and is
+   transferred to the local host for execution. The data processing device 700 as
+   shown in FIG. 7 is therefore an exemplary embodiment of how the present
+10 invention can be implemented. Those skilled in the art will appreciate that
+   alternative embodiments can be adopted to implement the present invention.
+   Example embodiments described herein can be applied to various industrial
+   automated systems, communication systems and computer-based systems,
+   such    as   computer-integrated     production   processes,   machine    shops,
+15 automated assembly lines, multi-robot assembly system, multiprocessor
+   system, parallel computer architectures, chemical processes, logistics and
+   transportation system etc., that have properties of process synchronization,
+   asynchronous events, concurrent operations, and conflicts or resource
+   sharing can all be recognized as DESs and can be executed as part of an
+20 example embodiment.
+   The preferred embodiments of the present invention are thus fully described.
+   Although the description referred to particular embodiments, it will be clear to
+   one skilled in the art that the present invention may be practiced with variation
+   of these specific details. Hence this invention should not be construed as
+25 limited to the embodiments set forth herein.
+   The methods in accordance with example embodiments are provided as
+   examples, and examples from one method should not be construed to limit
+   examples from another method. Further, methods discussed within different
+30 figures can be added to or exchanged with methods in other figures. Further
+   yet, specific numerical data values (such as specific quantities, numbers,
+   categories, etc.) or other specific information should be interpreted as
+                                            43
+
+  illustrative for discussing example embodiments. Such specific information is
+  not provided to limit example embodiments. For example, the applications of
+  DES are not limited to the manufacturing system using AGVs and the small
+  factory system which were illustrated as the examples. Manufacturing
+5 systems, traffic systems, computer networks, communication          protocols,
+  process control plants are examples of DES.
+                                        44
+
+                                         CLAIMS
+   What is claimed is:
+   1. A method executed by a computer system that improve fault diagnosability
+ 5    of a discrete event system (DES), the method comprising:
+            modeling, by the computer system, the DES as a Petri net that
+      includes transitions, wherein the transitions represent events in the DES;
+           adding, by the computer system, a number of places to the Petri net
+      as added places, wherein the number of the added places is determined
+10    by a number of place faults;
+           computing, by the computer system, a minimal number of arcs
+      between the added places and the transitions by solving an integer linear
+      programming problem; and
+            improving the fault diagnosability of the DES by constructing a
+15    redundancy to the DES by:
+                         adding a number of parts observed by a plurality of
+                  sensors to the DES according to the number of the added
+                  places in the Petri net; and
+                         connecting the added parts with the events in the DES
+20                according to the arcs in the Petri net.
+   2. The method of claim, further comprising:
+           computing, by the computer system, a weight of the arcs that satisfies
+      conditions in the form of:
+25
+                                yBs;B,(p,,),Vi  E    = {1,2,...,z}
+                                           y; O,Vi e N,
+      to ensure that the added places do not affect behavior of the Petri net,
+      where z is a number of the added places, y' is a nonnegative vector,
+30     B,(p,,) is a vector denoting arc weights between the added places and the
+                                            45
+
+      transitions, and B is an incidence matrix of the Petri net.
+   3. The method of claim, wherein one arc is set between each added place
+      and each transition that is connected therewith.
+ 5
+   4. The method of claim, further comprising:
+           computing, by the computer system, a weight of the arcs that satisfies
+      conditions in the form of:
+                                 Z,(0 )+ jg,2rj/7+1
+                                 Z, (07 ) + Ig   1  2tr +1
+10                               W(p,,,t)     Mg     Vi eNZ
+                                 W(p,,tj)> -M(1 -g+ ) +1, Vi         NZ
+                                 W(, itj)>-    - Mg1. ,Vi E NZ
+                                 W(p, ,ty)M(1 - gi .) -1, Vi   E=NZ
+      to achieve a maximal diagnosabilitiy of the DES, where z is a number of
+      the added places, Z, is a nonzero counter function, 0; and 0- are vectors
+      that denote observations at a transition t1          , W(p,,,tj)  denotes an arc
+      weight between the added place p, and the transition t1 , M is a positive
+15    integer constant, and g , g. are binary variables.
+   5. The method of claim, further comprising:
+           computing, by the computer system, a marking for the added places
+      by solving an integer linear programming problem in the form of:
+                                 maximize      -B, (P) x 6
+20                               subject to    Mo + BO 0
+          where Br(pai) is a vector denoting the arc weights between the added
+      place and the transitions, M is an initial marking of the Petri net, B is the
+                                             46
+
+incidence matrix of the Petri net and 6 is a vector with integer variables as
+entries.
+                                    47
+
+<removed-date>
+                                               <U+2736> <U+273C>
+              <U+2701><U+2735><U+2735>
+                    <U+25BC><U+2666><U+275E><U+2761><U+2767><U+2710><U+2665><U+2763><U+2731> <U+275C><U+2461> t<U+2764><U+2761> <U+275D><U+2666><U+2660><U+2663><U+2709>t<U+2761>r s<U+2461>st<U+2761><U+2660><U+2731> t<U+2764><U+2761> <U+2749><U+274A><U+2759> <U+275B>s <U+275B> P<U+2761>tr<U+2710> <U+2665><U+2761>t
+                                     t<U+2764><U+275B>t <U+2710><U+2665><U+275D><U+2767><U+2709><U+275E><U+2761>s tr<U+275B><U+2665>s<U+2710>t<U+2710><U+2666><U+2665>s
+                                               <U+2701><U+2701><U+2735>
+<removed-apn>           <U+2746><U+275E><U+275E><U+2710><U+2665><U+2763><U+2731> <U+275C><U+2461> t<U+2764><U+2761> <U+275D><U+2666><U+2660><U+2663><U+2709>t<U+2761>r s<U+2461>st<U+2761><U+2660><U+2731> <U+275B> <U+2665><U+2709><U+2660><U+275C><U+2761>r <U+2666><U+2762> <U+2663><U+2767><U+275B><U+275D><U+2761>s t<U+2666>
+                                           t<U+2764><U+2761> P<U+2761>tr<U+2710> <U+2665><U+2761>t
+                                               <U+2701><U+2737><U+2735>
+                    <U+2748><U+2666><U+2660><U+2663><U+2709>t<U+2710><U+2665><U+2763><U+2731> <U+275C><U+2461> t<U+2764><U+2761> <U+275D><U+2666><U+2660><U+2663><U+2709>t<U+2761>r s<U+2461>st<U+2761><U+2660><U+2731> <U+275B> <U+2660><U+2710><U+2665><U+2710><U+2660><U+275B><U+2767> <U+2665><U+2709><U+2660><U+275C><U+2761>r <U+2666><U+2762>
+                      <U+275B>r<U+275D>s <U+275C><U+2761>t<U+2707><U+2761><U+2761><U+2665> t<U+2764><U+2761> <U+275B><U+275E><U+275E><U+2761><U+275E> <U+2663><U+2767><U+275B><U+275D><U+2761>s <U+275B><U+2665><U+275E> t<U+2764><U+2761> tr<U+275B><U+2665>s<U+2710>t<U+2710><U+2666><U+2665>s <U+275C><U+2461>
+                         s<U+2666><U+2767><U+2708><U+2710><U+2665><U+2763> <U+275B><U+2665> <U+2710><U+2665>t<U+2761><U+2763><U+2761>r <U+2767><U+2710><U+2665><U+2761><U+275B>r <U+2663>r<U+2666><U+2763>r<U+275B><U+2660><U+2660><U+2710><U+2665><U+2763> <U+2663>r<U+2666><U+275C><U+2767><U+2761><U+2660>
+                                               <U+2701><U+2738><U+2735>
+                         ¦<U+2660><U+2663>r<U+2666><U+2708><U+2710><U+2665><U+2763> t<U+2764><U+2761> <U+2762><U+275B><U+2709><U+2767>t <U+275E><U+2710><U+275B><U+2763><U+2665><U+2666>s<U+275B><U+275C><U+2710><U+2767><U+2710>t<U+2461> <U+2666><U+2762> t<U+2764><U+2761> <U+2749><U+274A><U+2759> <U+275C><U+2461>
+                             <U+275D><U+2666><U+2665>str<U+2709><U+275D>t<U+2710><U+2665><U+2763> <U+275B> r<U+2761><U+275E><U+2709><U+2665><U+275E><U+275B><U+2665><U+275D><U+2461> t<U+2666> t<U+2764><U+2761> <U+2749><U+274A><U+2759>
+                                               <U+2701><U+2739><U+2735>
+                        <U+2746><U+275E><U+275E><U+2710><U+2665><U+2763> <U+275B> <U+2665><U+2709><U+2660><U+275C><U+2761>r <U+2666><U+2762> <U+2663><U+275B>rts <U+2666><U+275C>s<U+2761>r<U+2708><U+2761><U+275E> <U+275C><U+2461> <U+275B> <U+2663><U+2767><U+2709>r<U+275B><U+2767><U+2710>t<U+2461>
+                          <U+2666><U+2762> s<U+2761><U+2665>s<U+2666>rs t<U+2666> t<U+2764><U+2761> <U+2749><U+274A><U+2759> <U+275B><U+275D><U+275D><U+2666>r<U+275E><U+2710><U+2665><U+2763> t<U+2666> t<U+2764><U+2761> <U+275B><U+275E><U+275E><U+2761><U+275E>
+                                      <U+2663><U+2767><U+275B><U+275D><U+2761>s <U+2710><U+2665> t<U+2764><U+2761> P<U+2761>tr<U+2710> <U+2665><U+2761>t
+                                               <U+2701><U+2739><U+2701>
+                        <U+2748><U+2666><U+2665><U+2665><U+2761><U+275D>t<U+2710><U+2665><U+2763> t<U+2764><U+2761> <U+275B><U+275E><U+275E><U+2761><U+275E> <U+2663><U+275B>rt <U+2707><U+2710>t<U+2764> t<U+2764><U+2761> <U+2761><U+2708><U+2761><U+2665>ts <U+2710><U+2665> t<U+2764><U+2761>
+                            <U+2749><U+274A><U+2759> <U+275B><U+275D><U+275D><U+2666>r<U+275E><U+2710><U+2665><U+2763> t<U+2666> t<U+2764><U+2761> <U+275B>r<U+275D>s <U+2710><U+2665> t<U+2764><U+2761> P<U+2761>tr<U+2710> <U+2665><U+2761>t
+                                               <U+2701><U+2739><U+2737>
+                                              <U+274B><U+2702><U+2704><U+2733><U+260E>
+
+       <removed-apn>   <removed-date>
+                      <U+2737><U+2735><U+2735>
+<U+274B><U+2702><U+2704><U+2733>
+                            <U+2737><U+273C>
+
+       <removed-apn>   <removed-date>
+                        <U+2738><U+2735><U+2735>
+<U+274B><U+2702><U+2704><U+2733>
+                              <U+2738><U+273C>
+
+       <removed-apn>   <removed-date>
+                             <U+2739><U+2735><U+2735>
+<U+274B><U+2702><U+2704><U+2733>
+                            <U+2739><U+273C>
+
+       <removed-apn>   <removed-date>
+                          <U+2701><U+2735><U+2735>
+<U+274B><U+2702><U+2704><U+2733>
+                            <U+273A><U+273C>
+
+       <removed-apn>   <removed-date>
+                    <U+2701><U+2735><U+2735>
+<U+274B><U+2702><U+2704><U+2733>
+                            <U+273B><U+273C>
+
+<removed-date>
+                                    <U+273C> <U+273C>
+                                <U+2759><U+2666><U+2762>t<U+2707><U+275B>r<U+2761>
+                                  <U+273C><U+2737><U+2735>
+<removed-apn>
+                        <U+2756><U+2663><U+2761>r<U+275B>t<U+2710><U+2665><U+2763>   <U+2759><U+2461>st<U+2761><U+2660>
+                                  <U+273C><U+2737><U+2701>
+                     |<U+2761><U+275E><U+2709><U+2665><U+275E><U+275B><U+2665><U+275D><U+2461>      <U+2748><U+2666><U+2665>str<U+2709><U+275D>t<U+2666>r
+                                  <U+273C><U+2737><U+2737>
+                                <U+274D><U+275B>r<U+275E><U+2707><U+275B>r<U+2761>
+                                  <U+273C><U+2701><U+2735>
+                                              P<U+2761>r<U+2710><U+2663><U+2764><U+2761>r<U+275B><U+2767>
+                                             ¦<U+2665>t<U+2761>r<U+2762><U+275B><U+275D><U+2761>   <U+273C><U+2701><U+2739>
+              Pr<U+2666><U+275D><U+2761>ss<U+2666>r   <U+273C><U+2701><U+2701>
+                                               <U+25C6><U+2761>t<U+2707><U+2666>r<U+2766>
+                                             ¦<U+2665>t<U+2761>r<U+2762><U+275B><U+275D><U+2761>   <U+273C><U+2701><U+2701>
+              <U+25BC><U+2761><U+2660><U+2666>r<U+2461>    <U+273C><U+2701><U+2737>
+                                                 ¦<U+2665><U+2663><U+2709>t
+                                             ¦<U+2665>t<U+2761>r<U+2762><U+275B><U+275D><U+2761>   <U+273C><U+2701><U+2701>
+              <U+2759>t<U+2666>r<U+275B><U+2763><U+2761>   <U+273C><U+2701><U+2738>
+                                                <U+2756><U+2709>t<U+2663><U+2709>t
+                                             ¦<U+2665>t<U+2761>r<U+2762><U+275B><U+275D><U+2761>   <U+273C><U+2701><U+273C>
+                    <U+2749><U+275B>t<U+275B> Pr<U+2666><U+275D><U+2761>ss<U+2710><U+2665><U+2763> <U+2749><U+2761><U+2708><U+2710><U+275D><U+2761>      <U+273C><U+2735><U+2735>
+                                  <U+274B><U+2710><U+2763><U+2733><U+273C>
+

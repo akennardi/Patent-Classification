@@ -1,0 +1,2073 @@
+                                                 - 47
+                                              Abstract
+     METHOD, APPARATUS AND SYSTEM FOR ENCODING AND DECODING A
+              SUBSET OF TRANSFORM UNITS OF ENCODED VIDEO DATA
+ 5
+            A method of decoding a subset of a transform unit (e.g., 400) of encoded video data
+   using Golomb-Rice decoding is disclosed. An initial Rice parameter value for Golomb
+   Rice decoding of the subset of the transform unit is determined, from previously decoded
+   information for the transform unit. The Rice parameter is initialized to the predetermined
+10 value. The subset of the transform unit is decoded using Golomb-Rice decoding. The
+   initialised Rice parameter is used as an initial decoding parameter for decoding the subset.
+   14060378_1
+
+                                                  -1
+     METHOD, APPARATUS AND SYSTEM FOR ENCODING AND DECODING A
+              SUBSET OF TRANSFORM UNITS OF ENCODED VIDEO DATA
+                       CROSS REFERENCE TO RELATED APPLICATIONS
+            This application is a divisional application of Australian Patent Application No.
+   <removed-apn>, filed on 12 April 2016. Australian Patent Application No. <removed-apn> is a
+ 5 divisional application of Australian Patent Application No. 2012202182, filed on 13 April
+   2012. The contents of Australian Patent Application No. 2012202182 and Australian
+   Patent Application No. <removed-apn> are hereby incorporated by reference in their entirety
+   as if fully set forth herein.
+                                          TECHNICAL FIELD
+10          The present invention relates generally to digital video signal processing and, in
+   particular, to a method, apparatus and system for encoding and decoding a subset of
+   transform units of video data.
+                                            BACKGROUND
+            Many applications for video coding currently exist, including applications for
+15 transmission and storage of video data.        Many video coding standards have also been
+   developed and others are currently under development.           Recent developments in video
+   coding standardisation have led to the formation of a group called the "Joint Collaborative
+   Team on Video Coding" (JCT-VC). The Joint Collaborative Team on Video Coding (JCT
+   VC)     includes    members     of Study    Group     16,   Question  6   (SG16/Q6)      of the
+20 Telecommunication          Standardisation     Sector     (ITU-T)    of    the     International
+   Telecommunication Union (ITU), known as the Video Coding Experts Group (VCEG),
+   and members         of the    International Organisations    for  Standardisation/International
+   Electrotechnical Commission Joint Technical Committee 1 / Subcommittee 29 / Working
+   Group 11 (ISO/IEC JTC1/SC29/WG 11), also known as the Moving Picture Experts Group
+25 (MPEG).
+            The Joint Collaborative Team on Video Coding (JCT-VC) has the goal of
+   producing a new video coding standard to significantly outperform a presently existing
+   video coding standard, known as "H.264/MPEG-4 AVC".                 The H.264/MPEG-4 AVC
+   standard is itself a large improvement on previous video coding standards, such as MPEG
+30 4 and ITU-T H.263. The new video coding standard under development has been named
+   "high efficiency video coding (HEVC)". The Joint Collaborative Team on Video Coding
+   JCT-VC is also considering implementation challenges arising from technology proposed
+   14060378_1
+
+                                                 -2
+   for high efficiency     video coding      (HEVC)    that create  difficulties when scaling
+   implementations of the standard to operate at high resolutions or high frame rates.
+            The H.264/MPEG-4 AVC video coding standard presents difficulties for achieving
+   high compression efficiency when coding residual coefficients to represent video data.
+ 5         Video data is formed by a sequence of frames, with each frame having a two
+   dimensional array of samples.      Typically, frames include one luminance (luma) and two
+   chrominance (chroma) channels.        Colour information is typically represented using a
+   colour space such as YUV, with Y being the luma channel and UV being two chroma
+   channels. A colour space such as YUV gives the advantage that the majority of frame
+10 content is contained in the luma channels and a relatively smaller amount of content stored
+   in the UV channels is sufficient to reconstruct a colour frame. The chroma channels may
+   also be down-sampled to a lower spatial resolution with negligible perceptual quality loss.
+           A commonly used chroma format known as 4:2:0 results in each chroma channel
+   having half the vertical and horizontal resolution. Each frame is decomposed into an array
+15 of largest coding units (LCUs). The largest coding units (LCUs) have a fixed size, with
+   edge dimensions being a power of two and having equal width and height, such as 64 luma
+   samples. A coding tree enables the subdivision of each largest coding unit (LCU) into four
+   coding units (CUs), each having half the width and height of a parent largest coding unit
+   (LCU). Each of the coding units (CUs) may be further subdivided into four equally-sized
+20 coding units (CUs). Such a subdivision process may be applied recursively until a smallest
+   coding unit (SCU) size is reached, enabling coding units (CUs) to be defined down to a
+   minimum supported size.       The recursive subdivision of a largest coding unit, into a
+   hierarchy of coding units, has a quad-tree structure and is referred to as the coding tree.
+   The subdivision process is encoded in a communications bit-stream as a sequence of flags,
+25 coded as bins. Coding units therefore have a square shape.
+           A set of coding units exist in a coding tree that are not further sub-divided,
+   occupying leaf nodes of the coding tree. Transform trees exist at the coding units.        A
+   transform tree may further decompose a coding unit using a quad-tree structure as used for
+   the coding tree.    At leaf nodes of the transform tree, residual data is encoded using
+30 transform units (TUs).    In contrast to the coding tree, the transform tree may subdivide
+   coding units into transform units having a non-square shape. Further, the transform tree
+   structure does not require that transform units (TUs) occupy all of the area provided by the
+   parent coding unit.
+   14060378_1
+
+                                                 -3
+            Each coding unit at leaf nodes of the coding trees are subdivided into one or more
+   arrays of predicted data samples, each known as a prediction unit (PU). Each prediction
+   unit (PU) contains a prediction of a portion of input video frame data, derived by applying
+   an intra-prediction or an inter-prediction process.
+ 5          Several methods may be used for coding prediction units (PUs) within a coding
+   unit (CU). A single prediction unit (PU) may occupy an entire area of a coding unit (CU),
+   or the coding unit (CU) may be split into two equal-sized rectangular prediction units
+   (PUs), either horizontally or vertically. Additionally, the coding units (CU) may be split
+   into four equal-sized square prediction units (PUs).
+10          A video encoder compresses the video data into a bit-stream by converting the
+   video data into a sequence of syntax elements.        A context adaptive binary arithmetic
+   coding (CABAC) scheme is defined within the high efficiency video coding (HEVC)
+   standard under development, using an identical arithmetic coding scheme as to that defined
+   in the MPEG4-AVC/H.264 video compression standard.              In the high efficiency video
+15 coding (HEVC) standard under development, when context adaptive binary arithmetic
+   coding (CABAC) is in use, each syntax element is expressed as a sequence of bins. Each
+   bin is either bypass-coded or arithmetically coded. Bypass coding is used where the bin is
+   equally likely to be 0 or 1. In this case, there is no further compression achievable.
+   Arithmetic coding is used for bins which have an unequal probability distribution. Each
+20 arithmetically coded bin is associated with information known as a 'context'.        Contexts
+   contain a likely bin value (the 'vaIMPS') and a probability state, an integer which maps to
+   an estimated probability of the likely bin value.        Creating such a sequence of bins,
+   comprising combinations of bypass-coded bins and arithmetic-coded bins, from a syntax
+   element is known as "binarising" the syntax element.
+25          In a video encoder or video decoder, as separate context information is available for
+   each bin, context selection for bins provides a means to improve coding efficiency. In
+   particular, coding efficiency may be improved by selecting a particular bin such that
+   statistical properties from previous instances of the bin, where the associated context
+   information was used, correlate with statistical properties of a current instance of the bin.
+30 Such context selection frequently utilises spatially local information to determine the
+   optimal context.
+            In the high efficiency video coding (HEVC) standard under development and in
+   H.264/MPEG-4 AVC, a prediction for a current block is derived, based on reference
+   sample data either from other frames, or from neighbouring regions within the current
+   14060378_1
+
+                                                 -4
+   block that have been previously decoded. The difference between the prediction and the
+   desired sample data is known as the residual. A frequency domain representation of the
+   residual is a two-dimensional array of residual coefficients. By convention, the upper-left
+   corner of the two-dimensional array contains residual coefficients representing low
+ 5 frequency information.
+           In typical video data, the majority of the changes in sample values are gradual,
+   resulting in a predominance of low-frequency information within the residual.               This
+   manifests as larger magnitudes for residual coefficients located in the upper-left corner of
+   the two-dimensional array.
+10
+                                             SUMMARY
+           It is an object of the present invention to substantially overcome, or at least
+   ameliorate, one or more disadvantages of existing arrangements.
+           According to one aspect of the present disclosure, there is provided a method of
+15 decoding a transform unit of encoded video data using Golomb-Rice decoding, the method
+   comprising:
+            determining significant residual coefficients for a sub-set of the transform unit;
+            selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+   of the transform unit, the predetermined Rice parameter being offset from a zero setting
+20 when the determined number of significant residual coefficients is higher than a
+   predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+   as an initial parameter for the Golomb-Rice decoding.
+           According to another aspect of the present disclosure, there is provided an
+25 apparatus for decoding a transform unit of encoded video data using Golomb-Rice
+   decoding, the apparatus comprising:
+           means for determining significant residual coefficients for a sub-set of the
+   transform unit;
+           means for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+30 the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+   setting when the determined number of significant residual coefficients is higher than a
+   predetermined threshold; and
+           means for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+   14060378_1
+
+                                                 -5
+           According to another aspect of the present disclosure, there is provided a system for
+   decoding a transform unit of encoded video data using Golomb-Rice decoding, the system
+   comprising:
+            a memory for storing data and a computer program;
+ 5          a processor coupled to said memory for executing said computer program, said
+   computer program comprising instructions for:
+            determining significant residual coefficients for a sub-set of the transform unit;
+            selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+   of the transform unit, the predetermined Rice parameter being offset from a zero setting
+10 when the determined number of significant residual coefficients is higher than a
+   predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+   as an initial parameter for the Golomb-Rice decoding.
+           According to another aspect of the present disclosure, there is provided a computer
+15 readable medium having a computer program recoded thereon for decoding a transform
+   unit of encoded video data using Golomb-Rice decoding, the program comprising:
+            code for determining significant residual coefficients for a sub-set of the transform
+   unit;
+            code for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+20 the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+   setting when the determined number of significant residual coefficients is higher than a
+   predetermined threshold; and
+            code for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+25         According to another aspect of the present disclosure, there is provided a method of
+   decoding a stream of video data to determine a value of a current residual coefficient in a
+   decoded stream of video data, the method comprising:
+           receiving a transform unit of residual coefficients from the stream of video data;
+            determining a position of a current residual coefficient of the transform unit;
+30          decoding the current residual coefficient using dependency free Golomb-rice
+   decoding when the position of the current residual coefficient in the transform unit is
+   greater than a predetermined threshold, wherein the dependency free Golomb-rice uses a
+   predetermined Golomb-Rice value;
+   14060378_1
+
+                                                 -6
+            decoding the current residual coefficient using dependency based Golomb-rice
+   decoding for the current coefficient when the position of the current residual coefficient in
+   the transform unit is less than the predetermined threshold, wherein the dependency based
+   Golomb-Rice decoding uses a previously decoded residual coefficient value to select a
+ 5 Golomb-Rice value; and
+            determining a value for the current residual coefficient using the selected Golomb
+   Rice decoding value.
+           According to another aspect of the present disclosure, there is provided a method of
+   decoding a transform unit of encoded video data using Golomb-Rice decoding, the method
+10 comprising:
+            determining a quantization parameter for the transform unit;
+            determining significant residual coefficients for a sub-set of the transform unit;
+            selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+   of the transform unit, the predetermined Rice parameter being offset from a zero setting
+15 when the determined quantization parameter is lower than a predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+   as an initial parameter for the Golomb-Rice decoding.
+           According to another aspect of the present disclosure, there is provided an
+   apparatus for decoding a transform unit of encoded video data using Golomb-Rice
+20 decoding, the apparatus comprising:
+           means for determining significant residual coefficients for a sub-set of the
+   transform unit;
+           means for determining a quantization parameter for the transform unit;
+           means for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+25 the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+   setting when the determined quantization parameter is lower than a predetermined
+   threshold; and
+           means for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+30         According to another aspect of the present disclosure, there is provided a system for
+   decoding a transform unit of encoded video data using Golomb-Rice decoding, the system
+   comprising:
+            a memory for storing data and a computer program;
+   14060378_1
+
+                                                 -7
+            a processor coupled to said memory for executing said computer program, said
+   computer program comprising instructions for:
+            determining significant residual coefficients for a sub-set of the transform unit;
+            determining a quantization parameter for the transform unit;
+ 5          selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+   of the transform unit, the predetermined Rice parameter being offset from a zero setting
+   when the determined quantization parameter is lower than a predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+   as an initial parameter for the Golomb-Rice decoding.
+10         According to another aspect of the present disclosure, there is provided a computer
+   readable medium having a computer program recoded thereon for decoding a transform
+   unit of encoded video data using Golomb-Rice decoding, the program comprising:
+            code for determining significant residual coefficients for a sub-set of the transform
+   unit;
+15          code for determining a quantization parameter for the transform unit;
+            code for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+   the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+   setting when the determined quantization parameter is lower than a predetermined
+   threshold; and
+20          code for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+           According to another aspect of the present disclosure, there is provided a method of
+   decoding a transform unit of encoded video data using Golomb-Rice decoding, the method
+   comprising:
+25          determining a quantization parameter for the transform unit;
+            determining a width and a height for the transform unit;
+            determining significant residual coefficients for a sub-set of the transform unit;
+            selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+   of the transform unit, the predetermined Rice parameter being offset from a zero setting
+30 when the determined quantization parameter is lower than or equal to a predetermined
+   threshold, the width is greater than a predetermined threshold and the height is greater than
+   a predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+   as an initial parameter for the Golomb-Rice decoding.
+   14060378_1
+
+                                                 -8
+           According to another aspect of the present disclosure, there is provided an
+   apparatus for decoding a transform unit of encoded video data using Golomb-Rice
+   decoding, the apparatus comprising:
+           means for determining significant residual coefficients for a sub-set of the
+ 5 transform unit;
+           means for determining a quantization parameter for the transform unit;
+           means for determining a width and a height for the transform unit;
+           means for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+   the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+10 setting when the determined quantization parameter is lower than or equal to a
+   predetermined threshold, the width is greater than a predetermined threshold and the height
+   is greater than a predetermined threshold; and
+           means for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+15         According to another aspect of the present disclosure, there is provided a system for
+   decoding a transform unit of encoded video data using Golomb-Rice decoding, the system
+   comprising:
+            a memory for storing data and a computer program;
+            a processor coupled to said memory for executing said computer program, said
+20 computer program comprising instructions for:
+            determining significant residual coefficients for a sub-set of the transform unit;
+            determining a quantization parameter for the transform unit;
+            determining a width and a height for the transform unit;
+            selecting a predetermined Rice parameter for Golomb-Rice decoding of the subset
+25 of the transform unit, the predetermined Rice parameter being offset from a zero setting
+   when the determined quantization parameter is lower than or equal to a predetermined
+   threshold, the width is greater than a predetermined threshold and the height is greater than
+   a predetermined threshold; and
+            decoding the subset of the transform unit using the predetermined Rice parameter
+30 as an initial parameter for the Golomb-Rice decoding.
+           According to another aspect of the present disclosure, there is provided a computer
+   readable medium having a computer program recoded thereon for decoding a transform
+   unit of encoded video data using Golomb-Rice decoding, the program comprising:
+   14060378_1
+
+                                                  -9
+            code for determining significant residual coefficients for a sub-set of the transform
+   unit;
+            code for determining a quantization parameter for the transform unit;
+            code for determining a width and a height for the transform unit;
+ 5          code for selecting a predetermined Rice parameter for Golomb-Rice decoding of
+   the subset of the transform unit, the predetermined Rice parameter being offset from a zero
+   setting when the determined quantization parameter is lower than or equal to a
+   predetermined threshold, the width is greater than a predetermined threshold and the height
+   is greater than a predetermined threshold; and
+10          code for decoding the subset of the transform unit using the predetermined Rice
+   parameter as an initial parameter for the Golomb-Rice decoding.
+            According to another aspect of the present disclosure, there is provided a method of
+   decoding a subset of a transform unit of encoded video data using Golomb-Rice decoding,
+   the method comprising:
+15          determining an initial Rice parameter value for Golomb-Rice decoding of the
+   subset of the transform unit, from previously decoded information for the transform unit;
+            initializing the Rice parameter to the predetermined value; and
+            decoding the subset of the transform unit using Golomb-Rice decoding, wherein the
+   initialised Rice parameter is used as an initial decoding parameter for decoding the subset.
+20          According to another aspect of the present disclosure, there is provided an
+   apparatus for decoding a subset of a transform unit of encoded video data using Golomb
+   Rice decoding, the apparatus comprising:
+            means for determining an initial Rice parameter value for Golomb-Rice decoding
+   of the subset of the transform unit, from previously decoded information for the transform
+25 unit;
+            means for initializing the Rice parameter to the determined value; and
+            means for decoding the subset of the transform unit using Golomb-Rice decoding,
+   wherein the initialised Rice parameter is used as an initial parameter for decoding the
+   subset.
+30          According to another aspect of the present disclosure, there is provided a system for
+   decoding a subset of a transform unit of encoded video data using Golomb-Rice decoding,
+   the system comprising:
+            a memory for storing data and a computer program;
+   14060378_1
+
+                                                  - 10
+            a processor coupled to said memory for executing said computer program, said
+   computer program comprising code for:
+            determining an initial Rice parameter value for Golomb-Rice decoding of the
+   subset of the transform unit, from previously decoded information for the transform unit;
+ 5          initializing the Rice parameter to the determined value; and
+            decoding the subset of the transform unit using Golomb-Rice decoding, wherein the
+   initialised Rice parameter is used as an initial parameter for decoding the subset.
+            According to another aspect of the present disclosure, there is provided a computer
+   readable medium having a computer program recorded thereon for decoding a subset of a
+10 transform unit of encoded video data using Golomb-Rice decoding, the program
+   comprising:
+            code for determining an initial Rice parameter value for Golomb-Rice decoding of
+   the subset of the transform unit, from previously decoded information for the transform
+   unit;
+15          code for initializing the Rice parameter to the determined value; and
+            code for decoding the subset of the transform unit using Golomb-Rice decoding,
+   wherein the initialised Rice parameter is used as an initial parameter for decoding the
+   subset.
+            According to another aspect of the present disclosure, there is provided a method of
+20 encoding a subset of a transform unit of video data using Golomb-Rice encoding, the
+   method comprising:
+            determining an initial Rice parameter value for Golomb-Rice encoding of the
+   subset of the transform unit, from previously encoded information for the transform unit;
+            initializing the Rice parameter to the predetermined value; and
+25          encoding the subset of the transform unit using Golomb-Rice encoding, wherein the
+   initialised Rice parameter is used as an initial encoding parameter for encoding the subset.
+            According to another aspect of the present disclosure, there is provided an
+   apparatus for encoding a subset of a transform unit of video data using Golomb-Rice
+   encoding, the apparatus comprising:
+30          means for determining an initial Rice parameter value for Golomb-Rice encoding
+   of the subset of the transform unit, from previously encoded information for the transform
+   unit ;
+            means for initializing the Rice parameter to the determined value; and
+   14060378_1
+
+                                                  - 11
+            means for encoding the subset of the transform unit using Golomb-Rice encoding,
+   wherein the initialised Rice parameter is used as an initial parameter for encoding the
+   subset.
+            According to another aspect of the present disclosure, there is provided a system for
+ 5 encoding a subset of a transform unit of video data using Golomb-Rice encoding, the
+   system comprising:
+            a memory for storing data and a computer program;
+            a processor coupled to said memory for executing said computer program, said
+   computer program comprising code for:
+10          determining an initial Rice parameter value for Golomb-Rice encoding of the
+   subset of the transform unit, from previously encoded information for the transform unit;
+   and
+            initializing the Rice parameter to the determined value; and
+            encoding the subset of the transform unit using Golomb-Rice encoding, wherein the
+15 initialised Rice parameter is used as an initial parameter for encoding the subset.
+            According to another aspect of the present disclosure, there is provided a computer
+   readable medium having a computer program recorded thereon for encoding a subset of a
+   transform unit of video data using Golomb-Rice encoding, the program comprising:
+            code for determining an initial Rice parameter value for Golomb-Rice encoding of
+20 the subset of the transform unit, from previously encoded information for the transform
+   unit;
+            code for initializing the Rice parameter to the determined value; and
+            code for encoding the subset of the transform unit using Golomb-Rice encoding,
+   wherein the initialised Rice parameter is used as an initial parameter for encoding the
+25 subset.
+            Other aspects are also disclosed.
+                            BRIEF DESCRIPTION OF THE DRAWINGS
+            At least one embodiment of the present invention will now be described with
+   reference to the following drawings, in which:
+30          Fig. 1 is a schematic block diagram showing functional modules of a video
+   encoder;
+            Fig. 2 is a schematic block diagram showing functional modules of a video
+   decoder;
+   14060378_1
+
+                                                - 12
+           Figs. 3A and 3B form a schematic block diagram of a general purpose computer
+   system upon which the encoder and decoder of Figs. 1 and 2, respectively, may be
+   practiced;
+           Figs. 4A and 4B shows spatial structure of an example transform unit;
+ 5         Fig. 5 is a schematic block diagram showing syntax element structure of an
+   example transform unit;
+           Fig. 6A is a schematic block diagram showing a method of encoding a transform
+   unit (TU);
+           Fig. 6B is a schematic flow diagram showing a method of decoding a transform
+10 unit (TU);
+           Fig. 7 is a schematic block diagram showing syntax element structure of a sub-set
+   of the example transform unit of Fig. 5;
+           Fig. 8A is a schematic flow diagram showing a method of encoding a sub-set of a
+   transform unit;
+15         Fig. 8B is a schematic flow diagram showing a method of decoding a sub-set of a
+   transform unit;
+           Fig. 9 is a table showing binary representations of residual coefficients with
+   Golomb-Rice code-words;
+           Fig. 10 is a table showing binary representations of residual coefficients with
+20 exponential Golomb code-words of order zero;
+           Fig. 11 is a table showing a lookup table for determining a value of a Golomb-Rice
+   parameter based on the current value of a Golomb-Rice parameter and the value of a
+   previous residual coefficient;
+           Fig. 12A is a schematic flow diagram showing a method of encoding a residual
+25 coefficient;
+           Fig. 12B is a schematic flow diagram showing a method of decoding a residual
+   coefficient;
+           Fig. 13 is a schematic flow diagram showing a method for determining the value of
+   a parameter K as used by the method for decoding a residual coefficient using Golomb
+30 Rice decoding;
+           Fig. 14A shows a binariser for decoding remaining residual coefficient magnitude
+   values for a sub-set of a transform unit (TU);
+           Fig. 14B shows another binariser for decoding remaining residual coefficient
+   magnitude values for a sub-set of a transform unit (TU); and
+   14060378_1
+
+                                                  - 13
+           Fig. 15 shows another example transform unit.
+                     DETAILED DESCRIPTION INCLUDING BEST MODE
+           Where reference is made in any one or more of the accompanying drawings to steps
+   and/or features, which have the same reference numerals, those steps and/or features have
+ 5 for the purposes of this description the same function(s) or operation(s), unless the contrary
+   intention appears.
+            The property of low-frequency information being predominant in the upper-left
+   corner of a two-dimensional array of residual coefficients may be used by a binarisation
+   scheme to minimise the size of the residual coefficients in a bit-stream.
+10          One aspect of binarisation is selection of contexts to use for coding syntax elements
+   corresponding to individual flags. One flag may use more than one context. Determining
+   which context should be used for a particular instance of a flag depends on other already
+   available information and is known as 'context modelling'. Context modelling is a process
+   whereby a context that most accurately represents the statistical properties of the present
+15 instance of the flag is selected. For example, frequently the value of a flag is influenced by
+   the values of neighbouring instances of the same flag, in which case a context can be
+   selected based on the values of neighbouring instances of the flag. Due to the majority of
+   frame information being contained in the luma channel, context modelling frequently uses
+   separate contexts for the luma channel versus the chroma channels. However, contexts are
+20 typically shared between chroma channels, as the statistical properties of the two chroma
+   channels are relatively similar.
+           Version 6 of the high efficiency video coding (HEVC) test model ("HM-6.0")
+   divides a transform unit (TU) into a number of sub-sets and scans the residual coefficients
+   in each sub-set in two passes. The first pass encodes flags indicating the status of residual
+25 coefficients as being nonzero-valued (significant) or zero-valued (non-significant).      This
+   data is known as a significance map. A second pass encodes the magnitude and sign of
+   significant residual coefficients, known as the coefficient levels.
+           A provided scan pattern enables scanning of the two-dimensional array of residual
+   coefficients into a one-dimensional array. In HM-6.0, the provided scan pattern is used for
+30 processing both the significance map and the coefficient levels.             By scanning the
+   significance map using the provided scan pattern, the location of the last significant
+   coefficient in the two-dimensional significance map may be determined.           Scan patterns
+   may be horizontal, vertical or diagonal.
+   14060378_1
+
+                                                 - 14
+           HM-6.0 provides support for residual blocks, also known as transform units (TUs)
+   having both a square shape and a non-square shape. Each transform unit (TU) contains a
+   set of residual coefficients.   Residual blocks having equally sized side dimensions are
+   known as square transform units (TUs) and residual blocks having unequally sized side
+ 5 dimensions are known as non-square transform units (TUs).
+            Transform unit (TU) sizes supported in HM-6.0 are 4x4, 8x8, 16x16, 32x32, 4x16,
+    16x4, 8x32 and 32x8. Transform unit (TU) sizes are typically described in terms of luma
+   samples. However, when a chroma format of 4:2:0 is used, each chroma sample occupies
+   the area of 2x2 luma samples.       Accordingly, scanning transform units (TUs) to encode
+10 chroma residual data uses scan patterns of half the horizontal and vertical dimensions, such
+   as 2x2 for a 4x4 luma residual block. For the purpose of scanning and coding the residual
+   coefficients, the 16x16, 32x32, 4x16, 16x4, 8x32 and 32x8 transform units (TUs) are
+   divided into a number of sub-blocks, i.e.: a lower-layer of the transform unit (TU) scan,
+   having a size of 4x4, with a corresponding map existing within HM-6.0.
+15         In HM-6.0, sub-blocks for the above transform unit (TU) sizes are co-located with
+   sub-sets in the transform unit (TU).In another implementation, sub-sets may not be co
+   located with the sub-blocks having sizes different from the sizes of sub-blocks. The set
+   significant coefficient flags within a portion of the significance map collocated within one
+   sub-block is referred to as a significant coefficient group.
+20         For the 16x16, 32x32, 4x16, 16x4, 8x32 and 32x8 transform units (TUs), the
+   significance map coding makes use of a two-level scan. The upper level scan performs a
+   scan, such as a backward diagonal down-left scan, to code or infer flags representing the
+   significant coefficient groups of each sub-block. Within the sub-blocks, a scan, such as the
+   backward diagonal down-left scan, is performed to code the significant coefficient flags for
+25 sub-blocks having a one-valued significant coefficient group flag. For a 16x16 transform
+   unit (TU), a 4x4 upper-level scan is used. For a 32x32 transform unit (TU), an 8x8 upper
+   level scan is used. For 16x4, 4x16, 32x8 and 8x32 transform unit (TU) sizes, 4x1, 1x4,
+   8x2 and 2x8 upper-level scans are used respectively.
+           At each transform unit (TU), residual coefficient data may be encoded into a bit
+30 stream. Each "residual coefficient" is a number representing image characteristics within a
+   transform unit in the frequency (DCT) domain and occupying a unique location within the
+   transform unit.     A transform unit is a block of residual data samples that may be
+   transformed between the spatial and the frequency domains. In the frequency domain, the
+   transform unit (TU) encodes the residual data samples as residual coefficient data. Side
+   14060378_1
+
+                                                 - 15
+   dimensions of transform units are sized in powers of two (2), ranging from 4 samples to 32
+   samples for a "Luma" channel, and 2 to 16 samples for a "Chroma" channel.             The leaf
+   nodes of the transform unit (TU) tree may contain either a transform unit (TU) or nothing
+   at all, in the case where no residual coefficient data is required.
+ 5           As the spatial representation of the transform unit is a two-dimensional array of
+   residual data samples, as described in detail below, a frequency domain representation
+   resulting from a transform, such as a modified discrete cosine transform (DCT), is also a
+   two-dimensional array of residual coefficients.        The spectral characteristics of typical
+   sample data within a transform unit (TU)             are such that the frequency domain
+10 representation is more compact than the spatial representation. Further, the predominance
+   of lower-frequency spectral information typical in a transform unit (TU) results in a
+   clustering of larger-valued residual coefficients towards the upper-left of the transform unit
+   (TU), where low-frequency residual coefficients are represented.
+             Modified discrete cosine transforms (DCTs) or modified discrete sine transforms
+15 (DSTs) may be used to implement the residual transform. Implementations of the residual
+   transform are configured to support each required transform unit (TU) size. In a video
+   encoder, the residual coefficients from the residual transform are scaled and quantised.
+   The scaling and quantisation reduces the magnitude of the residual coefficients, reducing
+   the size of the data coded into the bit-stream at the cost of reducing the image quality.
+20           After performing the residual transform, a quantization process is performed. The
+   purpose of the quantization process is to achieve a higher compression ratio by reducing
+   the precision of the magnitude of the residual coefficients. This reduction in magnitude
+   precision is a lossy process and thus has an impact on visual quality. The level of precision
+   reduction is controlled by a quantization parameter (QP). The higher the value of the
+25 parameter the more visual quality is affected. The quantization parameter maybe modified
+   on transform unit (TU) level by using a delta-qp syntax element as described below.
+             The high efficiency video coding (HEVC) standard under development is seeking
+   to achieve a high efficiency compression of video data. Estimation and statistical data
+   analysis may be used to achieve high efficiency compression of video data.           The high
+30 efficiency video coding (HEVC) standard under development is seeking to encode or
+   decode video data at high bit-rates.        The context adaptive binary arithmetic coding
+   (CABAC) scheme employed in the high efficiency video coding (HEVC) standard under
+   development supports an 'equal probability' mode of operation referred to as 'bypass
+   coding'. In this mode, a bin is not associated with a context from the context model, and
+   14060378_1
+
+                                                - 16
+   so there is no context model update step. In such a mode, multiple adjacent bins may be
+   read from a bit-stream in parallel, provided each bin is bypass coded which increases
+   throughput. For example, hardware implementations may write/read groups of adjacent
+   bypass coded data in parallel to increase the throughput of encoding/decoding the bit
+ 5 stream.
+            Fig. 1 is a schematic block diagram showing functional modules of a video encoder
+    100. Fig. 2 is a schematic block diagram showing functional modules of a corresponding
+   video decoder 200. The video encoder 100 and video decoder 200 may be implemented
+   using a general-purpose computer system 300, as shown in Figs. 3A and 3B where the
+10 various functional modules may be implemented by dedicated hardware within the
+   computer system 300, by software executable within the computer system 300, or
+   alternatively by a combination of dedicated hardware and software executable within the
+   computer system 300.
+            As seen in Fig. 3A, the computer system 300 includes: a computer module 301;
+15 input devices such as a keyboard 302, a mouse pointer device 303, a scanner 326, a
+   camera 327, and a microphone 380; and output devices including a printer 315, a display
+   device 314 and loudspeakers 317.           An external Modulator-Demodulator      (Modem)
+   transceiver device 316 may be used by the computer module 301 for communicating to and
+   from a communications network 320 via a connection 321. The communications network
+20 320 may be          a wide-area network (WAN),        such as the    Internet, a cellular
+   telecommunications network, or a private WAN. Where the connection 321 is a telephone
+   line, the modem 316 may be a traditional "dial-up" modem. Alternatively, where the
+   connection 321 is a high capacity (e.g., cable) connection, the modem 316 may be a
+   broadband modem. A wireless modem may also be used for wireless connection to the
+25 communications network 320.
+            The computer module 301 typically includes at least one processor unit 305, and a
+   memory unit 306. For example, the memory unit 306 may have semiconductor random
+   access memory (RAM) and semiconductor read only memory (ROM).                The computer
+   module 301 also includes an number of input/output (I/O) interfaces including: an audio
+30 video interface 307 that couples to the video display 314, loudspeakers 317 and
+   microphone 380; an I/O interface 313 that couples to the keyboard 302, mouse 303,
+   scanner 326, camera 327 and optionally a joystick or other human interface device (not
+   illustrated); and an interface 308 for the external modem 316 and printer 315.     In some
+   implementations, the modem 316 may be incorporated within the computer module 301,
+   14060378_1
+
+                                               - 17
+   for example within the interface 308. The computer module 301 also has a local network
+   interface 311, which permits coupling of the computer system 300 via a connection 323 to
+   a local-area communications network 322, known as a Local Area Network (LAN).            As
+   illustrated in Fig. 3A, the local communications network 322 may also couple to the wide
+ 5 network 320 via a connection 324, which would typically include a so-called "firewall"
+   device or device of similar functionality. The local network interface 311 may comprise an
+   Ethemet TM circuit card, a Bluetooth T M wireless arrangement or an IEEE 802.11 wireless
+   arrangement; however, numerous other types of interfaces may be practiced for the
+   interface 311.
+10          The I/O interfaces 308 and 313 may afford either or both of serial and parallel
+   connectivity, the former typically being implemented according to the Universal Serial Bus
+   (USB) standards and having corresponding USB connectors (not illustrated).          Storage
+   devices 309 are provided and typically include a hard disk drive (HDD) 310. Other storage
+   devices such as a floppy disk drive and a magnetic tape drive (not illustrated) may also be
+15 used. An optical disk drive 312 is typically provided to act as a non-volatile source of
+   data. Portable memory devices, such optical disks (e.g. CD-ROM, DVD, Blu-ray DiscTM),
+   USB-RAM, portable, external hard drives, and floppy disks, for example, may be used as
+   appropriate sources of data to the system 300.     Typically, any of the HDD 310, optical
+   drive 312, networks 320 and 322, or camera 327 may for a source for video data to be
+20 encoded, or, with the display 314, a destination for decoded video data to be stored or
+   reproduced.
+            The components 305 to 313 of the computer module 301 typically communicate via
+   an interconnected bus 304 and in a manner that results in a conventional mode of operation
+   of the computer system 300 known to those in the relevant art.            For example, the
+25 processor 305 is coupled to the system bus 304 using a connection 318.        Likewise, the
+   memory 306 and optical disk drive 312 are coupled to the system bus 304 by connections
+   319.    Examples of computers on which the described arrangements can be practised
+                                                                         TM
+   include IBM-PC's and compatibles, Sun Sparcstations, Apple Mac            or alike computer
+   systems.
+30          Where appropriate or desired, the encoder 100 and the decoder 200, as well as
+   methods described below, may be implemented using the computer system 300 wherein
+   the encoder 100, the decoder 200 and the processes, to be described, may be implemented
+   as one or more software application programs 333 executable within the computer system
+   300.    In particular, the encoder 100, the decoder 200 and the steps of the described
+   14060378_1
+
+                                               - 18
+   methods may be effected by instructions 331 (see Fig. 3B) in the software 333 that are
+   carried out within the computer system 300. The software instructions 331 may be formed
+   as one or more code modules, each for performing one or more particular tasks.         The
+   software may also be divided into two separate parts, in which a first part and the
+ 5 corresponding code modules performs the described methods and a second part and the
+   corresponding code modules manage a user interface between the first part and the user.
+            The software may be stored in a computer readable medium, including the storage
+   devices described below, for example. The software is loaded into the computer system
+   300 from the computer readable medium, and then executed by the computer system 300.
+10 A computer readable medium having such software or computer program recorded on the
+   computer readable medium is a computer program product.         The use of the computer
+   program product in the computer system 300 preferably effects an advantageous apparatus
+   for implementing the encoder 100, the decoder 200 and the described methods.
+            The software 333 is typically stored in the HDD 310 or the memory 306.        The
+15 software is loaded into the computer system 300 from a computer readable medium, and
+   executed by the computer system 300. Thus, for example, the software 333 may be stored
+   on an optically readable disk storage medium (e.g., CD-ROM) 325 that is read by the
+   optical disk drive 312.
+           In some instances, the application programs 333 may be supplied to the user
+20 encoded on one or more CD-ROMs 325 and read via the corresponding drive 312, or
+   alternatively may be read by the user from the networks 320 or 322.      Still further, the
+   software can also be loaded into the computer system 300 from other computer readable
+   media.     Computer readable storage media refers to any non-transitory tangible storage
+   medium that provides recorded instructions and/or data to the computer system 300 for
+25 execution and/or processing.    Examples of such storage media include floppy disks,
+   magnetic tape, CD-ROM, DVD, Blu-ray Disc, a hard disk drive, a ROM or integrated
+   circuit, USB memory, a magneto-optical disk, or a computer readable card such as a
+   PCMCIA card and the like, whether or not such devices are internal or external of the
+   computer module 301.       Examples of transitory or non-tangible computer readable
+30 transmission media that may also participate in the provision of the software, application
+   programs, instructions and/or video data or encoded video data to the computer
+   module 301 include radio or infra-red transmission channels as well as a network
+   connection to another computer or networked device, and the Internet or Intranets
+   including e-mail transmissions and information recorded on Websites and the like.
+   14060378_1
+
+                                                 - 19
+            The second part of the application programs 333 and the corresponding code
+   modules mentioned above may be executed to implement one or more graphical user
+   interfaces (GUIs) to be rendered or otherwise represented upon the display 314. Through
+   manipulation of typically the keyboard 302 and the mouse 303, a user of the computer
+ 5 system 300 and the application may manipulate the interface in a functionally adaptable
+   manner to provide controlling commands and/or input to the applications associated with
+   the GUI(s).      Other forms of functionally adaptable user interfaces may also be
+   implemented, such as an audio interface utilizing speech prompts output via the
+   loudspeakers 317 and user voice commands input via the microphone 380.
+10         Fig. 3B is a detailed schematic block diagram of the processor 305 and a
+   "memory" 334.      The memory 334 represents a logical aggregation of all the memory
+   modules (including the HDD 309 and semiconductor memory 306) that can be accessed by
+   the computer module 301 in Fig. 3A.
+           When the computer module 301 is initially powered up, a power-on self-test
+15 (POST) program 350 executes. The POST program 350 is typically stored in a ROM 349
+   of the semiconductor memory 306 of Fig. 3A. A hardware device such as the ROM 349
+   storing software is sometimes referred to as firmware. The POST program 350 examines
+   hardware within the computer module 301 to ensure proper functioning and typically
+   checks the processor 305, the memory 334 (309, 306), and a basic input-output systems
+20 software (BIOS)module 351, also typically stored in the ROM 349, for correct operation.
+   Once the POST program 350 has run successfully, the BIOS 351 activates the hard disk
+   drive 310 of Fig. 3A.     Activation of the hard disk drive 310 causes a bootstrap loader
+   program 352 that is resident on the hard disk drive 310 to execute via the processor 305.
+   This loads an operating system 353 into the RAM memory 306, upon which the operating
+25 system 353 commences operation. The operating system 353 is a system level application,
+   executable by the processor 305, to fulfil various high level functions, including processor
+   management, memory management, device management, storage management, software
+   application interface, and generic user interface.
+            The operating system 353 manages the memory 334 (309, 306) to ensure that each
+30 process or application running on the computer module 301 has sufficient memory in
+   which to execute       without  colliding with memory       allocated to   another process.
+   Furthermore, the different types of memory available in the system 300 of Fig. 3A must be
+   used properly so that each process can run effectively.        Accordingly, the aggregated
+   memory 334 is not intended to illustrate how particular segments of memory are allocated
+   14060378_1
+
+                                                 - 20
+   (unless otherwise stated), but rather to provide a general view of the memory accessible by
+   the computer system 300 and how such is used.
+           As shown in Fig. 3B, the processor 305 includes a number of functional modules
+   including a control unit 339, an arithmetic logic unit (ALU) 340, and a local or internal
+ 5 memory 348, sometimes called a cache memory.              The cache memory 348 typically
+   includes a number of storage registers 344- 346 in a register section. One or more internal
+   busses 341 functionally interconnect these functional modules.            The processor 305
+   typically also has one or more interfaces 342 for communicating with external devices via
+   the system bus 304, using a connection 318. The memory 334 is coupled to the bus 304
+10 using a connection 319.
+            The application program 333 includes a sequence of instructions 331 that may
+   include conditional branch and loop instructions.        The program 333 may also include
+   data 332 which is used in execution of the program 333.         The instructions 331 and the
+   data 332 are stored in memory locations 328, 329, 330 and 335, 336, 337, respectively.
+15 Depending upon the relative size of the instructions 331 and the memory locations 328
+   330, a particular instruction may be stored in a single memory location as depicted by the
+   instruction shown in the memory location 330.           Alternately, an instruction may be
+   segmented into a number of parts each of which is stored in a separate memory location, as
+   depicted by the instruction segments shown in the memory locations 328 and 329.
+20         In general, the processor 305 is given a set of instructions which are executed
+   therein. The processor 305 waits for a subsequent input, to which the processor 305 reacts
+   to by executing another set of instructions. Each input may be provided from one or more
+   of a number of sources, including data generated by one or more of the input
+   devices 302, 303,    data   received    from    an  external  source   across   one  of the
+25 networks 320, 302, data retrieved from one of the storage devices 306, 309 or data
+   retrieved from a storage medium 325 inserted into the corresponding reader 312, all
+   depicted in Fig. 3A. The execution of a set of the instructions may in some cases result in
+   output of data. Execution may also involve storing data or variables to the memory 334.
+            The encoder 100, the decoder 200 and the described methods use input
+30 variables 354,   which    are  stored    in the    memory 334    in  corresponding   memory
+   locations 355, 356, 357. The encoder 100, the decoder 200 and the described methods
+   produce output variables 361, which are stored in the memory 334 in corresponding
+   memory locations 362, 363, 364.       Intermediate variables 358 may be stored in memory
+   locations 359, 360, 366 and 367.
+   14060378_1
+
+                                                 -21
+           Referring to the processor 305 of Fig. 3B, the registers 344, 345, 346, the
+   arithmetic logic unit (ALU) 340, and the control unit 339 work together to perform
+   sequences of micro-operations needed to perform "fetch, decode, and execute" cycles for
+   every instruction in the instruction set making up the program 333. Each fetch, decode,
+ 5 and execute cycle comprises:
+            (a) a fetch operation, which fetches or reads an instruction 331 from a memory
+   location 328, 329, 330;
+            (b) a decode operation in which the control unit 339 determines which instruction
+   has been fetched; and
+10          (c) an execute operation in which the control unit 339 and/or the ALU 340 execute
+   the instruction.
+            Thereafter, a further fetch, decode, and execute cycle for the next instruction may
+   be executed.     Similarly, a store cycle may be performed by which the control unit 339
+   stores or writes a value to a memory location 332.
+15         Each step or sub-process in the processes to be described is associated with one or
+   more segments of the program 333 and is typically performed by the register section 344,
+   345, 347, the ALU 340, and the control unit 339 in the processor 305 working together to
+   perform the fetch, decode, and execute cycles for every instruction in the instruction set for
+   the noted segments of the program 333.
+20          The encoder 100, the decoder 200 and the described methods may alternatively be
+   implemented in dedicated hardware such as one or more integrated circuits performing the
+   functions or sub functions of the described methods.         Such dedicated hardware may
+   include graphic processors, digital signal processors, application specific integrated circuits
+   (ASICs), field programmable gate arrays (FPGAs) or one or more microprocessors and
+25 associated memories.
+           As described above, the video encoder 100 may be implemented as one or more
+   software code modules of the software application program 333 resident on the hard disk
+   drive 310 and being controlled in its execution by the processor 305.        In particular the
+   video encoder 100 comprises modules 102 to 112, 114 and 115 which may each be
+30 implemented as one or more software code modules of the software application
+   program 333.
+           Although the video encoder 100 of Fig. 1 is an example of a high efficiency video
+   coding (HEVC) video decoding pipeline, processing stages performed by the modules 102
+   to 112, 114 and 115 are common to other video codecs such as VC-1 or H.264/MPEG-4
+   14060378_1
+
+                                                -22
+   AVC. The video encoder 100 receives unencoded frame data 101 as a series of frames
+   including luminance and chrominance samples. The video encoder 100 divides each frame
+   of the frame data 101 into hierarchical sets of coding units (CUs) which may be
+   represented, for example, as a coding unit (CU) tree.
+ 5          The video encoder 100 operates by outputting, from a multiplexer module 110, an
+   array of predicted data samples known as a prediction unit (PU) 120. A difference module
+    115 outputs the difference between the prediction unit (PU) 120 and a corresponding array
+   of data samples received from the frame data 101, the difference being known as residual
+   data samples 122.
+10          The residual data samples 122 from the difference module 115 are received by a
+   transform module 102, which converts the difference from a spatial representation to a
+   frequency domain representation to create transform coefficients 124 for each transform
+   unit (TU) in the transform tree. For the high efficiency video coding (HEVC) standard
+   under development, the conversion to the frequency domain representation is implemented
+15 using a modified discrete cosine transform (DCT), in which a traditional DCT is modified
+   to be implemented using shifts and additions. The transform coefficients 124 are then
+   input to a scale and quantise module 103 and are scaled and quantised to produce residual
+   coefficients 126. The scale and quantisation process results in a loss of precision.
+            The residual coefficients 126 are taken as input to an inverse scaling module 105
+20 which reverses the scaling performed by the scale and quantise module 103 to produce
+   rescaled transform coefficients 128, which are rescaled versions of the residual coefficients
+    126. The residual coefficients 126 are also taken as input to an entropy encoder module
+    104 which encodes the residual coefficients in an encoded bit-stream 113. Due to the loss
+   of precision resulting from the scale and quantise module 103, the rescaled transform
+25 coefficients 128 are not identical to the original transform coefficients 124. The rescaled
+   transform coefficients 128 from the inverse scaling module 105 are then output to an
+   inverse transform module 106. The inverse transform module 106 performs an inverse
+   transform from the frequency domain to the spatial domain to produce a spatial-domain
+   representation 130 of the rescaled transform coefficients 128 identical to a spatial domain
+30 representation that is produced at a decoder.
+           A motion estimation module 107 produces motion vectors 132 by comparing the
+   frame data 101 with previous frame data stored in a frame buffer module 112 configured
+   within the memory 306. The motion vectors 132 are then input to a motion compensation
+   module 108 which produces inter-predicted reference samples 134 by filtering samples
+   14060378_1
+
+                                                - 23
+   stored in the frame buffer module 112, taking into account a spatial offset derived from the
+   motion vectors 132. Not illustrated in Fig. 1, the motion vectors 132 are also passed as
+   syntax elements to the entropy encoder module 104 for coding in the encoded bit-stream
+   113. An intra-frame prediction module 109 produces intra-predicted reference samples
+ 5 136 using samples 138 obtained from a summation module 114, which sums the output
+   120 of the multiplexer module 110 and the output 130 from the inverse transform module
+   106.
+           Prediction units (PUs) may be coded using intra-prediction or inter-prediction
+   methods. The decision as to whether to use intra-prediction or inter-prediction is made
+10 according to a rate-distortion trade-off between desired bit-rate of the resulting encoded
+   bit-stream 113 and the amount of image quality distortion introduced by either the intra
+   prediction or inter-prediction method. If intra-prediction is used, one intra-prediction
+   mode is selected from a set of possible modes, also according to a rate-distortion trade-off.
+   One intra-prediction mode is selected for each prediction unit.
+15          The multiplexer module 110 selects either the intra-predicted reference samples
+   136 from the intra-frame prediction module 109 or the inter-predicted reference samples
+   134 from the motion compensation block 108, depending on a current prediction mode
+   142, determined by control logic not illustrated but well-known in the art. The prediction
+   mode 142 is also provided to the entropy encoder 104 and as such is used to determine or
+20 otherwise establish the scan order of transform units as will be described. Inter-frame
+   prediction uses only a diagonal scan order, whereas intra-frame prediction may use the
+   diagonal scan, a horizontal scan or a vertical scan order.
+            The summation module 114 produces a sum 138 that is input to a de-blocking filter
+   module 111. The de-blocking filter module 111 performs filtering along block boundaries,
+25 producing de-blocked samples 140 that are written to the frame buffer module 112
+   configured within the memory 306.         The frame buffer module 112 is a buffer with
+   sufficient capacity to hold data from multiple past frames for future reference.
+           In the video encoder 100, the residual data samples 122 within one transform unit
+   (TU) are determined by finding the difference between data samples of the input frame
+30 data 101 and the prediction 120 of the data samples of the input frame data 101. The
+   difference provides a spatial representation of the residual coefficients of the transform unit
+   (TU).    The residual coefficients of a transform unit (TU) are converted to the two
+   dimensional significance map.
+   14060378_1
+
+                                                  - 24
+            The significance map of the residual coefficients in the transform unit (TU) is then
+   scanned in a particular order, known as a scan order, to form a one-dimensional list of flag
+   values, called a list of significant coefficient flags. The scan order may be described or
+   otherwise specified by a scan pattern, such as that received with the prediction mode 142
+ 5 from the intra-prediction module 109.          The scan pattern may be horizontal, vertical,
+   diagonal or zig-zag.
+           Version 6 of the high efficiency video coding (HEVC) test model (i.e., "HM_6.0")
+   performs scanning in a backward direction. However, scanning in a forward direction is
+   also possible. In the HEVC reference model version 6.0 (i.e., "HM 6.0"), the scan
+10 operation starts one residual coefficient after a last significant coefficient (where 'after' is
+   in the direction of a backward scan of the residual coefficients) and progresses until an
+   upper-left location of the significance map is reached.           Scan operations having this
+   property and which accord to the HEVC reference model version 6.0 are known as
+   'backward scans'.      In the HEVC reference software version 6.0 (i.e., "HM_6.0"), the
+15 location of the last significant coefficient is signalled by encoding co-ordinates of the
+   coefficient in the transform unit (TU).      The use of the adjective "last" in this context is
+   dependent upon the particular order of scanning. What may be the "last" non-zero residual
+   coefficient or corresponding one-valued significant coefficient flag according to one scan
+   pattern may not be the "last" according to another scan pattern.
+20          The list of significant coefficient flags, indicating the significance of each residual
+   coefficient prior to the last significant coefficient, is coded into the bit-stream. The last
+   significant coefficient flag value is not required to be explicitly encoded into the bit-stream
+   because the prior coding of the location of the last significant coefficient flag implicitly
+   indicates that this residual coefficient was significant.
+25          The clustering of larger-valued residual coefficients towards the upper-left of the
+   transform unit (TU) results in most significance flags earlier in the list being significant,
+   whereas few significance flags are found later in the list.
+           As described above, the video encoder 100 also comprises an entropy encoder
+   module 104 that implements an entropy encoding method. The entropy encoder module
+30  104 produces syntax elements from incoming residual coefficient data (or residual
+   coefficients) 126 received from the scale and quantise module 103. The entropy encoder
+   module 104 outputs encoded bit-stream 113 and will be described in more detail below.
+   For the high efficiency video coding (HEVC) standard under development, the encoded
+   14060378_1
+
+                                                 - 25
+   bit-stream 113 is delineated into network abstraction layer (NAL) units. Each slice of a
+   frame is contained in one NAL unit.
+            There are several alternatives for the entropy encoding method implemented in the
+   entropy encoder module 104. The high efficiency video coding (HEVC) standard under
+ 5 development supports context adaptive binary arithmetic coding (CABAC), a variant of
+   context adaptive binary arithmetic coding (CABAC) found in H.264/MPEG-4 AVC. An
+   alternative entropy coding scheme is known as the probability interval partitioning entropy
+   (PIPE) coder.
+           For the video encoder 100 supporting multiple video coding methods, one of the
+10 supported entropy coding methods is selected according to the configuration of the
+   encoder 100. Further, in encoding the coding units from each frame, the entropy encoder
+   module 104 writes the encoded bit-stream 113 such that each frame has one or more slices
+   per frame, with each slice containing image data for part of the frame. Producing one slice
+   per frame reduces overhead associated with delineating each slice boundary.       However,
+15 dividing the frame into multiple slices is also possible.
+            The video decoder 200 of Fig. 2 may be implemented as one or more software code
+   modules of the software application program 333 resident on the hard disk drive 310 and
+   being controlled in its execution by the processor 305. In particular the video decoder 200
+   comprises modules 202 to 208 and 210 which may each be implemented as one or more
+20 software code modules of the software application program 333.          Although the video
+   decoder 200 is described with reference to a high efficiency video coding (HEVC) video
+   decoding pipeline, processing stages performed by the modules 202 to 208 and 209 are
+   common to other video codecs that employ entropy coding, such as H.264/MPEG-4 AVC,
+   MPEG-2 and VC-1.
+25         An encoded bit-stream, such as the encoded bit-stream 113, is received by the
+   video decoder 200. The encoded bit-stream 113 may be read from memory 306, the hard
+   disk drive 310, a CD-ROM, a Blu-rayTM disk or other computer readable storage medium.
+   Alternatively the encoded bit-stream 113 may be received from an external source such as
+   a server connected to the communications network 320 or a radio-frequency receiver. The
+30 encoded bit-stream 113 contains encoded syntax elements representing frame data to be
+   decoded.
+            The encoded bit-stream 113 is input to an entropy decoder module 202 which
+   extracts the syntax elements from the encoded bit-stream 113 and passes the values of the
+   syntax elements to other blocks in the video decoder 200. There may be multiple entropy
+   14060378_1
+
+                                                -26
+   decoding methods implemented in the entropy decoder module 202, such as those
+   described with reference to the entropy encoder module 104. Syntax element data 220
+   representing residual coefficient data is passed to an inverse scale and transform module
+   203 and syntax element data 222 representing motion vector information is passed to a
+ 5 motion compensation module 204. The inverse scale and transform module 203 performs
+   inverse scaling on the residual coefficient data to create reconstructed transform
+   coefficients.   The module 203 then performs an inverse transform to convert the
+   reconstructed transform coefficients from a frequency domain representation to a spatial
+   domain representation, producing residual samples 224, such as the inverse transform
+10 described with reference to the inverse transform module 106.
+            The motion compensation module 204 uses the motion vector data 222 from
+   entropy decoder module 202, combined with previous frame data 226 from a frame buffer
+   block 208, configured within the memory 306, to produce inter-predicted reference
+   samples 228 for a prediction unit (PU), being a prediction of output decoded frame data.
+15 When a syntax element indicates that the current coding unit was coded using intra
+   prediction, the intra-frame prediction module 205 produces intra-predicted reference
+   samples 230 for the prediction unit (PU) using samples spatially neighbouring the
+   prediction unit (PU). The spatially neighbouring samples are obtained from a sum 232
+   output from a summation module 210. The multiplexer module 206 selects intra-predicted
+20 reference samples or inter-predicted reference samples for the prediction unit (PU)
+   depending on the current prediction mode, which is indicated by a syntax element in the
+   encoded bit-stream 113.    The array of samples 234 output from the multiplexer module
+   206 is added to the residual samples 224 from the inverse scale and transform module 203
+   by the summation module 210 to produce the sum 232 which is then input to each of a de
+25 blocking filter module 207 and the intra-frame prediction module 205. In contrast to the
+   encoder 100, the intra-frame prediction module 205 receives a prediction mode 236 from
+   the entropy decoder 202. The multiplexer 206 receives an intra-frame prediction / inter
+   frame prediction selection signal from the entropy decoder 202. The de-blocking filter
+   module 207 performs filtering along data block boundaries to smooth artefacts visible
+30 along the data block boundaries. The output of the de-blocking filter module 207 is written
+   to the frame buffer module 208 configured within the memory 306. The frame buffer
+   module 208 provides sufficient storage to hold multiple decoded frames for future
+   reference. Decoded frames 209 are also output from the frame buffer module 208.
+   14060378_1
+
+                                                - 27
+            The spatial structure of an example transform unit (TU) 400 will be described with
+   the reference to Fig. 4A and Fig. 4B.
+           Fig. 4A shows an example transform unit (TU) 400. The transform unit 400has a
+   rectangular spatial structure and may vary in size from 4x4 to 32x32. Width and height of
+ 5 the transform unit (TU) 400 takes values which are integer powers of two (2).
+           As described above, transform units (TUs) hold the residual coefficients. A two
+   level scan which divides the transform unit (TU) 400 into a set of one or more sub-sets
+   401, may be defined.          Each sub-set consists of sixteen (16)      consecutive residual
+   coefficients in a scan order 403, except the first sub-set in the scan order, which may
+10 contain less than sixteen (16) residual coefficients, depending on the position of the last
+   significant coefficient. As seen in Fig. 4B, the example transform unit 400has a last
+   significant coefficient position 451 with respect to the scan order 403.
+           As seen in Fig. 4A, at an upper level of the transform unit 400, scanning is
+   performed by scanning each lower-level using a scan, such as the backward diagonal
+15 down-left scan. At the lower level of the transform unit 400, also known as the "sub-set
+   level", scanning may be performed using a scan such as the backward diagonal down-left
+   scan. At the upper scan level of the transform unit 400, a decision maybe made to not
+   perform lower-level scanning of the next sub-set if the next sub-set does not contain any
+   significant residual coefficients.
+20          The transform unit 400 contains a sub-set 452 with no significant residual
+   coefficients. In this instance, the lower-level scanning step may be skipped for the sub-set
+   452 and high-level scanning proceeds to a next sub-set in the scan order 403. The upper
+   left sub-set 405 of the transform unit 400 has sub-set index zero.        Other sub-sets have
+   incrementing indexes in the order opposite to the scan order.
+25          Syntax element structure of a transform unit (TU), such as the transform unit (TU)
+   400, will be described with the reference to Fig. 5 and Fig. 7. A bit-stream portion 501of
+   the bit-stream 113 contains syntax elements of transform unit (TU) 400 and consists of the
+   following syntax elements:
+            (i) delta qp 502: The delta qp syntax element 502 contains information about a
+30 difference between a quantization parameter value used to quantize the transform unit (TU)
+   400 and a predetermined quantization parameter value.
+            (ii) last significantxy 503: The last significantxy syntax element 503 contains
+   information about a position of the last significant residual coefficient in the transform unit
+   (TU) 400.
+   14060378_1
+
+                                                 -28
+            (iii) sub-set residual coefficient data 504: The sub-set residual coefficient data
+   consists of zero or more blocks 701 and contains information about the values of the
+   residual coefficients of the transform unit (TU) 400.
+           As seen in Fig. 7, a block 701 contains information about the values of the residual
+ 5 coefficients of a single sub-set of a transform unit (TU) and consists of the following
+   syntax elements:
+            (i) significantcoeffgroupflag 702: The significantcoeff groupflag syntax
+   element 702 is coded once per sub-set and when false, all residual coefficients in the sub
+   set are inferred to be zero and the residual coefficient data 703, 704, 705 706 and 707 is
+10 absent from the block701. Otherwise (when the significantceoff groupflag syntax
+   element 702 is true), at least one residual coefficient in the sub-set has a non-zero value
+   and some combination of residual coefficient data 703, 704, 705, 706 and 707 is present in
+   the block 701.
+            (ii) a block 703 of zero or more significantcoeff flag values: The block 703 is
+15 present if the significantcoeff groupflag 702 indicates presence of the block 703. Values
+   of the significantcoeff flag702 are present in the block 703 for every residual coefficient
+   of the sub-set except the last significant residual coefficient to indicate whether the
+   magnitude of a given residual coefficient is greater than zero.
+            (iii) a block 704 of zero or more coeffabslevelgreaterlflag values: The block
+20 704 is present if the significantcoeffgroupflag 702 indicates presence of the block 704.
+   The coeffabslevel greaterlflag values are present in the block 703, for every residual
+   coefficient of the sub-set for which magnitude was indicated to be greater than zero, to
+   indicate whether the magnitude of a given residual coefficient is greater than one.
+            (iv) a block 705 of zero or more coeffabslevelgreater2_flag values: The block
+25 705 is present if the significantcoeffgroupflag 702 indicates presence of the block 705.
+   The coeffabslevel greater2_flag values are present in the block 705, for every residual
+   coefficient of the sub-set for which the magnitude was indicated to be greater than one, to
+   indicate whether the magnitude of a given residual coefficient is greater than two.
+            (v) a block 706 of zero or more coeff sign flag values: The block 706 is present if
+30 the   significantcoeff groupflag 702         indicates presence  of the block 706.        The
+   coeff sign flag values are present in the block 706, for every residual coefficient for which
+   the magnitude was indicated to be greater than zero, to indicate the arithmetic sign of a
+   given residual coefficient.
+   14060378_1
+
+                                                 -29
+            (vi) a block 707 of zero or more coeffabslevelremaining                 values: Each
+   coeffabslevelremaining value of the block 707 is a Golomb-Rice code-word for a given
+   value of the residual coefficient magnitude minus three (i.e., the remaining residual
+   coefficient magnitude). The block 707 is present if the significant coeff groupflag 702
+ 5 indicates presence of the block 707. The coeffabslevelremaining values are present in
+   the block 707 for each residual coefficient for which the magnitude was indicated to be
+   greater than two. The coeffabslevel-remaining values specify the value of the Golomb
+   Rice code-word for the remaining residual coefficient magnitude of a given residual
+   coefficient.
+10         A method 650 of encoding a transform unit (TU) will now be described with
+   reference to Fig. 6A.The method 650 may be implemented as part of the entropy encoder
+   modules 104of the encoder 100. As described above, the software code modules 102 to
+    112, 114 and 115 forming the encoder 100 are resident on the hard disk drive 310 and are
+   controlled in their execution by the processor 305.
+15          The method 650 will be described by way of example with reference to the bit
+   stream portion 501      of Fig. 5.      The method 650 encodes the deltaqp 502, the
+   last-significant xy503 and the data 504 into the bit-stream portion 501.
+            The method 650 begins at encode delta-qp value step 651, where a delta-qp value is
+   encoded by the encoder module 104, under execution of the processor 305, and stored in
+20 the memory 306.
+            Then at encode last significant position step 652, the position of the last significant
+   residual coefficient is encoded into the bit-stream portion 501 by the encoder module 104,
+   under execution of the processor 305.      The bit-stream portion 501 may be stored in the
+   memory 306.The position of the last significant residual coefficient, width and height of
+25 the transform unit and information about scan order 403 are used to determine the number
+   of sub-sets to be encoded in the transform unit (TU).
+            The method 650 continues at an encode sub-set step 653, where the sub-set data
+   504 is encoded by the encoder module 104and stored within the memory 306.
+            Then at decision step 654,the encoder module 104determines whether more sub
+30 sets 504 should be encoded into the bit-stream portion 501, based on the information about
+   the position of the last significant residual coefficient in the transform unit (TU) and scan
+   order 403 used. If the encoder module 104 determines that there are more sub-sets 504 to
+   be encoded, then the method 650 returns to encode sub-set step 653. As such, the method
+   650 iterates over steps 653 and 654 until all sub-sets from the sub-set containing the last
+   14060378_1
+
+                                                  - 30
+   significant coefficient to the first sub-set have been processed. Otherwise, the method 650
+   concludes.
+           A method 600 of decoding a transform unit (TU) will be described with reference
+   to Fig.6B.     The method 600 may be implemented as part of the entropy decoder
+ 5 module202 of the decoder 200. As described above, the software code modules 202 to 208
+   and 21 Oforming the decoder 200 are resident on the hard disk drive 310 and are controlled
+   in their execution by the processor 305.
+           Again, the method 600 will be described by way of example with reference to the
+   bit-stream portion 501 of Fig. 5 encoded in accordance with the method 650.The method
+10 600 decodes data blocks 502, 503, 504 from the bit-stream portion 501.
+            The method begins at decode delta-qp value step 601, where a value of delta-qp
+   flag is determined by the decoder module 202 under execution of the processor 305. The
+   delta-qp flag value may be stored in the memory 306.
+            Then at decode last significant position step 602, the position of the last significant
+15 residual coefficient in the transform unit (TU) is determined by the decoder module 202.
+   The position of the last significant residual coefficient, width and height of the transform
+   unit and information about scan order 403 are used to determine the number of sub-sets to
+   be decoded in the transform unit (TU).
+            The method 600 continues at decode sub-set step 603, where the sub-set data 504 is
+20 decoded by the decoder module 202 under execution of the processor 305. The decoded
+   sub-set data may be stored within the memory 306.
+            Then at decision step 604, the decoder module 202determines whether more sub
+   sets 504 should be decoded from the bit-stream portion 501 based on the information about
+   the position of the last significant residual coefficient in the transform unit (TU) and used
+25 scan order403.
+           If the decoder module 202 determines that there are more sub-sets 504 to be
+   decoded, then the method 600 returns to sub-set step 603. Otherwise, the method 600
+   concludes.
+           A method 850 of encoding a sub-set of a transform unit (TU) will now be described
+30 with the reference to Fig.8A. The method 850 may be implemented as part of the entropy
+   encoder module 104 of the encoder 100. As described above, the software code modules
+    102 to 112, 114 and 115 forming the encoder 100 are resident on the hard disk drive 310
+   and are controlled in their execution by the processor 305.
+   14060378_1
+
+                                                  -31
+            The method 850 will be described by way of example with reference to the block
+   701 of Fig. 7.The method 850 encodes the blocks 702, 703, 704, 705, 706, 707 into the bit
+   stream portion 501.
+            The method 850 begins at encodes significant group flag step 851 where the
+ 5 encoder module 104, under execution of the processor 305, encodes a value of the
+   significant coeff groupflag 702 and stores the encoded value in the memory 306.
+            Then at step 852, if the value of the significantcoeff groupflag 702 indicates that
+   the sub-set contains the data to be encoded for blocks 703, 704, 705 706, 707 the method
+   850 proceeds to step 853. Otherwise, the method 850 concludes.
+10         At encoding step 853, the encoder module 104, under execution of the processor
+   305, encodes the block 703 of significantcoeff flag values.         The encoder module 104
+   determines one significantcoeff flag value for each residual coefficient of the sub-set
+   except the last significant       residual coefficient   of the transform unit (TU).    The
+   significantcoeffflag values may be stored in the memory 306.
+15          Then at encoding step 854, the encoder module 104 encodes the block 704 of
+   coeffabs level greater _flag values.           The   encoder module     104 determines  one
+   coeffabs level greater _flag value for each residual coefficient of the sub-set with the
+   magnitude greater than zero. The encoded coeffabs_levelgreater 1_flag values may be
+   stored in the memory 306.
+20         At encoding step 855, the encoder module 104 encodes the block 705 of
+   coeffabs level greater2_flag       values.     The   encoder module     104 determines  one
+   coeffabs level greater2_flag value for each residual coefficient of the sub-set with a
+   magnitude greater than one.      The encoded coeffabs_levelgreater2_flag values may be
+   stored in the memory 306.
+25          Then at encoding step 856, the encoder module 104, under execution of the
+   processor 305, encodes the block 706 of coeffsign flag values. The encoder module 104
+   determines one coeff sign flag value for each residual coefficient of the sub-set with the
+   magnitude greater than zero.       The encoded coeff sign flag values may be stored in the
+   memory 306.
+30         At encoding step 857, the encoder module            104 encodes the block 707 of
+   coeffabslevelremaining          values.      The   encoder   module    104  determines  one
+   coeffabslevelremaining value for each residual coefficient of the sub-set with the
+   magnitude greater than two.         The encoded coeffabslevelremaining values may be
+   stored in the memory 306.After step 857, the method 850 concludes.
+   14060378_1
+
+                                                - 32
+           A method 800 of decoding a sub-set of a transform unit (TU) will be described with
+   the reference to Fig.8B.    The method 800 may be implemented as part of the entropy
+   decoder module 202 of the decoder 200. As described above, the software code modules
+   202 to 208 and 210 forming the decoder 200 are resident on the hard disk drive 310 and are
+ 5 controlled in their execution by the processor 305.
+            The method 800 will be described by way of example with reference to the block
+   701 of Fig. 7. The method 800 decodes the blocks 702, 703, 704, 705, 706, 707from the
+   bit-stream portion 501.
+            The method 800 begins at decode significant group flag step 801, where the
+10 decoder module 202 decodes a value of the significantcoeffgroupflag702.                The
+   decodedsignificant coeff groupflag702 value may be stored in the memory 306.
+            Then at step 802, if the decoder module 202 determines that the value of the
+   significant coeff groupflag702 indicates that the sub-set contains the residual coefficient
+   data blocks 703, 704, 705, 706, 707 the method 800 proceeds to step 803. Otherwise, the
+15 method 800 concludes.
+           At decoding step 803, the decoder module 202, under execution of the processor
+   305, decodes the block 703 of significantcoeff flag values.       The decoder module 202
+   determines one significantcoeff flag value for each residual coefficient of the sub-set
+   except the last significant residual coefficient of the transform unit (TU).  The decoded
+20 significantcoeffflag values may be stored in the memory 306.
+            Then at decoding step 804, the decoder module 202 decodes the block 704 of
+   coeffabs level greater 1_flag values.        The decoder module 202 determines          one
+   coeffabs level greater _flag value for each residual coefficient of the sub-set for which
+   one the magnitude was determined at step 803 to be greater than zero.        The decoded
+25 coeffabs level greater _flag values may be stored in the memory 306.
+           At decoding step 805, the decoder module 202, under execution of the processor
+   305, decodes the block 705 of coeffabs levelgreater2_flag values. The decoder module
+   202 determines one coeffabslevelgreater2_flag value for each residual coefficient of
+   the sub-set for which the magnitude was determined at step 804 to be greater than one.
+30 The decoded coeffabslevel greater2_flag values may be stored in the memory 306.
+            Then at decoding step 806, the decoder module 202 decodes the block 706 of
+   coeff sign flag values. The decoder module 202 determines one coeff sign flag value for
+   every residual coefficient of the sub-set for which the magnitude was determined at step
+   803 to be greater than zero. The coeffsign flag values may be stored in the memory 306.
+   14060378_1
+
+                                                - 33
+            The method 800 concludes at step 807, where the decoder module 202 decodes the
+   block 707 of coeffabslevelremaining values. The decoder module 202determines one
+   coeffabslevelremaining value for each residual coefficient of the sub-set for which the
+   magnitude was determined at step 805 to be greater than two.           Also at step 807, the
+ 5 decoder module 202 determines the value of a Golomb-Rice code-word for the remaining
+   residual coefficient magnitude of a given residual coefficient.
+           Following step 807, the method 800 concludes.
+           Parameterized Golomb-Rice codes and their use in the HEVC reference model
+   version 6.0 and the methods described herein, will now be described with the reference to
+10 Fig.9, Fig. 10, Fig. 14A and Fig. 14B.
+           Parameterized Golomb-Rice codes are a class of universal prefix binary codes used
+   to represent the remaining residual coefficient magnitude values of residual coefficients of
+   a transform unit (TU).A prefix binary code is a binary value representation where every
+   binary code-word has a unique prefix. Such a unique prefix allows a particular code-word
+15 to be distinguished from other code-words which is necessary to uniquely identify the
+   values represented by the code-words.
+           Each code-word of a parameterized Golomb-Rice code may consist of two parts: a
+   parameterized truncated-Rice prefix part and possibly an empty order-0-exponential
+   Golomb suffix part. The truncated-Rice prefix part depends on a parameter K which may
+20 take values 0, 1, 2, 3, 4. For every value of the parameter K there is defined a threshold. If
+   the encoded value of residual coefficient remaining magnitude is less than the threshold
+   then the value is encoded with a truncated-Rice code without an exponential-Golomb
+   suffix.
+           If the encoded value of the residual coefficient remaining magnitude is equal to or
+25 greater than the threshold then a predetermined truncated-Rice code-word is encoded to
+   indicate that the encoded value is equal to or greater than the threshold. Further, a value
+   equal to the original encoded value minus the value of the threshold is encoded using an
+   order-0-exponential-Golomb code.
+            Table 900, as seen in Fig. 9, contains example truncated-Rice code-words for
+30 values 0 to 15 and parameter K values 0 and 1.
+            Table 1000, as seen in Fig. 10, contains example order-0-exponential-Golomb
+   code-words. For example, using the Golomb-Rice code with parameter K=0 the value ten
+   (10) will be represented with the truncated-Rice prefix "11111111" and order-0
+   exponential-Golomb suffix "110" forming Golomb-Rice code-word "11111111110".When
+   14060378_1
+
+                                                -34
+   the value of the parameter K is known, a Golomb-Rice code-word may be uniquely
+   identified from a given binary sequence.
+           Every code-word of parameterized Golomb-Rice code has a fixed length which
+   depends on the parameter K and the encoded value. A limited number of code-words may
+ 5 have a given length. As such, for a set of encoded values, some encoded values are
+   represented with shorter code-words while other encoded values will be represented with
+   longer code-words. For video data encoding, the code-words may be allocated to the
+   encoded values so as to minimize a total length of all the code-words encoded into the bit
+   stream 113. Different remaining residual coefficient magnitude values have a different
+10 frequency of appearance in the transform unit (TU) data. A reduction of the total code
+   word length maybe achieved by assigning code-words to the encoded values so that the
+   length of the code-word corresponds to the frequency of appearance of the encoded value.
+   For example, more frequent values of residual coefficient remaining magnitude may be
+   assigned shorter code-words, the values of residual coefficient remaining magnitude with
+15 the same frequency may be assigned code-words of the same length.
+            The parameter K of parameterized Golomb-Rice code allows the distribution of
+   code-word length among the code-words to be controlled. The smaller values of the
+   parameter K allocate more optimal code-words to values with smaller magnitudes while
+   the larger values of the parameter K allocate more optimal code-words to values with
+20 larger magnitudes. Therefore, in order to allocate optimal code-words in general, the
+   described methods determine the value of the parameter K based on the frequency of
+   appearance of a given value of residual coefficient remaining magnitude.
+           In the HEVC standard under development, the true frequencies of the residual
+   coefficient remaining magnitude values such as the values of the remaining residual
+25 coefficients magnitude are not known in advance so an estimation of the parameter K value
+   is performed within a subset. To ensure correct decoding of parameterized Golomb-Rice
+   code-words the encoder 100 and decoder 200 may be configured to use the same value of
+   the parameter K to decode a particular code-word. As such, estimation of the frequency
+   value is limited to the information available at the decoder 200.
+30          The estimation of the frequency value may consist of two phases: initial estimation
+   and adaptation.
+            The initial estimation phase provides an initial estimated value for the parameter K.
+   The adaptation phase provides further corrections to the value of the parameter K as values
+   14060378_1
+
+                                                - 35
+   of the remaining residual coefficients magnitude are being decoded and more information
+   becomes available for the analysis.
+            Initial estimation ensures more optimal code-word allocation. On the other hand,
+   the initial estimation is usually hard to implement in an efficient way as prior to decoding
+ 5 no information about the values of the remaining residual coefficients magnitude is
+   available. An efficient method of initially determining an estimation of the parameter K
+   may provide considerable improvements in coding efficiency.
+            During the initial estimation of the parameter K it is possible to detect the cases
+   where further adaptation will have no significant impact on the value of the parameter K
+10 and therefore can be skipped. The adaptation phase improves encoding efficiency in
+   general. However, for a wide class of practical cases the adaptation is redundant because
+   the initial estimation provides an optimal value of the parameter K and further adaptation is
+   not needed. One disadvantage of the adaptation phase is that the consecutive values of the
+   coeffabslevelremaining value cannot be decoded in parallel because each value cannot
+15 be decoded without knowing the value of the parameter K which is estimated adaptively
+   after decoding of the previous coeffabslevelremaining value.
+            A method 1250 of encoding a block of coeffabslevelremaining values of a sub
+   set of a transform unit (TU) will now be described with the reference to Fig. 11 and
+   Fig. 12A.
+20          The method 1250 may be implemented as part of the entropy encoder module
+    104of the encoder 100. As described above, the software code modules 102 to 112, 114
+   and 115 forming the encoder 100 are resident on the hard disk drive 310 and are controlled
+   in their execution by the processor 305.
+            The method 1250 will be described by way of example with reference to the block
+25 707 of coeffabslevelremaining values of Fig. 7.The method 1250 encodes zero or more
+   coeffabslevelremaining values into the block 707 of the stream portion501.
+            The method 1250 begins at initialization step 1251, where the Golomb-Rice
+   parameter K is initially estimated by the encoder module 104 under execution of the
+   processor 305. The initial value of K may be stored in the memory 306. Also at step 1251,
+30 the encoder module 104 determines necessity of the parameter K adaptation during the
+   encoding.
+            Then at decision step 1257, if the encoder module 104 determines that adaptation
+   is necessary, then the method 1250 proceeds to step 1252. The adaption decision step
+   14060378_1
+
+                                                - 36
+    1257 will be described in more detail below. Otherwise, the method 1250 proceeds to step
+    1255.
+            At decision step 1252, if the encoder module 104 determines that there are more
+   coeffabslevelremaining values to encode then the method 1250 proceeds to step
+ 5  1253.Otherwise, the method 1250 concludes.
+            At encoding step 1253, the encoder module 104 performs encoding of the Golomb
+   Rice code-word into the block 707 in accordance with the initial value of the Golomb-Rice
+   parameter K as described above with reference to Tables 900 and 1000.
+            Then at updating step 1254, the encoder module 104 performs adaptation of the
+10 value of the parameter K to be used for encoding the next coeffabslevelremaining
+   value. The next value Kn+iof the parameter K is determined at step 1254 based on two
+   parameters:    the   current   value   of   the   parameter  K,   and    a   last  decoded
+   coeffabslevelremaining value. Step 1254 may be determined using a look-up table
+    1100 as shown in Fig. 11.     The look-up table 1100 may be stored in the memory 306
+15 and/or the hard disk drive 310. The look-up table 1100 provides values for K".1 using the
+   value K, as the column and the residual coefficient magnitude as the row. For example, if
+   the    current  value   of the    parameter     K   is one  (1)  and   the    last decoded
+   coeffabslevelremaining value is twelve (12) then the next value of the parameter K is
+   three (3).
+20          At decision step 1255, if the encoder module 104 determines that there are more
+   coeffabslevelremaining values to encode, then the method 1250 proceeds to step 1256.
+   Otherwise, the method 1250 concludes.
+            At encoding step 1256, the encoder module 104 performs encoding of the Golomb
+   Rice code-word into the block 707 and stores the encoded Golomb-Rice code-word in the
+25 memory 306.
+            A method 1200 of decoding a block of coeffabslevelremaining values of a sub
+   set of a transform unit (TU) will now be described with the reference to Fig. 11 and
+   Fig.12B. The decoding is performed in accordance with the method 1200 using Golomb
+   Rice decoding. The method 1200 may be implemented as part of the entropy decoder
+30 module 202 to 208 of the decoder 200. As described above, the software code modules
+   202 to 208 and 210 forming the decoder 200 are resident on the hard disk drive 310 and are
+   controlled in their execution by the processor 305.
+            The method 1200 will be described by way of example with reference to the block
+   707 of coeffabslevelremaining values of Fig. 7. The method 1200 decodes zero or
+   14060378_1
+
+                                                 -37
+   more coeffabslevelremaining values (i.e., values of residual coefficient remaining
+   magnitude) from the block 707 of the bit-stream portion 501.
+            The method 1200 begins at initialization step 1201, where a Golomb-Rice
+   parameter K is initially determined by the decoder module 202 under execution of the
+ 5 processor 305.     Also at step 1201, the decoder module 202 determines necessity of the
+   parameter K adaptation during the decoding. Step 1201 is the same as the step 1251.
+            Then at decision step 1207, if the decoder module 202 determines that adaptation is
+   necessary, as will be described below, then the method 1200 proceeds to step 1202.
+   Otherwise, the method 1200 proceeds to step 1205.
+10          Then at decision step 1202, if the decoder module 202 determines that there are
+   more coeffabslevel remaining values to decode, then the method 1200 proceeds to step
+   1203. Otherwise, the method 1200 concludes.
+           At decoding step 1203, the decoder module 202 performs decoding the Golomb
+   Rice code-word from the block 707 stored in memory 306
+15          Then at updating step 1204,the decoder module 202performs adaptation of the
+   value of the parameter K to be used for Golomb-Rice decoding of the next
+   coeffabslevelremaining value of the sub-set. The procedure of adaptation performed at
+   step 1204 is the same as used at step 1254 described above.
+           At decision step 1205, if the decoder module 202determines that there are more
+20 coeffabslevelremaining values to decode, then the method 1200 proceeds to step 1206.
+   Otherwise, the method 1200 concludes.
+           At decoding step 1206, the decoder module 202 performs decoding of the Golomb
+   Rice code-word from the block 707 using Golomb-Rice decoding. The decoded Golomb
+   Rice code-word may be stored in the memory 306.
+25          The adaptive and non-adaptive decoding of remaining residual coefficient
+   magnitude values will now be described with reference to Fig. 14A and Fig. 14B.
+           Fig. 14A shows a coeffabslevel-remaining binariser 1400. The binariser module
+   1400 may be implemented using the computer system 300 where various functional
+   modules 1414, 1413, 1406, 1407 and 1410 may be implemented by software executable
+30 within the computer system 300. Alternatively, the binariser 1400 may be implemented by
+   dedicated hardware within the computer system 300.          In still another alternative, the
+   binariser 1400 may be implemented by a combination of dedicated hardware and software
+   executable within the computer system 300.
+   14060378_1
+
+                                               - 38
+            The binariser 1400 may be implemented as part of the decoder module 202 of the
+   decoder 200. Alternatively, the binariser 1400 may also be implemented as part of the
+   encoder module 104 of the decoder 100.
+            The binariser 1400 decodes remaining residual coefficient magnitude values for a
+ 5 sub-set of a transform unit (TU).
+            The binariser1400 uses adaptive estimation of the parameter K. The binariser 1400
+   comprises an initial estimation of Ko module 1414 which performs initial estimation of the
+   parameter K as described above.
+           A module 1413 decodes a remaining residual coefficient magnitude V 0 . Module
+10  1413 accepts input Golomb-Rice code-word 1402 and the initially estimated value 1401 of
+   the parameter K. Once module 1413 completes decoding a decoded remaining residual
+   coefficient magnitude value 1412 is output as seen in Fig. 14A.
+           Module 1406 performs adaptation of the parameter K value based on the initially
+   estimated value 1401 of the parameter K and the value 1404 decoded by the module 1403
+15 as described above.
+           Module 1407 decodes a remaining residual coefficient magnitude V 1 . Module 1407
+   accepts as input a Golomb-Rice code-word 1403 and an estimated value 1405 of the
+   parameter K. Once module 1407 completes decoding a decoded remaining residual
+   coefficient magnitude value 1411 is output.
+20         Module 1410 performs adaptation of the parameter K value based on the previous
+   value 1405 of the parameter K and the value 1408 decoded by the module 1407.
+           Estimated value 1409 of the parameter K maybe used by next Golomb-Rice
+   decoding and adaptation modules 1415. Module 1410 depends on the data provided by the
+   module 1407 which depends on the data provided by the module 1406 which depends on
+25 the data provided by the module 1413.As such, parallel execution of the decoding modules
+    1413 and 1410 is difficult. Further decoding and adaptation modules 1415 also depend
+   both on input data 1416 as well as on previously estimated values of the parameter K.
+   However, the adaptation steps such as steps 1406 and 1410 do not affect the actual value of
+   the parameter K if the value of the parameter K is already optimal. Avoiding adaptation
+30 steps where it is redundant may improve decoding throughput without considerable impact
+   on the coding efficiency.
+           Fig. 14B shows another coeffabslevelremaining binariser 1450.           Again, the
+   binariser module 1450 may be implemented using the computer system 300 where various
+   functional modules 1414, 1413, 1406, 1407 and 1410 may be implemented by software
+   14060378_1
+
+                                                -39
+   executable within the computer system 300. Alternatively, the binariser 1450 may be
+   implemented by dedicated hardware within the computer system 300.           In still another
+   alternative, the binariser 1450 may be implemented by a combination of dedicated
+   hardware and software executable within the computer system 300.
+ 5         Again, the binariser 1450 may implemented as part of the decoder module 202 of
+   the decoder 200. Alternatively, the binariser 1450 may also be implemented as part of the
+   encoder module 104 of the decoder 100.
+   The binariser1450 does not use adaptive estimation of the parameter K. The binarizer 1450
+   achieves parallelism by decoding multiple residual coefficients per clock cycle.
+10         Module 1458 performs initial estimation of the parameter K as described above.
+           Module 1454 decodes a remaining residual coefficient magnitude VO as described
+   above.
+           Module 1454 then accepts input Golomb-Rice code-word 1452 and the initially
+   estimated value 1451 of the parameter K. Module 1456 decodes a remaining residual
+15 coefficient magnitude V 1. Module 1456 accepts as input a Golomb-Rice code-word 1453
+   and the initially estimated value 1451 of the parameter K.
+           Further decoding modules 1460 will also accept their corresponding input Golomb
+   Rice code-words 1459 and the initially estimated value 1451 of the parameter K.
+           Modules 1454, 1456 and all further decoder modules 1460 do not have any data
+20 dependencies and can be executed in parallel.
+           A method 1300 of determining a value of the parameter K for decoding a block of
+   coeffabslevelremaining values of a sub-set of a transform unit (TU) will now be
+   described with the reference to Fig. 13.
+            The method 1300 is used by both the encoder 100 and decoder 200 to guarantee
+25 correct decoding of data. As such, the method 1300 may be implemented as part of the
+   entropy encoder modules 104 of the encoder 100.         Further, the method 1300 may be
+   implemented as part of the entropy decoder module 202 of the decoder 200.
+            The method 1300 will be described by way of example with reference to the
+   decoder 200.
+30          The method 1300 begins at step 1301, where the decoder module 202, under
+   execution of the processor 305, analyses previously decoded information for a current sub
+   set and previously decoded sub-sets of the transform unit (TU). The previously decoded
+   information for the current sub-set may be accessed from the memory 306. Step 1301 will
+   be described in further detail below.
+   14060378_1
+
+                                                     - 40
+             Then at step 1302, the decoder module 202 determines whether the decoding will
+   use adaptation and determines a value for the parameter K. Step 1302 will be described in
+   further detail below.
+             At step 1303, the value of the parameter K estimated at step 1302 is assigned by the
+ 5 decoder module 202 to a variable configured within the memory 306 holding the parameter
+   K. Following step 1303, the method 1300 concludes.
+             In one implementation, step 1301 may analyse whether the number of non-zero
+   residual coefficients in the current sub-set is greater than a predetermined threshold value
+   T. If the number of non-zero (significant) residual coefficients is greater than the
+10 predetermined threshold then the parameter K is assigned an offset value Koffset. The offset
+   value will result in the parameter K having a non-zero value that is offset from zero by the
+   value of Koffset. The value of Koffset may be as predetermined value and set to one (1).
+   Otherwise, the parameter K is assigned a zero setting value         Kzero.
+             For the HEVC test model 6.0 ("HM-6.0"), the threshold value T used to make the
+15 decision would be fourteen (14). The offset value Koffset of the parameter K would be one
+   (1) and the zero setting value Kzero would be zero (0).
+             In another implementation, the value of the quantization parameter       Q and the index
+   of the current subset I may be analysed at step 1301. In such an implementation, if the
+   value of the quantization parameter        Q is less than a predetermined threshold TQ and the
+20 value of the subset index I is less than a predetermined threshold Isubset then the parameter
+   K is assigned an offset value Koffset. Otherwise, the parameter K is assigned a zero setting
+   value Kzero
+             For the HEVC test model 6.0 ("HM-6.0"), the threshold value of the quantization
+   parameter TQ used to make the decision would be ten (10) and the value of the subset index
+25 Isubset used to make the decision would be one (1). The offset value Koffset of the parameter
+   K would be one (1) and the zero setting value Kzero would be zero (0).
+             The values of transform unit width and height may additionally be analysed at step
+    1301. In such an implementation, if the values of transform unit width and height are
+   greater than predetermined thresholds       Twidth  and Theight then the parameter K is assigned an
+30 offset value Koffset. Otherwise, the parameter K is assigned a zero setting value Kzero
+             For the HEVC test model 6.0 ("HM-6.0"), the threshold values of transform unit
+   width and height     Twidth and Theight used to make the decision would be eight (8) and eight
+   (8). The offset value Koffset of the parameter K would be one (1) and the zero setting value
+   Kzero would be zero (0).
+   14060378_1
+
+                                                 -41
+           A decision about using adaptation during encoding or decoding of a sub-set maybe
+   made at step 1302 based on the index of the sub-set. If the index is equal to or greater than
+   a predetermined value Imax then at step 1257 of encoder method 1250 and at step 1207 of
+   decoder method 1200, the method proceeds to the step 1205 of decoder and step 1255 of
+ 5 encoder and does not use adaptation of the parameter K. Having a fixed Rice parameter K
+   may be considered as dependency free Golomb-Rice encoding or decoding. Otherwise, the
+   method proceeds to step 1202 of method 1200 and step 1252 of method 1250 and uses
+   adaptation of the parameter K. Having an adaptive Rice parameter K may be considered as
+   dependency based Golomb-Rice encoding or decoding.
+10         For the HEVC test model 6.0 ("HM 6.0"), the threshold value of the index            Imax
+   would be six (6). Fig. 15 shows an example transform unit 1500 where the threshold value
+   six (6) of the index Imax is used at step 1302 to make a decision about using adaptation
+   during encoding or decoding of a subset. A backward diagonal scan pattern is assumed in
+   the example of Fig. 15. Transform unit 1500 is split into sixteen subsets such as sub-set
+15  1510. Every subset in Fig. 15 is marked with either letter "A" or letter "F" where sub-sets
+   marked with letter "A" indicate sub-sets that are encoded and decoded using adaptive Rice
+   parameters K; while subsets marked with "F" indicate sub-sets using fixed Rice parameters
+   K when using a threshold value of six (6) for the index Imax at step 1302. The value of six
+   for the index Imax results in the "A" sub-sets using adaptive Rice parameters K within the
+20 sub-set. Sub-set marked with the letter "F" indicate sub-sets in positions in the TU 1500
+   where a threshold value of six (6) for the index Imax result in the sub-sets using a fixed Rice
+   parameter. The threshold value of index Imax is the same for all of the sub-sets in the TU
+    1500, the location of the sub-set in the TU 1500 is compared to the threshold to determine
+   if an adaptive Rice parameter is to be used for encoding and decoding. The value of the
+25 threshold index Imax is used to select a boundary between the adaptive and fixed sub-sets in
+   fig. 15. The sub-set order starts at zero (0) for the top left sub-set 1520 and proceeds in a
+   reverse scan order with sub-set 1530 as one (1) and sub-set 1540 as sub-set two (2).
+           In another implementation, a decision about using adaptation during encoding or
+   decoding of a sub-set maybe made at step 1302 based on a number G1 of residual
+30 coefficients greater than one and a number G2 of residual coefficients greater than two in a
+   previously encoded or decoded sub-set. However, such a method does not apply to the case
+   when there is no previously encoded or decoded sub-set. When there is a previously
+   encoded or decoded sub-set, then if the value (G2 - G1) is greater than a predetermined
+   threshold T2 1, then at step 1257 of encoder method 1250 (or at step 1207 of decoder
+   14060378_1
+
+                                                 - 42
+   method 1200) the method 1250 proceeds to step 1255 of encoder method 1250 (or step
+    1205 of decoder method 1200) and does not use adaptation of the parameter K. Otherwise,
+   the method 1250 proceeds to step 1252 of encoder method 1250 (or the method 1200
+   proceeds to step 1202 of decoder method 1200) and uses adaptation of the parameter K.
+ 5         For the HEVC test model 6.0 the threshold value of the index T2 1 would be four
+   (4).
+            The methods 1250 and 1300 when applied to video encoder 100 and the methods
+    1200 and 1300 when applied to decoder 200, enable implementations to realise a more
+   efficient compression of frame data, such as frame data 101. The described methods also
+10 enable implementations to realise an increase in the throughput of parsing an encoded bit
+   stream, such as encoded bitstreaml 13. More efficient compression of frame data occurs
+   through using better estimation of Golomb-Rice parameter K which allows shorter code
+   words to be assigned to encoded symbols. Higher throughput may be achieved through
+   allowing implementations to use the described methods of decoding Golomb-Rice code
+15 words which can decode more than one code-word at a time by eliminating data
+   dependencies between the code-words.
+                                    INDUSTRIAL APPLICABILITY
+            The arrangements described are applicable to the computer and data processing
+   industries and particularly for the digital signal processing for the encoding a decoding of
+20 signals such as video signals.
+            The foregoing describes only some embodiments of the present invention, and
+   modifications and/or changes can be made thereto without departing from the scope and
+   spirit of the invention, the embodiments being illustrative and not restrictive.
+            In the context of this specification, the word "comprising" means "including
+25 principally but not necessarily solely" or "having" or "including", and not "consisting only
+   of'.   Variations of the word "comprising", such as "comprise" and "comprises" have
+   correspondingly varied meanings.
+30
+   14060378_1
+
+                                                  - 43
+   THE CLAIMS DEFINING THE INVENTION ARE AS FOLLOWS:
+    1.      A method of decoding a subset of a plurality of subsets of a transform unit of
+   encoded video data using Golomb-Rice decoding, the method comprising:
+ 5          determining an initial value of a Rice parameter for Golomb-Rice decoding of the
+   subset of the transform unit, from information related to previously decoded residual
+   coefficient values for a previous sub-set of the plurality of sub-sets of the transform unit;
+            initializing the Rice parameter to the determined initial value; and
+            decoding the subset of the transform unit using Golomb-Rice decoding, wherein the
+10 initialised Rice parameter is used as an initial Rice parameter for decoding the subset.
+   2.       A method according to the claim 1, wherein the initialised Rice parameter is
+   determined from information decoded for the transform unit prior to decoding of the
+   current sub-set.
+15
+   3.       A method according to the claim 2, wherein the initialised Rice parameter is offset
+   from a zero setting when the quantization parameter is lower than a predetermined
+   threshold.
+20 4.       A method according to the claim 1, wherein the initialised Rice parameter is
+   determined from information decoded for the current subset of the transform unit.
+   5.       A method according to the claim 4, wherein the initialised Rice parameter is offset
+   from a zero setting when the determined number of significant residual coefficients in the
+25 current subset is higher than a predetermined threshold.
+   6.       An apparatus for decoding a subset of a plurality of sub-sets of a transform unit of
+   encoded video data using Golomb-Rice decoding, the apparatus comprising:
+            means for determining an initial value of a Rice parameter value for Golomb-Rice
+30 decoding of the subset of the transform unit, from information related to previously
+   decoded residual coefficient values for a previous sub-set of the plurality of sub-sets of the
+   transform unit;
+            means for initializing the Rice parameter to the determined initial value; and
+   14060378_1
+
+                                                  - 44
+            means for decoding the subset of the transform unit using Golomb-Rice decoding,
+   wherein the initialised Rice parameter is used as an initial Rice parameter for decoding the
+   subset.
+ 5 7.       A system for decoding a subset of a plurality of sub-sets of a transform unit of
+   encoded video data using Golomb-Rice decoding, the system comprising:
+            a memory for storing data and a computer program;
+            a processor coupled to said memory for executing said computer program, said
+   computer program comprising code for:
+10          determining an initial value of a Rice parameter for Golomb-Rice decoding of the
+   subset of the transform unit, from information related to previously decoded residual
+   coefficient values for a previous sub-set of the plurality of sub-sets of the transform unit;
+            initializing the Rice parameter to the determined initial value; and
+            decoding the subset of the transform unit using Golomb-Rice decoding, wherein the
+15 initialized Rice parameter is used as an initial parameter for decoding the subset.
+   8.       A computer readable medium having a computer program recorded thereon for
+   decoding a subset of a transform unit of encoded video data using Golomb-Rice decoding,
+   the program comprising:
+20          code for determining an initial Rice parameter value for Golomb-Rice decoding of
+   the subset of the transform unit, from previously decoded information for the transform
+   unit;
+            code for initializing the Rice parameter to the determined value; and
+            code for decoding the subset of the transform unit using Golomb-Rice decoding,
+25 wherein the initialised Rice parameter is used as an initial parameter for decoding the
+   subset.
+   9.       A method of encoding a subset of a transform unit of video data using Golomb
+   Rice encoding, the method comprising:
+30          determining an initial Rice parameter value for Golomb-Rice encoding of the
+   subset of the transform unit, from previously encoded information for the transform unit;
+            initializing the Rice parameter to the predetermined value; and
+            encoding the subset of the transform unit using Golomb-Rice encoding, wherein the
+   initialised Rice parameter is used as an initial encoding parameter for encoding the subset.
+   14060378_1
+
+                                                  - 45
+    10.     An apparatus for encoding a subset of a transform unit of video data using Golomb
+   Rice encoding, the apparatus comprising:
+            means for determining an initial Rice parameter value for Golomb-Rice encoding
+ 5 of the subset of the transform unit, from previously encoded information for the transform
+   unit ;
+            means for initializing the Rice parameter to the determined value; and
+            means for encoding the subset of the transform unit using Golomb-Rice encoding,
+   wherein the initialised Rice parameter is used as an initial parameter for encoding the
+10 subset.
+    11.     A system for encoding a subset of a transform unit of video data using Golomb
+   Rice encoding, the system comprising:
+            a memory for storing data and a computer program;
+15          a processor coupled to said memory for executing said computer program, said
+   computer program comprising code for:
+            determining an initial Rice parameter value for Golomb-Rice encoding of the
+   subset of the transform unit, from previously encoded information for the transform unit;
+   and
+20          initializing the Rice parameter to the determined value; and
+            encoding the subset of the transform unit using Golomb-Rice encoding, wherein the
+   initialised Rice parameter is used as an initial parameter for encoding the subset.
+    12.     A computer readable medium having a computer program recorded thereon for
+25 encoding a subset of a transform unit of video data using Golomb-Rice encoding, the
+   program comprising:
+            code for determining an initial Rice parameter value for Golomb-Rice encoding of
+   the subset of the transform unit, from previously encoded information for the transform
+   unit;
+30          code for initializing the Rice parameter to the determined value; and
+   code for encoding the subset of the transform unit using Golomb-Rice encoding, wherein
+   the initialised Rice parameter is used as an initial parameter for encoding the subset.
+                                   CANON KABUSHIKI KAISHA
+   14060378_1
+
+                          - 46
+           Patent Attorneys for the Applicant
+                  Spruson&Ferguson
+14060378_1
+
+                                                                          <removed-apn>             <removed-date>
+                            102                103                                   104
+                                   124
+      101       122                                            126
+Frame       |                             Scale and                             Entropy            Encoded
+                       Transform
+ Data                                     Quantise                              Encoder            bitstream
+                                                                                             113
+                  115
+                                  142                          Inverse          Inverse
+                                                               Scaling         Transform         106
+                                                  105
+                                                                         128               130
+                                                                                                               1/21
+                              136
+                                                         109             114
+                                        Intra-frame
+                                                                                           138
+                                         prediction
+                                                        108     112      140   111
+                      Mux     134
+                                       Motion                                  Deblocking
+            120                                           Frame Buffer
+                                    Compensation                                 Filter
+                      110                         132
+                                                                                                   100
+                                         Motion
+                                        Estimation       107
+
+                                                                      <removed-apn>             <removed-date>
+                   202                                                 203
+                                      220                                          224
+Encoded           Entropy                                 Inverse Scale
+bitstream         Decoder                                 and Transform
+                                     236
+            113                                                              234
+                                                                                                 210
+                                                                                         +
+                                                          205
+                              230                                                              232
+                                     Intra-frame
+            222                       prediction                                                       2/21
+                                                         226          208          207
+                        Mux
+                              228
+                                       Motion                                       Deblocking
+                                                           Frame Buffer
+                                    Compensation                                      Filter
+                  206
+                                                   204                       Decoded
+                                                                             Frames
+                                                                       209
+                                                                200
+
+<removed-date>
+                                                  3/21
+                                                 (Wide-Area)
+                                               Communications
+                                                Network 320
+<removed-apn>
+               Printer 315
+              Microphone                                                324
+                  380
+                                                        321
+              317                                                         (Local-Area)
+                          Video                                          Communications
+                         Display                                          Network 322
+                                           Ext.            323
+                           314            Modem
+                                           316
+                                                                                     300
+                                                                          301
+                                                                       Appl. Prog     Storage
+                Audio-Video     I/O Interfaces        Local Net.
+                                                                          333         Devices
+               Interface 307         308              I/face 311
+                                                                       HDD 310        309
+                                                                                        304
+                                318                                     319
+                    Processor         I/O Interface           Memory          Optical Disk
+                       305                 313                 306             Drive 312
+                     Keyboard 302
+                     Scanner 326                                           Disk Storage
+                                                              303          Medium 325
+                      Camera 327
+
+<removed-date>
+                                              4/21
+                                              334                            333
+                      Instruction (Part 1) 328                Data 335
+                      Instruction (Part 2) 329                Data 336           332
+              331
+                            Instruction 330                   Data 337
+<removed-apn>
+                      ROM 349
+                    POST     BIOS          Bootstrap           Operating
+                     350      351         Loader 352          System 353
+                       Input Variables 354           Output Variables 361
+                               355                             362
+                               356                             363
+                               357                             364
+                                  Intermediate Variables 358
+                                  359                      366
+                                  360                          367
+                                 319                                       304
+                                                     318
+                      305
+                                        Interface 342
+                                        341                    348
+                                                        Reg. 344 (Instruction)
+                     Control Unit 339
+                                                              Reg. 345
+                        ALU 340                            Reg. 346 (Data)
+
+      <removed-apn>   <removed-date>
+                         405
+403
+                                     5/21
+                               400
+                   401
+        402
+
+<removed-date>
+                                  6/21
+                                                 400
+<removed-apn>
+                                                        452
+              20 13 3     1   0    0     0   0
+              11 10 7     0   0    0     0   0
+              9   5   0   1   0    0     0   0
+              1   1   1   4   0    0     0   0         451
+              0   1   0   0   0    0     0   1
+              1   1   0   0   0    0     0   0
+              0   0   0   0   0    0     0   0
+              0   0   0   0   0    0     0   0
+
+                  <removed-apn>   <removed-date>
+                    500
+502   503   504                   501
+                                        7/21
+
+<removed-date>
+                                   8/21
+                                                       650
+<removed-apn>
+                           Start
+                                                 651
+                     Encode Delta-qp
+                         Value
+                                                 652
+                       Encode Last
+                    Significant Position
+                                                 653
+                     Encode Sub-set
+                                           654
+              Yes
+                     More Sub-sets?
+                         No
+                           End
+
+<removed-date>
+                                    9/21
+                                                       600
+<removed-apn>
+                           Start
+                                                 601
+                     Decode Delta-qp
+                         Value
+                                                 602
+                       Decode Last
+                    Significant Position
+                                                 603
+                     Decode Sub-set
+                                           604
+              Yes
+                     More Sub-sets?
+                         No
+                           End
+
+                               <removed-apn>         <removed-date>
+                                            700
+                        504
+      501
+                                              701
+                                                           10/21
+702         703   704    705   706    707
+
+<removed-date>
+                                   11/21
+                           Start                        850
+                                              851
+                    Encode Significant
+                       Group Flag
+<removed-apn>
+                                            852
+              No       Is Significant
+                           Group
+                               Yes
+                                                  853
+                           Encode
+                   significant_coeff_flag
+                          Encode                  854
+                   coeff_abs_level_great
+                          er1_flag
+                          Encode                  855
+                   coeff_abs_level_great
+                          er2_flag
+                         Encode                   856
+                      coeff_sign_flag
+                          Encode                  857
+                   coeff_abs_level_rema
+                           ining
+                           End
+
+<removed-date>
+                                   12/21
+                           Start                        800
+                                              801
+                    Decode Significant
+                       Group Flag
+<removed-apn>
+                                            802
+              No       Is Significant
+                           Group
+                               Yes
+                                                  803
+                           Decode
+                   significant_coeff_flag
+                                                  804
+                          Decode
+                   coeff_abs_level_great
+                          er1_flag
+                                                  805
+                          Decode
+                   coeff_abs_level_great
+                          er2_flag
+                                                  806
+                         Decode
+                      coeff_sign_flag
+                                                  807
+                          Decode
+                   coeff_abs_level_rema
+                           ining
+                           End
+
+<removed-date>
+                                   13/21
+<removed-apn>
+                                                      900
+              Encoded   K=0                K=1
+               Value    Codeword           Codeword
+                 0      0                  00
+                 1      10                 01
+                 2      110                100
+                 3      1110               101
+                 4      11110              1100
+                 5      111110             1101
+                 6      1111110            11100
+                 7      11111110           11101
+                 8      11111111           111100
+                 9      11111111           111101
+                10      11111111           1111100
+                11      11111111           1111101
+                12      11111111           11111100
+                13      11111111           11111101
+                14      11111111           11111110
+                15      11111111           11111111
+
+<removed-date>
+                                    14/21
+                                                       1000
+              Encoded Value minus   Codeword
+              Threshold
+<removed-apn>
+              0                     0
+              1                     10
+              2                     110
+              3                     1110
+              4                     11110
+              5                     111110
+              6                     1111110
+              7                     11111110
+              8                     111111110
+              9                     1111111110
+              10                    11111111110
+              11                    111111111110
+              12                    1111111111110
+              13                    11111111111110
+              14                    111111111111110
+              15                    1111111111111110
+
+<removed-date>
+                                   15/21
+                                                    1100
+<removed-apn>
+              Symbol   K=0   K=1       K=2   K=3   K=4
+              0        0     1         2     3     4
+              1        0     1         2     3     4
+              2        0     1         2     3     4
+              3        1     1         2     3     4
+              4        1     1         2     3     4
+              5        1     1         2     3     4
+              6        2     2         2     3     4
+              7        2     2         2     3     4
+              8        2     2         2     3     4
+              9        2     2         2     3     4
+              10       2     2         2     3     4
+              11       2     2         2     3     4
+              12       3     3         3     3     4
+              13       3     3         3     3     4
+              14       3     3         3     3     4
+              15       3     3         3     3     4
+              16       3     3         3     3     4
+              17       3     3         3     3     4
+              18       3     3         3     3     4
+              19       3     3         3     3     4
+              20       3     3         3     3     4
+              21       3     3         3     3     4
+              22       3     3         3     3     4
+              23 and   4     4         4     4     4
+              above
+
+<removed-date>
+                                               16/21
+                                       Start                                1250
+<removed-apn>
+                                                                1251
+                                   Initialize K
+                                                         1257
+                       No                                 Yes
+                              Use Adaptation?
+                                   1255
+                                                                            1252
+                                    No         No
+              More to Encode?                          More to Encode?
+                                1256                             Yes
+                                                                            1253
+              Encode Coefficient                       Encode Coefficient
+                 Magnitude                                Magnitude
+                                                                            1254
+                                                           Update K
+                                        End
+
+<removed-date>
+                                               17/21
+                                       Start                                1200
+                                                                1201
+<removed-apn>
+                                   Initialize K
+                                                         1207
+                       No                                 Yes
+                              Use Adaptation?
+                                   1205
+                                                                            1202
+                                    No         No
+              More to Decode?                          More to Decode?
+                                1206                             Yes
+                                                                            1203
+              Decode Coefficient                       Decode Coefficient
+                 Magnitude                                Magnitude
+                                                                            1204
+                                                           Update K
+                                        End
+
+<removed-date>
+                           18/21
+                Start
+                                          1300
+              Analyse
+<removed-apn>
+              statistics
+                                   1301
+              Estimate             1302
+                Kinit
+                                   1303
+               Assign
+               K=Kinit
+                End
+
+<removed-date>
+                                                  19/21
+<removed-apn>
+                  Initial        1414                                   1400
+                estimation
+                   of K0
+                                                                                1412
+                                           1413
+              1401           Decode
+                               V0
+                                                          1406
+              1402                     Estimate
+                                          K1
+                       1404     1405                                 1407
+              1403                                   Decode
+                                                       V1                        1411
+                                                                               1410
+                                                                 Estimate
+                                                                    K2
+                                           1408
+                                                          1409
+               1416                                                            1415
+
+<removed-date>
+                                                 20/21
+                                                                1450
+<removed-apn>
+                       Initial estimation         1458
+                               of K0
+                1451                                     1454
+                                            Decode V0            1455
+              1452
+                                                         1456
+                                            Decode V1            1457
+              1453
+                                                         1460
+              1459
+
+<removed-date>
+                                   21/21
+                                           1500
+<removed-apn>
+                     1520   1540
+                                             1510
+              1530
+

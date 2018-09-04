@@ -1,0 +1,1209 @@
+                                        ABSTRACT
+        A video encoding method, a video encoding apparatus, a video decoding
+method, and a video decoding apparatus, the video encoding method including
+producing a fast transform matrix based on a transform matrix which is used for
+frequency transformation on a predetermined-size block; producing a transformed
+block by transforming the predetermined-size block by using the fast transform
+matrix; and performing scaling with respect to the transformed block to correct a
+difference between the transform matrix used for the frequency transformation and
+the fast transform matrix.
+
+    VIDEO ENCODING METHOD AND DEVICE AND DECODING METHOD AND
+                                         DEVICE
+        The present application is a divisional application from Australian Patent
+Application No. <removed-apn>, which is a divisional of Australian Patent Application
+No. 2015221483, which is a divisional of Australian Patent Application No.
+2011308204 the entire disclosure of which is incorporated herein by reference.
+                                   TECHNICAL FIELD
+        The present invention relates to a video encoding method, a video encoding
+apparatus, a video decoding method, and a video decoding apparatus, and more
+particularly, to a method and apparatus for transforming a large-sized block, and a
+method and apparatus for inversely transforming a large-sized transformed block.
+                                  BACKGROUND ART
+        According to a current international video coding standard, such as H.264 or
+MPEG-4, a video signal is hierarchically divided into a sequence, a frame, a slice, a
+macroblock, and a block, wherein the block is a minimum processing unit.         In terms
+of encoding, a prediction remaining error of the block is determined via intra-frame or
+inter-frame prediction, block transformation is performed such that energy is focused
+on a coefficient of a decimal, and image data is compressed and recorded as a
+coded bitstream via quantization, scanning, run-length coding, and entropy coding.
+In terms of decoding, processes are performed in the opposite order.       First, a block
+transformation coefficient of entropy coding is extracted from a bitstream.     Then, a
+prediction remaining error of a block is reconstructed via inverse-quantization and
+inverse-transformation, and prediction information is used to reconstruct video data
+of the block. In an encoding-decoding process, a transformation module is a base of
+video compression, and transformation performance of the transformation module
+directly affects the general performance of a codec.
+                                             1
+
+        Discrete cosine transform (DCT) is employed as an initial video coding
+standard, such as MPEG-1 or H.261. After DCT was introduced in 1974, DCT has
+been widely used in image and video coding fields.      Transformation performance of
+DCT is excellent compared to all sub-optimal transforms since DCT removes a
+correlation of image elements in a transformation domain and prepares a base for
+highly-efficient image compression. However, since a DCT matrix is expressed using
+floating point numbers, many system resources are used due to massive floating
+point operations. Accordingly, a new DCT algorithm is required so as to improve
+transformation efficiency while performing transformation on a large-size block.
+                            SUMMARY OF THE INVENTION
+        According to an aspect of the present invention, there is provided a video
+encoding method comprising: obtaining a transform block by transforming a residual
+block indicating differences between a current block and a predicted block of the
+current block; determining a scaling constant for quantization of transform
+coefficients included in the transform block based on a quantization parameter;
+quantizing the transform coefficients in the transform block based on the scaling
+constant; entropy-coding the quantized transform block; and outputting a bitstream
+including quantized transform block information indicating the quantized transform
+block, wherein, where i denotes a remainder after the quantization parameter is
+divided by 6, the scaling constant for i=0 is 40, the scaling constant for i=1 is 45, the
+scaling constant for i=2 is 51, the scaling constant for i=3 is 57, the scaling constant
+for i=4 is 64, and the scaling constant for i=5 is 72.
+        According to another aspect of the present invention, there is provided a video
+encoding apparatus comprising a processor configured to: obtain a transform block
+by transforming a residual block indicating differences between a current block and a
+predicted block of the current block, determine a scaling constant for quantization of
+transform coefficients included in the transform block based on a quantization
+parameter, quantize the transform coefficients in the transform block based on the
+scaling constant, entropy-coding the quantized transform block, and output a
+bitstream including quantized transform block information indicating the quantized
+transform block, wherein, where i denotes a remainder after the quantization
+                                             2
+
+parameter is divided by 6, the scaling constant for i=0 is 40, the scaling constant for
+i=1 is 45, the scaling constant for i=2 is 51, the scaling constant for i=3 is 57, the
+scaling constant for i=4 is 64, and the scaling constant for i=5 is 72.
+        According to a further aspect of the present invention, there is provided a
+non-transitory computer-readable recording medium comprising a bitstream, the
+bitstream comprising: quantized transform block information indicating a quantized
+transform block of a current block; quantization parameter information indicating a
+quantization parameter; and prediction mode information indicating a prediction
+mode of the current block. wherein, the quantized transform block is derived by
+entropy-decoding the quantized transform block information, transform coefficients in
+the quantized transform block are scaled by using a scaling constant that is
+determined based on the quantization parameter, a transform block that includes the
+scaled transform coefficients is inverse-transformed to obtain a residual block
+indicating differences between the current block and a predicted block of the current
+block, the predicted block of the current block is determined based on the prediction
+mode of the current block, where i denotes a remainder after the quantization
+parameter is divided by 6, the scaling constant for i=0 is 40, the scaling constant for
+i=1 is 45, the scaling constant for i=2 is 51, the scaling constant for i=3 is 57, the
+scaling constant for i=4 is 64, and the scaling constant for i=5 is 72.
+        There may be provided a video decoding method comprising: receiving a
+quantized transformed block of a predetermined size; scaling the quantized
+transformed block by using a descaling matrix that is derived from a difference
+between an inverse-transform matrix and a fast inverse-transform matrix, the fast
+inverse-transform matrix is produced based on the inverse-transform matrix; and
+inversely transforming the scaled transformed block by using the fast
+inverse-transform matrix.
+        There may be provided a video decoding method comprising: receiving a
+quantized transform block which has a predetermined size; determining a scaling
+constant for scaling of transform coefficients included in the quantized transform
+block based on a quantization parameter; scaling the transform coefficients by using
+the scaling constant; and inverse-transforming the transform block that includes the
+scaled transform coefficients. One or more exemplary embodiments provide a video
+                                              3
+
+encoding method, a video encoding apparatus, a video decoding method, and a
+video decoding apparatus that enable fast frequency transformation with respect to a
+large-sized block.     One or more exemplary embodiments also provide a video
+encoding method, a video encoding apparatus, a video decoding method, and a
+video decoding apparatus, in which transform errors that may be generated when
+using fast frequency transformation may be compensated for via scaling or
+de-scaling performed in a quantization or dequantization process.
+        According to an exemplary embodiment, an error in a result of IDCT using a
+fast transformation matrix is reduced by performing scaling with respect to a
+transformed block.
+        In image transformation and image inverse-transformation according to an
+embodiment of the present invention, an operation based on an integer instead of a
+floating point operation is performed when a large block is transformed and inversely
+transformed, so that calculation complexity is reduced and an operation speed is
+increased.
+        In addition, an error value between transformation based on a floating point
+operation and fast transformation may be compensated for by performing scaling
+and descaling during the quantization or the dequantization.
+                       BRIEF DESCRIPTION OF THE DRAWINGS
+        The above and other features and advantages of the present invention will
+become more apparent by describing in detail exemplary embodiments thereof with
+reference to the attached drawings in which:
+        FIG. 1 is a block diagram of a video encoding apparatus according to an
+embodiment of the present invention;
+        FIG. 2 is a flow graph of 4-point, 8-point, 16-point, and 32-point discrete
+cosine transform (DCT), according to an embodiment of the present invention;
+        FIG. 3 is a flowchart illustrating a method of producing a scaling matrix,
+according to an embodiment of the present invention;
+                                              4
+
+       FIGS. 4A-4F illustrate scaling matrices according to quantization parameters
+for use in transformation with respect to a 16x1 6 block, according to an embodiment
+of the present invention;
+       FIGS. 5A-5F illustrate scaling matrices according to quantization parameters
+for use in transformation with respect to a 32x32 block, according to an embodiment
+of the present invention;
+       FIGS. 6A-6F illustrate de-scaling matrices according to quantization
+parameters applied to a 16x1 6 block, according to an embodiment of the present
+invention;
+       FIGS. 7A-7F illustrate de-scaling matrices according to quantization
+parameters applied to a 32x32 block, according to an embodiment of the present
+invention;
+       FIG. 8 is a flow graph of 32-point DCT according to another embodiment of
+the present invention;
+       FIG. 9 is a reference diagram of an operation process of a butterfly structure
+forming the 32-point DCT of FIG. 8;
+       FIG. 10 is a flowchart illustrating a video encoding method according to an
+embodiment of the present invention;
+       FIG. 11 is a block diagram of a video decoding apparatus according to an
+embodiment of the present invention; and
+       FIG. 12 is a flowchart illustrating a video decoding method according to an
+embodiment of the present invention.
+                   DETAILED DESCRIPTION OF THE INVENTION
+       Hereinafter, exemplary embodiments will be described more fully with
+reference to the accompanying drawings.
+       FIG. 1 is a block diagram of a video encoding apparatus 100 according to an
+embodiment of the present invention.
+                                              5
+
+        Referring to FIG. 1, the video encoding apparatus 100 includes a predictor
+110, a subtracter 115, a transformer 120, a quantizer 130, and an entropy encoder
+140.
+        The predictor 110 divides an input image into blocks having a predetermined
+size, and generates a prediction block by performing inter prediction or intra
+prediction on each block.     In detail, the predictor 110 performs inter prediction for
+generating a prediction block through motion prediction and compensation
+processes, which generate a motion vector indicating a region similar to a current
+block within a predetermined search range of a reference picture that is previously
+encoded and then restored, and intra prediction for generating a prediction block by
+using data of an adjacent block that is adjacent to a current block.
+        The subtracter 115 generates a residual by subtracting the prediction block of
+the current block from original image data.
+        The transformer 120 transforms the residual to a frequency region.
+Specifically, in exemplary embodiments of the present invention, a discrete cosine
+transform (DCT) matrix defined with respect to an existing block having a relatively
+small size, such as a 4x4 or 8x8 block, may be enlarged and may be applied to a
+block having a size of at least 16x1 6. As is described below, the transformer 120
+performs DCT according to additions and subtractions based on an integer and a
+shift operation, instead of a floating point operation, by substituting elements of a
+transformation matrix used for existing DCT with rational numbers, thereby reducing
+calculation complexity while increasing an operation speed.       According to another
+embodiment, the transformer 120 may perform DCT by using a fast transformation
+matrix including elements that are obtained by multiplying the elements of a
+transformation matrix used for DCT by a power of 2 and then rounding up the
+multiplied elements, thereby reducing overall calculation complexity.
+        The quantizer 130 quantizes the transformed residual.        In particular, the
+quantizer 130 performs predetermined scaling so as to reduce an error value
+between a result of the transformation performed using the fast transform matrix by
+the transformer 120 and a result of transformation performed using a DCT matrix
+based on an actual floating point operation.      Scaling and quantization will be
+described in detail later.
+                                               6
+
+        The entropy encoder 140 generates a bitstream by performing variable length
+encoding on quantized image data.
+        The transformation performed in the transformer 120 of FIG. 1 will now be
+described in detail.
+        The transformer 120 performs column-wise transform and row-wise transform
+with respect to an NxN (where N denotes an integer) input block to produce an NxN
+transformed block.       When the NxN input block is Input, a row-wise DCT matrix is
+Transformhor, a column-wise DCT matrix is Transformver, and a transform result
+value is Output, the transformer 120 performs a matrix operation as expressed in
+Equation; Output=Transformhor x Input x Transformver to output the transform
+result value Output.      In the matrix operation, a first matrix multiplication
+Transformhor x Input corresponds to execution of one-dimensional (ID) horizontal
+DCT with respect to each row of the NxN input block Input, and a multiplication of
+Transformhor x Input by Transformver corresponds to execution of ID vertical DCT.
+The row-wise DCT matrix Transformhor is the transpose of the column-wise DCT
+matrix Transformver. Although the below description is focused on an NxN
+transform matrix and an NxN inverse-transform matrix that perform frequency
+transformation and frequency inverse-transformation with respect to the NxN input
+block, the spirit of the present invention may also be applied to the cases of using an
+axb (where a and b denote integers) frequency transform matrix and an axb
+frequency inverse-transform matrix.
+        When an element located at a (i,k) (where i and k are integers) position of a
+vertical transform matrix is Aik, the (i,k)th element Aik of the vertical transform matrix
+for transformation with respect to an NxN input block may be defined as in Equation
+1:
+          [Equation 1]
+                            i7(2k+ 1)i
+                                  2N
+                                 N1          2
+        (i,k=0,...,N-1 ,                         )MA
+                                               7
+
+        Since a horizontal transform matrix is the transpose of the vertical transform
+matrix, an (i,k)th element Bik of the horizontal transform matrix is expressed as a
+value obtained using a cosine function, like the vertical transform matrix.    The
+transformer 120 may perform DCT according to additions, subtractions, and a shift
+operation by using a fast transform matrix produced by substituting elements of a
+transformation matrix used for DCT with rational numbers.        According to another
+embodiment, the transformer 120 may perform DCT by using a fast transformation
+matrix formed of elements that are obtained by multiplying the elements of the
+transformation matrix used for DCT by a power of 2 and then rounding up the
+multiplied elements.
+        FIG. 2 is a flow graph of 4-point, 8-point, 16-point, and 32-point DCT,
+according to an embodiment of the present invention.
+        Referring to FIG. 2, fO through f31 denote input values of 1-dimensional (1D)
+DCT and at the same time, denote output values of 1D inverse discrete cosine
+transform (IDCT).        FO through F31 denote output values of 1D DCT and at the
+same time, denote input values of 1D IDCT.        A data processing direction during
+DCT is from left to right, and a processing direction during IDCT is from right to left.
+2 lines intersecting at a point denotes an addition of two numbers.     A value above
+each line denotes a multiplication according to a corresponding coefficient.     c6
+denotes cosO, sO denotes sinO, and '-' denotes negation.       A reference numeral 210
+indicating a dashed line is a flow graph of 4 point 1D DCT, a reference numeral 220
+indicating a dashed line is a flow graph of 8 point 1D DCT, a reference numeral 230
+indicating a dashed line is a flow graph of 16 point 1D DCT, and a reference numeral
+240 indicating a dashed line is a flow graph of 32 point 1D DCT.
+        As shown in the flow graph 200, ce and sO may become irrational numbers
+according to a value of   e in the DCT, and thus calculation complexity may increase.
+Such a process of the DCT may increase complexity when realized using hardware.
+Accordingly, according to an exemplary embodiment, the transformer 120 produces
+a fast transform matrix similar to the original DCT matrix by substituting
+trigonometrical function values of the elements used for DCT with rational numbers.
+According to another exemplary embodiment, the transformer 120 produces a fast
+transform matrix by multiplying the elements used for DCT by a predetermined
+constant, for example, 2", and rounding up the multiplied elements.
+                                             8
+
+          In detail, referring to FIG. 2, when N is 16, that is, when 1D DCT is performed
+with respect to a 16x1 6 input block, 1D DCT is performed in units of 16 rows and 16
+columns of the 16x1 6 input block according to the flow graph 230.           When f=[f0, f1,
+f2, ..., f1 4, f1 5]T denote 16 input values, F=[F0, F1, F2, ..., F1 4, F1 5]T denote
+transform result values, and OriginalA denotes a transform matrix representing a
+process of transforming the input values according to the flow graph 230,
+F=OriginalAxf denotes the 1D DCT.
+          As described above, since cos6 and sine may be irrational numbers according
+to a value of E, the transformer 120 substitutes cos6 and sinG included in the
+elements of the transform matrix OriginalA with rational numbers.            For example,
+when N=1 6, the transformer 120 substitutes cos 0 with aO, cos(rrx(1/2)/16) with al,
+cos(rrx(2/2)/16) with a2, cos(rrx(3/2)/16) with a3, cos(rrx(4/2)/16) with a4,
+cos(rrx(5/2)/16) with a5, cos(rrx(6/2)116) with a6, cos(rrx(7/2)/16) with a7,
+cos(rrx(8/2)/16) with a8, cos(rrx(9/2)/16) with a9, cos(rrx(10/2)/16) with a10,
+cos(rrx(1 1/2)/16) with al1, cos(rrx(1 2/2)/16) with al 2, cos(rx(1 3/2)/16) with al 3,
+cos(rrx(14/2)/16) with a14, and cos(rrx(15/2)/16) with a15.         Similarly, sine may be
+substituted with variables ai by using a relationship such as sine=cos(90-e).           The
+variables ai may be rational numbers, and a denominator of each variable ai may
+have a value of a power of 2 capable of a shift operation.         The variable ai is limited
+to a dyadic rational because if the denominator is a power of 2, a division operation
+or the like necessary for transformation may be substituted with a right shift
+operation (>>).
+          For example, when N is 16, 16 variables ai may be the following values;
+al=63/64, a2= 62/64, a3= 61/64, a4           = 59/64, a5   = 56/64, a6    = 53/64, a7    =
+49/64, a8        = 45/64, a9    = 40/64, al0= 35/64, al1 = 30/64, al2= 24/64, al3       =
+18/64, a14      =  12/64, and a15 = 6/64.
+          If N is 16, 1D DCT performed with respect to the 16x1 6 input block by using a
+substituted 16x1 6 transform matrix A may be expressed as the following operation,
+wherein Xi (where i denotes an integer in the range of 0 to 15) denotes an input
+value to be transformed, Bi, Ci, Di, Ei, and Fi denote intermediate values, and Yi
+denotes a transform result value:
+          {
+                                                9
+
+       /stage 0
+        Bo = XO + X15;B15 = XO - X15;B1 = X1 + X14;B14 = X1 - X14;B2 = X2 +
+X13;B13=X2-X13;B3=X3+X12;B12=X3-X12;B4=X4+X11;B11                              =X4
+Xl11;B5 = X5 + Xl 0;B1 0 = X5 - Xl 0;B6 = X6 + X9;B9 = X6 - X9;B7 = X7 + X8;B8            =
+X7 - X8;
+       /stage 1
+       CO = BO + B7;C7 = BO - B7;C1 = B1 + B6;C6 = B1 - B6;C2 = B2 + B5;C5 = B2
+- B5;C3 = B3 + B4;C4 = B3 - B4;C1 0 = (45 * ( B1 3 - B10 )) >> 6;C13 = (45 * ( B1 3
++ Bl0)) >> 6;C11 = (45     *   ( B12    - Bl1 ) ) >> 6;C12 = (45 * ( B12 + Bl   )) >> 6;
+       /stage 2
+        DO=CO+C3;D3=CO-C3;D8=B8+C11;D11                        =B8-C11;D12=B15
+C12;D15 = B15 + C12;D1 = C1 + C2;D2 = C1 - C2;D9 = B9 + C10;D10 = B9
+C10;D13 = B14 - C13;D14 = B14 + C13;D5 = (45 * (C6 - C5)) >> 6;D6 = (45                *
+(C6 + C5)) >> 6;
+       /stage 3
+       YO = (45  * ( DO  + Dl)) >>6;Y8 = (45 *         ( DO - Dl)) >>6;Y4 = (59    * D3 + 24
+* D2) >> 6;Y12 = (24    * D3    - 59  *  D2) >> 6;E4 = C4 + D5;E5 = C4    - D5;E6  = C7
+D6;E7 = C7 + D6;E9 = (24 * D14 - 59 * D9 ) >> 6;E10 = (-59 * D13 - 24 * D10 ) >>
+6;E13 = (24 * D13 - 59 * D10) >> 6;E14 = (59 * D14 + 24 * D9 ) >> 6;
+       /stage 4
+       Y2 = ( 12 * E4 + 62   *   E7) >> 6;Yl0 = (53 * E5 + 35 * E6) >> 6;Y6 = (53        *  E6
+- 35 * E5) >> 6;Y14 = ( 12    *   E7 - 62 * E4) >> 6;F8 = D8 + E9;F9 = D8 - E9;F10 =
+D11 -E10;F11 =D11 +E10;F12=D12+E13;F13=D12-E13;F14=D15-E14;F15
+= D15 + E14;
+                                                 10
+
+        /stage 5
+        Y1 = ( 6   *  F8 + 63 * F15 ) >> 6;Y9 = (49 * F9 + 40 * F14 ) >> 6;Y5 = (30         *
+F10 + 56    * F13   ) >> 6;Y13  =  (61  * E11 + 18 * F12) >> 6;Y3 = (61 * F12 - 18 * E11 )
+>> 6;Y1 1 = ( 30     * F13 - 56 * F1   ) >> 6;Y7 = (49 * F14 - 40 * F9 ) >> 6;Y15      = (6   *
+F15 - 63   *  F8) >> 6;
+        As another example, if N is 32, like when N is 16, a fast transform matrix A is
+produced by substituting the elements constituting a 32x32 transform matrix
+OriginalA for use in 1D DCT with respect to a 32x32 block with values based on 32
+variables ai (where i denotes an integer in the range of 0 to 31).         Referring back to
+FIG. 2, when N is 32, that is, when 1D DCT is performed with respect to a 32x32
+input block, 1D DCT is performed in units of 32 rows and 32 columns of the 32x32
+input block according to the flow graph 240.         When f=[f0, f1, f2, ..., f30, f31]T denote
+32 input values, F=[F0, F1, F2, ..., F30, F31 ]T denote transform result values, and
+OriginalA denotes a transform matrix representing a process of transforming the
+input values according to the flow graph 240, 1D DCT is expressed as
+F=OriginalAxf.         The transformer 120 produces the fast transform matrix A by
+substituting a component cos(rrx(i/2)/32) (where i denotes an integer from 0 to 31) of
+the elements constituting the 32x32 transform matrix OriginalA with 32 variables ai
+that are rational numbers.
+         When N is 32, 32 variables ai may have the following values; al = 255/256,
+a2 = 254/256, a3 = 253/256, a4 = 251/256, a5 = 248/256, a6 = 244/256, a7 =
+241/256, a8 = 236/256, a9 = 231/256, al 0 = 225/256, al1 = 219/256, al 2 = 212/256,
+a13 = 205/256, a14 = 197/256, al5 = 189/256, a16 = 181/256, a17 = 171/256, a18                  =
+162/256, a19 = 152/256, a20 = 142/256, a21 = 131/256, a22 = 120/256, a23 =
+109/256, a24 = 97/256, a25 = 86/256, a26 = 74/256, a27 = 62/256, a28 = 49/256,
+a29 = 37/256, a30 = 25/256, and a31 = 12/256.
+        When N is 32, 1D DCT performed on a 32x32 input block by using the fast
+transform matrix A may be expressed as the following operation, wherein Xi (where i
+denotes an integer in the range of 0 to 31) denotes an input value to be transformed,
+Ai, Bi, Ci, Di, Ei, and Fi denote intermediate values, and Yi denotes a transform
+result value:
+                                                11
+
+       {
+       /stage 0
+       AO = XC + X31;A31 = XC - X31;A1 = Xl + X30;A30 = Xl - X30;A2 = X2 +
+X29;A29 = X2 - X29;A3 = X3 + X28;A28 = X3 - X28;A4 = X4 + X27;A27 = X4
+X27;A5 = X5 + X26;A26 = X5 - X26;A6 = X6 + X25;A25 = X6 - X25;A7 = X7 +
+X24;A24 = X7 - X24;A8 = X8 + X23;A23 = X8 - X23;A9 = X9 + X22;A22 = X9
+X22;A10 = X10 + X21;A21 = X10 - X21;A11 = X11 + X20;A20 = X11 - X20;A12=
+X12 + X19;A19 = X12 - X19;A13 = X13 + X18;A18 = X13 - X18;A14 = X14 +
+Xl 7;Al 7 = Xl 4 - Xl 7;Al 5 = Xl 5 + Xl 6;Al 6 = Xl 5 - Xl 6;
+       /stage 1
+       BC= AC + A15;B15 = AC - A15;Bl = Al + A14;B14 = Al - A14;B2 = A2 +
+A13;B13 = A2 - A13;B3 =A3 + A12;B12 = A3 - A12;B4 = A4 + Al1;Bl1 = A4
+Al11;B5 = A5 + Al C;Bl0    = A5 - Al C;B6 = A6 + A9;B9 = A6 - A9;B7 = A7 + A8;B8 =
+A7 - A8;B20 = ( 181*( A27 - A20 ) ) >> 8;B27 = ( 181*( A27 + A20 ) ) >> 8;B21      =
+( 181*(A26 - A21 ))>> 8;B26 = ( 181*(A26 + A21 ))>> 8;B22 = ( 181*(A25
+A22 ) >> 8;B25     = (181 *( A25 + A22) ) >> 8;B23    =  (181 *( A24 - A23)) >> 8;B24  =
+(181*( A24 + A23)) >> 8;
+       /stage 2
+       CO = BC + B7;C7 = BC - B7;Cl        Bl + B6;C6    = Bl - B6;C2 = B2 + B5;C5 = B2
+- B5;C3 = B3 + B4;C4 = B3 - B4;Cl0 = (181 *( Bl 3 - Bl C)) >> 8;Cl 3 = ( 181 *( Bl 3
++ B1 0) ) >> 8;C1 1 = ( 181 *( B1 2 - B1 1 ))>> 8;C1 2 =(181 *( B1 2 + B1 1 ) ) >> 8;C1 6
+= Al 6 + B23;C23 = A16 - B23;C24 = A31 - B24;C31 = A31 + B24;Cl 7 = Al 7 +
+B22;C22 = Al 7 - B22;C25 = A30 - B25;C30 = A30 + B25;Cl 8 = Al 8 + B21;C21 =
+Al 8 - B21;C26 = A29 - B26;C29 = A29 + B26;Cl 9 = Al 9 + B20;C20 = Al 9
+B20;C27 = A28 - B27;C28 = A28 + B27;
+       /stage 3
+                                             12
+
+       DO=CO+C3;D3=CO-C3;D8=B8+C11;D11                   =B8-C11;D12=B15
+C12;D15 = B15 + C12;D1 = C1 + C2;D2 = C1 - C2;D9 = B9 + C10;D10 = B9
+C10;D13 = B14 - C13;D14     = B14 + C13;D5 = ( 181*(C6 - C5)) >> 8;D6 =
+( 181*( C6 + C5) ) >> 8;D18 = (97*C29 - 236*C18) >> 8;D20 = (- 236*C27
+97*C20) >> 8;D26 = (- 236*C21 + 97*C26) >> 8;D28 = ( 97*C19 + 236*C28) >>
+8;D19 = (97*C28 - 236*C19 ) >> 8;D21 = (- 236*C26 - 97*C21 ) >> 8;D27 =
+236*C20 + 97*C27) >> 8;D29     = (97*C18 + 236*C29    ) >> 8;
+       /stage 4
+       YO = ( 181*( DO + Dl )) >> 8;Y16 = ( 181*( DO - Dl )) >> 8;Y8 = (236*D3 +
+97*D2) >> 8;Y24 = (97*D3 - 236*D2) >> 8;E4 = C4 + D5;E5 = C4 - D5;E6 = C7
+D6;E7  =  C7 + D6;E9 = (97*D14 - 236*D9 ) >> 8;E1O =(-236*D13 - 97*D1) >>
+8;E13 = (97*D13 - 236*D10 ) >> 8;E14 = ( 236*D14 + 97*D9 ) >> 8;E16 = C16 +
+D19;E19 = C16 - D19;E20 = C23 - D20;E23 = C23 + D20;E24 = C24 + D27;E27 =
+C24 - D27;E28 = C31 - D28;E31 = C31 + D28;E17 = C17 + D18;E18 = C17
+D18;E21 = C22 - D21;E22 = C22 + D21;E25 = C25 + D26;E26 = C25 - D26;E29 =
+C30 - D29;E30 = C30 + D29;
+       /stage 5
+       Y4 = ( 49*E4 + 251 *E7 )>> 8;Y20   =  (212*E5 + 142*E6 ) >> 8;Y1 2 = ( 212*E6
+- 142*E5 ) >> 8;Y28 = ( 49*E7 - 251 *E4 ) >> 8;F8 = D8 + E9;F9 = D8 - E9;F1 0 = D11
+-E1O;F11   =D11 +E1O;F12=D12+E13;F13=D12-               E13;F14= D15- E14;F15=
+D15 + E14;F17 = (49*E30 - 251*E17) >> 8;F18 = (- 251*E29 - 49*E18 ) >> 8;F21 =
+(212*E26 - 142*E21 )>> 8;F22 = (- 142*E25 - 212*E22) >> 8;F25 = (212*E25
+142*E22) >> 8;F26    = ( 142*E26 + 212*E21 ) >> 8;F29    = (49*E29 - 251*E18 ) >>
+8;F30 = (251 *E30 + 49*E17) >> 8;
+       /stage 6
+       Y2 = ( 25*F8 + 254*Fl5 ) >> 8;Yl 8   = (197*F9 + 162*Fl 4) >> 8;Yl0   =
+(120*Fl 0 + 225*Fl 3 ) >> 8;Y26 = ( 244*F1 1 + 74*Fl2 ) >> 8;Y6   = ( 244*F1 2
+74*Fl1 ) >> 8;Y22 = ( 120*F13 - 225*F10 ) >> 8;Y14 = ( 197*F14 - 162*F9 ) >>
+                                          13
+
+8;Y30 = (25*F15 - 254*F8) >> 8;G16 = E16 + F17;G17 = E16 - F17;G18 = E19
+F18;G19 = E19 + F18;G20 = E20 + F21;G21 = E20 - F21;G22 = E23 - F22;G23                   =
+E23 + F22;G24 = E24 + F25;G25 = E24 - F25;G26            = E27 - F26;G27 = E27 +
+F26;G28 = E28 + F29;G29 = E28 - F29;G30           = E31  - F30;G31 = E31 + F30;
+        /stage 7
+        Y1 = ( 12*G16 + 255*G31 ) >> 8;Y17       =  ( 189*G17 + 171*G30 ) >> 8;Y9       =
+(109*G18 + 231 *G29) >> 8;Y25 = ( 241 *G19 + 86*G28) >> 8;Y5 = (62*G20 +
+248*G27 ) >> 8;Y21 = (219*G21 + 131 *G26 ) >> 8;Y1 3          =  ( 152*G22 + 205*G25) >>
+8;Y29 = ( 253*G23 + 37*G24 ) >> 8;Y3 = ( 253*G24 - 37*G23 ) >> 8;Y1 9 =
+( 152*G25 - 205*G22) >> 8;Y1 1 = ( 219*G26 - 131 *G21 ) >> 8;Y27 = ( 62*G27
+248*G20 ) >> 8;Y7 = (241 *G28 - 86*G19 ) >> 8;Y23 = ( 109*G29 - 231 *G18 ) >>
+8;Y15  =  ( 189*G30 - 171*G17 ) >> 8;Y31      = ( 12*G31 - 255*G16) >> 8;
+        }
+        As described above, according to another exemplary embodiment, the
+transformer 120 produces a fast transform matrix by multiplying elements used for
+DCT by 2" and rounding up the multiplied elements.          In detail, the fast transform
+matrix A is produced by transforming the values of the elements of the DCT matrix
+OriginalA according to Equation; A=round(Original A*2n), representing an operation
+of multiplying the transform matrix OriginalA for use in 1D DCT by 2" (where n is an
+integer) and then rounding up the multiplied transform matrix OriginalA.
+        According to exemplary embodiments, since the transformer 120 performs
+transformation by using the fast transform matrix A instead of the original NxN
+transform matrix Original_A, an error occurs between a result value based on the
+original NxN transform matrix OriginalA and a result value based on the substituted
+transform matrix A.     Accordingly, according to an exemplary embodiment, this error
+is minimized by performing scaling with respect to a transformed block in a
+quantization operation.
+        FIG. 3 is a flowchart illustrating a method of producing a scaling matrix,
+according to an embodiment of the present invention.
+                                              14
+
+        Referring to FIG. 3, in operation 310, a transformation error matrix
+Original_A-S@A constituting a difference between matrix S(@A, which is obtained by
+multiplying the elements of an NxN intermediate matrix S, in which each element on
+an i-th row has a value of Si (where i denotes an integer from 1 to N), by
+corresponding elements of an NxN fast transform matrix A, respectively, and the
+original NxN transform matrix OriginalA is obtained.        @ indicates an
+element-by-element multiplication or element-wise multiplication, in which elements
+at the same locations in matrices are multiplied.
+        For example, a 16x1 6 intermediate matrix S is defined as follows:
+               'Sl      S1     ... S1        Sl
+                 S2     S2 ... S2            S2
+        S=
+                S16 S16 ... S16 S16,
+        In operation 320, Si values that enable a sum of squares of elements
+excluding a diagonal component of the transformation error matrix OriginalA-S@A
+to be a minimum are obtained.       The Si values may be determined using any
+optimization algorithm.    For example, the Si values may be determined by setting
+an initial value of S1 to be (1/4*2(/2)) and applying an optimization algorithm such as
+a Nelder-Mead Sipmlex method.
+        In operation 330, a scaling matrix is produced based on a matrix S@ST
+obtained by multiplying the elements of the NxN intermediate matrix S, to which the
+acquired Si values have been applied, by corresponding elements of a transposed
+matrix ST of the NxN intermediate matrix S, respectively.
+        When PF denotes the matrix S@ST, a scaling matrix MF may be calculated
+according to Equation; MF=PF*2Am/Qstep.          Here, Qstep denotes a quantization
+step, and m is a positive integer.
+        FIGS. 4A-4F illustrate scaling matrices MF according to quantization
+parameters QP for use in transformation with respect to a 16x1 6 block, according to
+an embodiment of the present invention.       FIG. 4 illustrates a case in which m is 10
+during calculation of a scaling matrix.
+                                             15
+
+        The scaling matrices MF as shown in FIGS. 4A through 4F are defined with
+respect to Qstep values of 0.625, 0.6875, 0.8125, 0.875, 1, and 1.25 of only initial 6
+quantization steps without having to be defined with respect to all quantization steps,
+because      when the quantization parameter QP increases by 6, the quantization step
+Step is doubled, and thus the scaling matrices MF may be defined with respect to
+the Qstep values of the initial 6 quantization steps, and the scaling matrices MF
+according to the other quantization parameters QP may be selected according to a
+(QP mod 6) value.      The scaling matrices MF of FIGS. 4A-4F are only embodiments,
+and each element of the scaling matrices MF may be adjusted within the range of ±1
+or ±2.
+        Such a scaling matrix MF may be obtained for a 32x32 block in a similar
+manner as obtaining the scaling matrix MF for the 16x16 block.       FIGS. 5A-5F
+illustrate scaling matrices MF according to a quantization parameter QP applied to a
+32x32 block, which are obtained as above.       The scaling matrices MF of FIGS.
+5A-5F are only embodiments, and each element of the scaling matrices MF may be
+adjusted within the range of ±1 or ±2.    According to an exemplary embodiment, a
+special scaling matrix MF is not applied to each block size, but 6 scaling matrices MF
+are set for only a predetermined-size block according to the quantization parameter
+QP, and then a scaling matrix for a block smaller than or larger than the
+predetermined-size block may be a scaling matrix MF obtained by increasing or
+decreasing the elements of the 6 scaling matrices MF set for the predetermined-size
+block according to a ratio between the sizes of the predetermined-size block and the
+smaller or larger block.    For example, 6 scaling matrices MF are set for an MxM
+block according to a quantization parameter, and then a scaling matrix obtained by
+multiplying the elements of the 6 scaling matrices MF set for the MxM block by M/N
+may be used as a scaling matrix for an NxN block.      For example, when a scaling
+matrix MF is set for a 32x32 block, 2x2, 4x4, 8x8, and 16x1 6 blocks may use scaling
+matrices obtained by increasing the elements of the scaling matrix MF set for the
+32x32 block 16 times, 8 times, 4 times, and two time, respectively.     Similarly, when
+a scaling matrix MF is set for a 32x32 block, 64x64 and 128x1 28 blocks may use
+scaling matrices obtained by decreasing the elements of the scaling matrix MF set
+for the 32x32 block 1/2 times and 1/4 times, respectively.    As such, when a scaling
+matrix is set for only a predetermined-size block and blocks of the other sizes use
+                                            16
+
+scaling matrices increased or decreased according to size ratios between the
+predetermined-size block and the blocks of the other sizes, quantization or
+dequantization may be performed as much as the amount corresponding to a ratio
+between the elements of scaling matrices set for different sizes of blocks to restore
+its original value.  As described above, when a scaling matrix is set for only a
+predetermined-size block and blocks of the other sizes use scaling matrices
+increased or decreased according to size ratios between the predetermined-size
+block and the blocks of the other sizes, memory for storing a scaling matrix MF may
+be reduced.
+        As described above, the quantizer 130 performs scaling with respect to a
+transformed block by using a scaling matrix MF or a predetermined scaling constant
+in order to reduce an error value between a result of the transformation performed
+using the fast transform matrix A by the transformer 120 and a result of the
+transformation performed using the DCT matrix Original A based on an actual
+floating point operation.   In detail, the quantizer 130 may perform scaling and
+quantization simultaneously with respect to a transformed block corresponding to a
+result of the transformation on the NxN block by using the scaling matrix MF and a
+shift operation. The quantization is performed by performing a bit shift operation on a
+value obtained by multiplying the scaling matrix MF and the transformed block and
+then adding a predetermined offset to the value, by a q bit of the following equation:
+q=floor(QP/6)+m.      When Zij denotes a quantized coefficient value, Wij denotes a
+transformation coefficient, and f denotes an offset,
+  | Zij |=( | TyI .MF+f)>>qbitsand
+ sign(      Zin I )=sign(      I If     I ). Here, '.ME' denotes a vector product
+operation for multiplying the elements at the same locations in matrices.    As
+described above, the vector product operation may be indicated as @.
+         Meanwhile, in a dequantization operation, dequantization is performed by
+applying a descaling matrix and a shift operation for compensating for a difference
+between an original NxN inverse transform matrix OriginalA-1 used for IDCT, and
+an NxN fast inverse-transform matrix A-1.
+                                             17
+
+        According to an exemplary embodiment, a de-scaling matrix V may be
+generated based on a matrix PF corresponding to the matrix S@)ST obtained by
+multiplying the elements of the intermediate matrix S and the transposed matrix ST,
+which are    also used to generate the scaling matrix ME.       In detail, when Qstep
+denotes a quantization step, PF denotes the matrix S@ST, and n is a positive integer,
+the descaling matrix V is obtained according to the following equation:
+V=Qstep*PF*2An.
+        When the descaling matrix V is obtained as above, descaling and
+dequantization may be performed by performing a bit shift operation on a value
+obtained by multiplying the descaling matrix V and a quantized transformation
+coefficient, by a floor(QP/6) bit, wherein floor[x] is a maximum integer smaller than or
+equal to x and QP denotes a quantization parameter.         In other words, when Zij
+denotes a quantized coefficient value and Wij denotes a transformation coefficient,
+Wij may be obtained by dequantizing the quantized coefficient Zij via the following
+equation: Wij=(Zij)<<floor(QP/6).    Here, '.V' denotes a vector product operation for
+multiplying the elements at the same locations in matrices.       As described above, the
+vector product operation may be indicated as @.
+        FIGS. 6A-6F illustrate de-scaling matrices V according to AA quantization
+parameter QP applied to a 16x1 6 block, according to an embodiment of the present
+invention.   FIGS. 6A-6F illustrate a case in which m is 10 during calculation of a
+descaling matrix.    The descaling matrices V may be defined with respect to 0.625,
+0.6875, 0.8125, 0.875, 1, and 1.25, which are Qstep values of initial 6 quantization
+steps without having to be defined with respect to all quantization steps Qstep like
+the scaling matrices MF of FIGS. 4A-4F. The descaling matrices V according to
+other quantization parameters QP may be selected according to a (QP mod 6) value.
+The descaling matrices V of FIGS. 6A-6F are only embodiments, and each element
+of the descaling matrices V may be adjusted within the range of ±1 or ±2.
+        Similarly, descaling matrices V according to a quantization parameter QP
+applied to the 32x32 block may be obtained in a process similar to the descaling
+matrices V applied to the 16x16 block.      FIGS. 7A-7F illustrate descaling matrices V
+according to a quantization parameter QP applied to a 32x32 block, according to an
+embodiment of the present invention. The descaling matrices V of FIGS. 7A-7F are
+only embodiments, and each element of the descaling matrices V may be adjusted
+                                             18
+
+within the range of ±1 or ±2. According to an exemplary embodiment, a special
+descaling matrix V is not applied to each block size, but 6 descaling matrices V are
+set for only a predetermined-size block according to the quantization parameter QP,
+and then a descaling matrix for a block smaller than or larger than the
+predetermined-size block may be a descaling matrix V obtained by increasing or
+decreasing the elements of the 6 descaling matrices V set for the predetermined-size
+block according to a ratio between the sizes of the predetermined-size block and the
+smaller or larger block.     For example, 6 descaling matrices V are set for an MxM
+block according to a quantization parameter, and then a descaling matrix obtained
+by multiplying the elements of the 6 descaling matrices V set for the MxM block by
+M/N may be used as a descaling matrix for an NxN block.          For example, when a
+descaling matrix V is set for a 32x32 block, 2x2, 4x4, 8x8, and 16x1 6 blocks may use
+descaling matrices obtained by increasing the elements of the descaling matrix V set
+for the 32x32 block 16 times, 8 times, 4 times, and two time, respectively.     Similarly,
+when a descaling matrix V is set for a 32x32 block, 64x64 and 128x1 28 blocks may
+use descaling matrices obtained by decreasing the elements of the descaling matrix
+V set for the 32x32 block 1/2 times and 1/4 times, respectively.      As such, when a
+descaling matrix is set for only a predetermined-size block and blocks of the other
+sizes use descaling matrices increased or decreased according to size ratios
+between the predetermined-size block and the blocks of the other sizes, quantization
+or dequantization may be performed as much as the amount corresponding to a ratio
+between the elements of descaling matrices set for different sizes of blocks to
+restore its original value. As described above, when a descaling matrix is set for only
+a predetermined-size block and blocks of the other sizes use descaling matrices
+increased or decreased according to size ratios between the predetermined-size
+block and the blocks of the other sizes, memory for storing a descaling matrix V may
+be reduced.
+        FIG. 8 is a flow graph 800 of 32-point DCT according to another embodiment
+of the present invention.
+        Referring to FIG. 8, xO through x31 denote input values, and yO through y31
+denote output values of DCT.        A data processing direction during transformation is
+from left to right, and a processing direction during inverse transformation is from
+right to left.  2 lines intersecting at a point denotes an addition of two numbers, and
+                                              19
+
+'-'denotes a negation.     A value R(6) above each line denotes an operation process
+based on a butterfly structure as shown in FIG. 9.
+        FIG. 9 is a reference diagram of an operation process of a butterfly structure
+forming the 32 point DCT of FIG. 8.
+        Referring to FIG. 9, the operation process of the butterfly structure outputs an
+                                            [Y1         cosO -sin6          X1
+output value [Y1, Y2] via the equation               L,                            with
+respect to an input value [Xl,X2].
+        When DCT is performed according to the flow graph 800 of FIG. 8, cosE and
+sine are used according to the value R(G).     Similar to the transformation performed
+according to the flow graph 200 of FIG. 2, the transformer 120 may perform DCT
+with respect to an input block by performing only additions, subtractions, and a shift
+operation using the fast transform matrix A obtained by substituting cosE and sine
+according to the value of 8 with dyadic rationals or the fast transform matrix A
+obtained by multiplying each of the elements used for DCT according to the flow
+graph 800 of FIG. 8 by 2" and rounding up the multiplied elements.
+        For example, 1D DCT performed on a 32x32 input block by using the fast
+transform matrix A may be expressed as the following operation, wherein Xi (where i
+is an integer in the range of 0 to 31) denotes an input value to be transformed, Ai, Bi,
+Ci, Di, and Ei denote intermediate values, and Yi denotes a transform result value:
+        {
+        /stage 0
+        AC   =XC+X15;A1        =X1+X14;A2        =X2+X13;A3         =X3+X12;A4       =X4
++X11;A5      =X5+Xl1;A6        =X6+X9;A7       =X7+X8;A8         =X7-X8;A9     =X6
+X9;A10 = X5 - X10;A11 = X4 - X11;A12 = X3 - X12;A13 =X2 - X13;A14 = X1
+X14;A15 = XC - X15;
+        /stage 1
+        BC = AC + A7;B7 = AC - A7;B1 = Al + A6;B6 = Al       - A6;B2 = A2 + A5;B5 = A2
+- A5;B3 = A3 + A4;B4 = A3 - A4;
+                                            20
+
+         B8 = (49*A8 + 40*A1 5) >> 6;B1 5 = (-40*A8 + 49*A1 5) >> 6;B9 = (30*A9
+56*A1 4) >> 6;B1 4 = (56*A9 + 30*A1 4) >> 6;B1 0 = (61 *A1 0 + 18*A1 3) >> 6;B13     =
+(-1 8*A1 0 + 61 *A1 3) >> 6;B1 1 = (6*A1 1 - 63*A1 2) >> 6;B1 2 = (63*A1 1 + 6*A1 2) >> 6;
+         /stage 2
+         CO = BO + B3;C3 = BC - B3;C1 = B1 + B2;C2 = B1 - B2;
+         C4 = (6*B4 + 31 *B7, 5);C7 = (-31 *B4 + 6*B7, 5);C5 = (35*B5 + 53*B6) >>
+6;C6   =  (-53*B5 + 35*B6) >> 6;
+         C8=B8+B11;C11 =B8-B11;C9=B9+B10;C10=B9-B10;
+         C12 = B12 + B15;C15 = B12      - B15;C13  = B13 + B14;C14    =  B13 - B14;
+         /stage 3
+         DO = (45*(C0 + C1)) >> 6;D1 = (45*(-C0 + C1)) >> 6;
+         D2 = (24*C2 + 59*C3) >> 6;D3      = (-59*C2 + 24*C3) >> 6;
+         D4 = C4 + C5;D5 = C4 - C5;D6 = -C6 + C7;D7 = C6 + C7;
+         D8    =C8    +C14;D14=C8         -C14;D9    =C9    +C15;D15=C9         -C15;D10
+=  C10 + C11; Dl      = C10-C11;D12 = C12 + C13;D13 = C12-C13;
+         /stage 4
+         E5 = (45*(D5 + D7)) >> 6;E7 = (45*(-D5 + D7)) >> 6;
+         E8 = (24*D8 - 59*D9) >> 6;E9 = (59*D8 + 24*D9) >> 6;
+         El 1 = (45*(D1 1 + Di 2)) >> 6;E1 2 = (45*(-D1 1 + Di 2)) >> 6;
+         E14 = (24*D14 - 59*D15) >> 6;E15 = (59*D14 + 24*D15) >> 6;
+         /stage 5
+         YO = DO;Y8 = -D1;Y4 = D2;Y1 2 = D3;Y2 = D4;Y6 = E5;Y1 4 = D6;Y10 =
+-E7;Y3 = E8;Y1 3 = E9;Y9 = Di 0;Y1 5 = E11;Y1 = El 2;Y7 = Di 3;Y1 1 = -El 4;Y5 =
+El5;
+                                               21
+
+        }
+        According to another embodiment, the quantizer 130 may perform scaling by
+multiplying the transformed block by a predetermined scaling constant.       In detail,
+the quantizer 130 may perform scaling and quantization simultaneously with respect
+to an NxN transformed block by using a scaling constant QMat and a shift operation.
+The quantization and the scaling are performed by performing a bit shift operation on
+a value obtained by multiplying the scaling constant QMat and the NxN transformed
+block and then adding a predetermined offset to the value, by a q bit of the following
+equation: q=floor(QP/6)+m.      When Zij denotes a quantized coefficient value, Wij
+denotes a transformation coefficient, and f denotes an offset,
+  | Zij | =|    Wij       QMat+)>>qbits          and
+ sign ( Zj       )    sign ( WO/)
+        The scaling constant QMat may be selected based on the quantization
+parameter QP, and is defined with respect to Qstep values of 0.625, 0.6875, 0.8125,
+0.875, 1, and 1.25 of only initial 6 quantization steps without having to be defined
+with respect to all quantization steps.   As described above, when the quantization
+parameter QP increases by 6, the quantization step Qstep is doubled, and thus the
+scaling constant QMat may be defined with respect to the Qstep values of the initial
+6 quantization steps, and the scaling constant QMat according to the other
+quantization parameters QP may be selected according to a (QP mod 6) value.
+        For example, if i=(QP mod 6), a scaling constant QMati for scaling with
+respect to a 16x1 6 transformed block obtained by DCT according to the flow graph
+200 or 800 of FIG. 2 or 8 may be defined as follows:
+        QMat0=81, QMat1 =89, QMat2=1 05, QMat3=1 13, QMat4=1 29; QMat5=1 46
+        The scaling constant QMati is not limited thereto, and may be adjusted within
+the range of ±1 or ±2.    In other words, the scaling constant QMati may be adjusted
+within the range of QMati±1 or QMati±2.
+                                            22
+
+        A scaling constant QMati for scaling with respect to a 32x32 transformed
+block obtained by DCT according to the flow graph 200 or 800 of FIG. 2 or 8 may be
+defined as follows:
+        QMat0=40, QMat1 =44, QMat2=52, QMat3=56, QMat4=64; QMat5=72
+        The scaling constant QMati is not limited thereto, and may be adjusted within
+the range of ±1 or ±2. In other words, the scaling constant QMati may be adjusted
+within the range of QMati±1 or QMati±2.       For example, QMat0=40, QMat1 =45,
+QMat2=51, QMat3=57, QMat4=64, and QMat5=72 may be uses as the scaling
+constant QMati.
+        Meanwhile, in a dequantization operation, dequantization may be performed
+by applying a descaling constant and a shift operation for compensating for a
+difference between the original NxN inverse transform matrix OriginalA-1 used for
+IDCT, and the NxN fast inverse-transform matrix A-1, which is an inverse matrix of
+the NxN fast transform matrix A.
+        According to another embodiment, a descaling constant DQMat may be
+determined according to the quantization parameter QP.        When the descaling
+constant DQMat is obtained as above, descaling and dequantization may be
+performed by performing a bit shift operation on a value obtained by multiplying the
+descaling constant DQMat and a quantized transformation coefficient, by a
+floor(QP/6) bit, wherein floor[x] is a maximum integer smaller than or equal to x and
+QP denotes a quantization parameter.        In other words, when Zij denotes a
+quantized coefficient value and Wij denotes a transformation coefficient, Wij may be
+obtained by descaling and dequantizing the quantized coefficient Zij via the following
+equation: Wij=(Zij)*DQMat<<floor(QP/6).
+        The descaling constant DQMat is defined with respect to Qstep values of
+0.625, 0.6875, 0.8125, 0.875, 1, and 1.25 of only initial 6 quantization steps without
+having to be defined with respect to all quantization steps, because    when the
+quantization parameter QP increases by 6, the quantization step Qstep is doubled,
+and thus the descaling constant DQMat may be defined with respect to the Qstep
+values of the initial 6 quantization steps, and the descaling constant DQMat
+according to the other quantization parameters QP may be selected according to a
+(QP mod 6) value.
+                                             23
+
+        For example, if i=(QP mod 6), a descaling constant MQMati for descaling with
+respect to a 16x1 6 transformed block obtained by DCT according to the flow graph
+200 or 800 of FIG. 2 or 8 may be defined as follows:
+        DQMatO=81, DQMat1 =89, DQMat2=1 05, DQMat3=1 13, DQMat4=1 29;
+DQMat5=1 46
+        The descaling constant DQMati is not limited thereto, and may be adjusted
+within the range of ±1 or ±2. In other words, the descaling constant DQMati may be
+adjusted within the range of QMati±1 or QMati±2.
+        A descaling constant DQMati for descaling with respect to a 32x32
+transformed block obtained by DCT according to the flow graph 200 or 800 of FIG. 2
+or 8 may be defined as follows:
+        DQMatO=40, DQMat1 =44, DQMat2=52, DQMat3=56, DQMat4=64;
+DQMat5=72
+        The descaling constant DQMati is not limited thereto, and may be adjusted
+within the range of ±1 or ±2. In other words, the descaling constant DQMati may be
+adjusted within the range of QMati±1 or QMati±2.        For example, DQMatO=40,
+DQMat1 =45, DQMat2=51, DQMat3=57, DQMat4=64, and QMat5=72 may be used
+as the descaling constant DQMati.
+        FIG. 10 is a flowchart illustrating a video encoding method according to an
+embodiment of the present invention.
+        Referring to FIG. 10, in operation 1010, the transformer 120 produces a fast
+transform matrix based on an NxN (where N is an integer) transform matrix which is
+used for 1D DCT on an NxN block.          As described above, the transformer 120
+produces the fast transform matrix by using a fast transformation matrix formed of
+elements that are obtained by substituting the elements used for DCT with rational
+numbers or by multiplying the elements of the transformation matrix used for DCT by
+a power of 2 and then rounding up the multiplied elements.
+        In operation 1020, the transformer 120 produces an NxN transformed block
+by transforming the NxN block using the fast transform matrix.
+        In operation 1030, the quantizer 130 performs scaling on the NxN transformed
+block to correct a difference between the NxN transform matrix used for the 1D DCT
+                                              24
+
+and the fast transform matrix.   As described above, the quantizer 130 performs
+scaling with respect to a transformed block by using the scaling matrix MF or the
+scaling constant QMat in order to reduce an error value between a result of the
+transformation performed using the fast transform matrix A by the transformer 120
+and a result of the transformation performed using the DCT matrix OriginalA based
+on an actual floating point operation.
+       FIG. 11 is a block diagram of a video decoding apparatus 1100 according to
+an embodiment of the present invention.
+       Referring to FIG. 11, the video decoding apparatus 1100 includes an entropy
+decoder 1110, a dequantizer 1120, an inverse-transformer 1130, and a predictor
+1140.
+       The entropy decoder 1110 extracts prediction mode information, reference
+picture information, and residual information of a current block to be decoded, from
+an input bitstream.
+       The dequantizer 1120 dequantizes quantized transformation coefficients,
+which are entropy-decoded by the entropy decoder 1110.        In particular, according to
+an exemplary embodiment, the dequantizer 1120 performs descaling on an NxN
+transformed block to correct a difference between an NxN inverse-transform matrix
+for use in 1D IDCT with respect to a quantized NxN transformed block and a fast
+inverse-transform matrix produced based on the NxN inverse-transform matrix.
+       The inverse-transformer 1130 inverse-transforms the dequantized
+transformation coefficients.   Accordingly, residual values for each block are restored.
+The inverse transformation may be performed by performing N-point IDCT by using
+an inverse matrix A-1 of an NxN fast transform matrix A acuired according to various
+embodiments of the present invention.     The inverse-transformer 1130 performs
+IDCT by using a fast transformation matrix formed of elements that are obtained by
+substituting the elements of an inverse-transform matrix used for IDCT with rational
+numbers or by multiplying the elements of the inverse-transform matrix by a power of
+2 and then rounding up the multiplied elements.
+       IDCT performed on a 16x1 6 transformed block by using the flow graph 200 of
+FIG. 2 may be expressed as the following operation, wherein Xi (where i is an
+                                           25
+
+integer in the range of 0 to 15) denotes an input value, Bi, Ci, Di, Ei, and Fi denote
+intermediate values, and Yi denotes an inverse-transform result value:
+       {
+       /stage 0
+       F8 = ( 6*X1 - 63*X15 ) >> 6;F9   =  (49*X9 - 40*X7 ) >> 6;F10    = (30*X5
+56*X11 ) >> 6;F11 = ( 61*X13 - 18*X3) >> 6;F12 = ( 61*X3 + 18*X13 )>> 6;F13=
+(30*X11 + 56*X5 ) >> 6;F14= ( 49*X7 + 40*X9 ) >> 6;F15= ( 6*X15 + 63*X1 ) >6;
+       /stage 1
+       E4 = ( 12*X2 - 62*X1 4) >> 6;E5    =  (53*X1 0 - 35*X6) >> 6;E6    = (53*X6 +
+35*X10 ) >> 6;E7 = ( 12*X14 + 62*X2 ) >> 6;E8 = F8 + F9;E9       =  F8 - F9;E10 = F11
+F10;E11 = F11 + F10;E12= F12 + F13;E13 = F12 - F13;E14= F15 - F14;E15 = F15
++ F14;
+       /stage 2
+       DO = ( 45*( X0 + X8)) >> 6;D1 = (45*( X0 - X8) ) >> 6;D2       =  (24*X4
+59*X12 ) >> 6;D3 = ( 59*X4 + 24*X12 ) >> 6;D4 = E4 + E5;D5 = E4 - E5;D6 = E7
+E6;D7  =  E7 + E6;D9  =  ( 24*E14 - 59*E9) >> 6;DlO    =  ( - 59*E13  -  24*ElO)>>
+6;D13  =  (24*E13  - 59*ElO) >> 6;D14    =  (59*E14  +  24*E9) >> 6;
+       /stage 3
+       CO=DO+D3;C3=DO-            D3;C8=E8+ Ell;Cll =E8-E11;C12=E15
+E12;C15 = E15 + E12;C1 = D1 + D2;C2 = D1 - D2;C9 = D9 + D1O;C10 =D9
+D1O;C13 = D14 - D13;C14 = D14 + D13;C5 = (45*( D6 - D5) ) >> 6;C6            = (45*( D6
++ D5) ) >> 6;
+       /stage 4
+                                             26
+
+       BO = CO + D7;B7 = CO - D7;B1 = C1 + C6;B6 = C1 - C6;B2 = C2 + C5;B5 =
+C2 - C5;B3 = C3 + D4;B4 = C3 - D4;B10 = (45*( C13 - C10)) >> 6;B13 = (45*( C13
++ C10)) >> 6;B11 = (45*(C12 - C11 )) >> 6;B12 = (45*(C12 + C11 ))>> 6;
+       /stage 5
+       YO = BO + C15;Y15 = BO- C15;Y1 = B1 + C14;Y14 = B1 - C14;Y2 = B2 +
+B13;Y1 3 = B2 - B13;Y3    =  B3 + B12;Y1 2 = B3 - B12;Y4 = B4 + B 1;Y1 1 = B4
+B 1;Y5 = B5 + B10;Y1 0     = B5 - B10;Y6 = B6 + C9;Y9 = B6 - C9;Y7 = B7 + C8;Y8         =
+B7 - C8;
+       }
+       IDCT performed on a 32x32 transformed block by using the flow graph 200 of
+FIG. 2 may be expressed as the following operation, wherein Xi (where i is an
+integer in the range of 0 to 31) denotes an input value, Ai, Bi, Ci, Di, Ei, and Fi
+denote intermediate values, and Yi denotes an inverse-transform result value:
+       {
+       /stage 0
+       G16 = ( 12*X1 - 255*X31) >> 8;G17       = ( 189*X17 - 171*X15) >> 8;G18      =
+(109*X9 - 231*X23) >> 8;G19 = ( 241 *X25 - 86*X7) >> 8;G20 = ( 62*X5 - 248*X27)
+>> 8;G21 = ( 219*X21 - 131 *X1 1) >> 8;G22 = ( 152*X1 3 - 205*X1 9) >> 8;G23         =
+( 253*X29 - 37*X3) >> 8;G24 = ( 253*X3 + 37*X29) >> 8;G25 = ( 152*X1 9 +
+205*X1 3) >> 8;G26 = ( 219*X1 1 + 131 *X21) >> 8;G27 = ( 62*X27 + 248*X5) >>
+8;G28 = ( 241 *X7 + 86*X25) >> 8;G29 = ( 109*X23 + 231 *X9) >> 8;G30          =  ( 189*X15
++ 171*X17) >> 8;G31    =  ( 12*X31 + 255*X1) >> 8;
+       /stage 1
+       F8 = ( 25*X2 - 254*X30) >> 8;F9    =  (197*X1 8 - 162*X1 4) >> 8;F10     =
+(120*X1 0 - 225*X22) >> 8;F1 1 = ( 244*X26 - 74*X6) >> 8;F1 2 = ( 244*X6 + 74*X26)
+>> 8;F13 = ( 120*X22 + 225*X10) >> 8;F14 = ( 197*X14 + 162*X18) >> 8;F15 =
+(25*X30 + 254*X2) >> 8;F16 = G16 + G17;F17 = G16 - G17;F18 = G19 - G18;F19                =
+                                            27
+
+G19 + G18;F20 = G20 + G21;F21 = G20 - G21;F22 = G23 - G22;F23 = G23 +
+G22;F24 = G24 + G25;F25 = G24 - G25;F26 = G27 - G26;F27 = G27 + G26;F28 =
+G28 + G29;F29 = G28 - G29;F30 = G31       -  G30;F31 = G31 + G30;
+       /stage 2
+       E4 = (49*X4 - 251 *X28) >> 8;E5   =   (212*X20 - 142*X1 2) >> 8;E6 = (212*X1 2
++ 142*X20) >> 8;E7 = ( 49*X28 + 251 *X4) >> 8;E8 = F8 + F9;E9 = F8 - F9;E1 0 =
+Fl1 - F1O;E11 = Fl1 + F1O;E12 = F12 + F13;E13 = F12 - F13;E14 = F15 - F14;E15
+= F15 + F14;E17 = (49*F30 - 251*F17) >> 8;E18 = ( - 251*F29 - 49*F18) >> 8;E21      =
+(212*F26 - 142*F21) >> 8;E22 = (- 142*F25 - 212*F22) >> 8;E25 = (212*F25
+142*F22) >> 8;E26 = (142*F26 + 212*F21) >> 8;E29= (49*F29 - 251 *F1 8)>>
+8;E30 = ( 251 *F30 + 49*F17) >> 8;
+       /stage 3
+       DO = ( 181*( X0 + X16)) >> 8;D1 =     ( 181*( X0 - X16)) >> 8;D2 = (97*X8
+236*X24) >> 8;D3 = (236*X8 + 97*X24) >> 8;D4 = E4 + E5;D5 = E4 - E5;D6 = E7
+E6;D7 = E7 + E6;D9 = ( 97*E14 - 236*E9) >> 8;D10 = (-236*E13 - 97*E10) >> 8;D13
+= ( 97*E13 - 236*El0) >> 8;D14 = (236*E14 + 97*E9) >> 8;D16 = F16 + F19;D19 =
+F16 - F19;D20 = F23 - F20;D23    = F23 + F20;D24 = F24 + F27;D27 = F24 - F27;D28
+= F31 - F28;D31 = F31 + F28;D17 = E17 + E18;D18 = E17 - E18;D21 = E22
+E21;D22 = E22 + E21;D25 = E25 + E26;D26 = E25 - E26;D29 = E30 - E29;D30 =
+E30 + E29;
+       /stage 4
+       CO = DO + D3;C3 = DO - D3;C8 = E8 + El 1;Cl 1 = E8 - El 1;Cl 2 = El 5
+E12;C15 =E15 + E12;Cl = Dl + D2;C2 =D            - D2;C9 = D9 + DlO;C10 = D9
+DlO;C13     = D14 - D13;C14 = D14 + D13;C5 = ( 181*( D6 - D5)) >> 8;C6 = ( 181*( D6
++ D5 )) >> 8;Cl 8 = ( 97*D29 - 236*Dl 8) >> 8;C20 = (- 236*D27 - 97*D20) >> 8;C26
+= (- 236*D21 + 97*D26) >> 8;C28 = ( 97*Dl 9 + 236*D28) >> 8;Cl 9 = ( 97*D28
+236*D19) >> 8;C21 = (- 236*D26 - 97*D21) >> 8;C27 =        (- 236*D20 + 97*D27) >>
+8;C29 =   (  97*D18 + 236*D29) >> 8;
+                                            28
+
+       /stage 5
+       BC = CO + D7;B7 = CO - D7;B1 = C1 + C6;B6 = C1 - C6;B2 = C2 + C5;B5 =
+C2 - C5;B3 = C3 + D4;B4 = C3 - D4;B10 = ( 181*( C13 - C10)) >> 8;B13 =
+( 181*( C13 + C10)) >> 8;B11 = ( 181*( C12 - C11 )) >> 8;B12 = ( 181*( C12 +
+C11 )) >> 8;B1 6 = Dl 6 + D23;B23 = Dl 6 - D23;B24 = D31 - D24;B31 = D31 +
+D24;B17 = D17 + D22;B22 = D17 - D22;B25 = D30 - D25;B30 = D30 + D25;B18 =
+C18 + C21;B21 = C18 - C21;B26 = C29 - C26;B29 = C29 + C26;B19 = C19 +
+C20;B20 = C19 - C20;B27 = C28 - C27;B28 = C28 + C27;
+       /stage 6
+       AC = BC + C15;A15 = BC - C15;A1 = B1 + C14;A14 = B1 - C14;A2 = B2 +
+B13;A13 = B2 - B13;A3 =B3 + B12;A12 = B3 - B12;A4 = B4 + B11;A11 = B4
+B 1;A5 = B5 + B1 C;A10 = B5 - B1 C;A6 = B6 + C9;A9 = B6 - C9;A7 = B7 + C8;A8 =
+B7 - C8;A20 = ( 181*( B27 - B20 )) >> 8;A27 = ( 181*( B27 + B20 )) >> 8;A21 =
+( 181*( B26 - B21 )) >> 8;A26   =  ( 181*( B26 + B21 )) >> 8;A22    = ( 181*( B25 - B22))
+>> 8;A25 = ( 181 *( B25 + B22)) >> 8;A23      = (181 *( B24 - B23 )) >> 8;A24   =
+(181*( B24 + B23)) >> 8;
+       /stage 7
+       YO = AC + B31;Y31 = AC - B31;Yl = Al + B30;Y30 = Al - B30;Y2 = A2 +
+B29;Y29 = A2 - B29;Y3 = A3 + B28;Y28 = A3 - B28;Y4 = A4 + A27;Y27 = A4
+A27;Y5 = A5 + A26;Y26 = A5 - A26;Y6 = A6 + A25;Y25 = A6 - A25;Y7 = A7 +
+A24;Y24 = A7 - A24;Y8 = A8 + A23;Y23 = A8 - A23;Y9 = A9 + A22;Y22 = A9
+A22;Y10 = A10 + A21;Y21 = A10 - A21;Y11 = A11 + A20;Y20 = A11 - A20;Y12=
+Al 2 + B1 9;Yl 9 = Al 2 - B1 9;Yl 3 = Al 3 + B1 8;Yl 8 = Al 3 - B1 8;Yl 4 = Al 4 +
+B1 7;Yl 7 = Al 4 - B1 7;Yl 5 = Al 5 + Bl 6;Yl 6 = Al 5 - Bl 6;
+       }
+                                            29
+
+       IDCT performed on a 16x1 6 transformed block by using the flow graph 800 of
+FIG. 8 may be expressed as the following operation, wherein Xi (where i is an
+integer in the range of 0 to 15) denotes an input value, Ai, Bi, Ci, Di, and Ei denote
+intermediate values, and Yi denotes an inverse-transform result value:
+       {
+       /stage 0
+       DO = X0;D1 = -X8;D2 = X4;D3 = X1 2;D4 = X2;E5 = X6 ;D6 = X1 4;E7         =
+-X10;E8 = X3;E9 = X13;D10 = X9;E11 = X15;E12 = X1;D13 = X7;E14 = -X11;E15=
+X5;
+       /stage 1
+       D5 = (45*(E5 - E7)) >> 6;D7 = (45*(E5 + E7)) >> 6;
+       D8 = (24*E8 + 59*E9) >> 6;D9 = (-59*E8 + 24*E9) >> 6;
+       D11 = (45*(E11 - E12)) >> 6;D12 = (45*(E11 + E12)) >> 6;
+       D14 = (24*E14 + 59*E15) >> 6;D15 = (-59*E1 4 + 24*E15) >> 6;
+       /stage 2
+       CO = (45*(DO - D1)) >> 6;C1 = (45*(DO + D1)) >> 6;
+       C2 = (24*D2 - 59*D3) >> 6;C3 = (59*D2 + 24*D3) >> 6;
+       C4 = D4 + D5;C5 = D4 - D5;C6 = -D6 + D7;C7 = D6 + D7;
+       C8    =D8    +D14;C14=D8        -D14;C9     =D9     +D15;C15=D9         -D15;C1O
+= D10 + Dl; Cl = D10 - D11;C12 = D12 + D13;C13           =  D12 - D13;
+       /stage 3
+       BO = CO + C3;B3 = CO - C3;B1 = C1 + C2;B2 = C1 - C2;
+       B4 = (6*C4 - 31 *C7, 5);B7 = (31 *C4 + 6*C7, 5);B5 = (35*C5 - 53*C6) >> 6;B6
+= (53*C5 + 35*C6) >> 6;
+       B8=C8+C11;B11 =C8-C11;B9=C9+C1O;B1O=C9-C1O;
+                                           30
+
+        B12 = C12 + C15;B15 = C12 - C15;B13 = C13 + C14;B14 = C13 - C14;
+       /stage 4
+       AO = BC + B7;A7 = BO - B7;A1 = B1 + B6;A6 = B1 - B6;A2 = B2 + B5;A5 = B2
+- B5;A3 = B3 + B4;A4 = B3 - B4;
+       A8 = (49*B8 - 40*B15) >> 6;A15 = (40*B8 + 49*B15) >> 6;A9 = (30*B9 +
+56*B14) >> 6;A14 = (-56*B9 + 30*B14) >> 6;A10 = (61*B10 - 18*B13) >> 6;A13            =
+(18*B10 + 61 *B13) >> 6;A1 1 = (6*B11 + 63*B12) >> 6;A1 2 = (-63*B11 + 6*B12) >>
+6;
+       /stage 5
+       YO     = AC + A15;Y1     = A1 + A14;Y2     = A2 + A13;Y3     = A3 + A12;Y4    = A4
++ A11;Y5      = A5 + A1C;Y6     =A6 + A9;Y7 = A7 + A8;Y8         = A7 - A8;Y9    = A6
+A9;Y1C = A5 - A1;Y11 = A4 - A11;Y12 = A3 - A12;Y13 = A2 - A13;Y14 = A1
+A14;Y15 = AC - A15;
+       }
+        IDCT performed on a 32x32 transformed block by using the flow graph 800 of
+FIG. 8 may be expressed as the following operation, wherein Xi (where i is an
+integer in the range of 0 to 31) denotes an input value, Zi, Ai, Bi, Ci, Di, Ei, and Fi
+denote intermediate values, and Yi denotes an inverse-transform result value:
+       {
+       /stage 0
+        DO= X;E24 = X1;E12 = X2;F16 = -X3;D4 = X4;           F31 = X5;    E8 = X6; E26=
+-X7;D2 = X8;       E21 = X9;    E15 = X10;    F29 = X11;E5 = X12;      F18 = -X13;      D13
+= X14;      D22 = X15;D1 = -X16;       D25=X17;      D1C=X18;F19=-X19;E7=-X2;
+F28  = -X21 ; E14     =  -X22;  E20  = -X23;D3  =  X24; E27  = -X25;   E9  = X26; F30   =
+-X27;D6   =  X28; F17   = -X29;   E11  = X30;   E23  = -X31;
+                                            31
+
+        /stage 1
+        El 6 = (251 *F1 6 + 49*F1 7) >> 8;E1 7 = (-49*F1 6 + 251 *F1 7) >> 8;E18 =
+(212*F1 8 + 142*F1 9) >> 8;E1 9 = (-1 42*F1 8 + 212*F1 9) >> 8;
+        E28 = (212*F28 + 142*F29) >> 8;E29 = (-1 42*F28 + 212*F29) >> 8;E30          =
+(251*F30 + 49*F31) >> 8;E31 = (-49*F30 + 251*F31) >> 8;
+        /stage 2
+        D5 = (181 *(E5 - E7)) >> 8;D7 = (181 *(E5 + E7)) >> 8;
+        D8 = (97*E8 + 236*E9) >> 8;D9 = (-236*E8 + 97*E9) >> 8;
+        Dl1 = (181*(E11 - E12)) >> 8;D12 = (181*(E11 + E12)) >> 8;
+        D14 = (97*E14 + 236*E15) >> 8;D15 = (-236*E14 + 97*E15) >> 8;
+        D16 = E16 + E18;C18 = E16 - E18;C17 = E17 + E19;D19 = E17 - E19;
+        D20 = (236*E20 - 97*E21) >> 8;D21 = (97*E20 + 236*E21) >> 8;D23 =
+(181 *(E23 - E24)) >> 8;D24 = (181 *(E23 + E24)) >> 8;D26       = (236*E26 - 97*E27) >>
+8;D27 = (97*E26 + 236*E27) >> 8;D28 =       - E28 + E30;C30 = E28 + E30;C29 =      -  E29
++ E31;D31 = E29 + E31;
+        /stage 3
+        CO = (181*(DO - Dl)) >> 8;C1 = (181*(DO + Dl)) >> 8;
+        C2 = (97*D2 - 236*D3) >> 8;C3 = (236*D2 + 97*D3) >> 8;
+        C4 = D4 + D5;C5 = D4 - D5;C6 = -D6 + D7; C7 = D6 + D7;
+        C8   =D8     +D14;C14=D8        -D14;C9      =D9     +D15;C15=D9       -D15;ClO
+= D10 + Dl; C11 = D10 - Dll;C12 = D12 + D13;C13            =  D12 - D13;
+        C16 = (181*(D16 - D19)) >> 8;C19 = (181*(D16 + D19)) >> 8;C20 = D20 +
+D26;C26 = D20 - D26;C21 = D21 + D27;C27 = D21 - D27;C22 = D22 + D23;C23 =
+D22 - D23;C24 = D24 + D25;C25 = D24 - D25;C28 = (181 *(D28 - D31)) >> 8;C31 =
+(181 *(D28 + D31)) >> 8;
+                                            32
+
+      /stage 4
+       BC = CO + C3;B3 = CO - C3;B1 = C1 + C2;B2 = C1 - C2;
+       B4 = (49*C4 - 251 *C7) >> 8;B7 = (251 *C4 + 49*C7) >> 8;B5 = (142*C5
+212*C6) >> 8;B6 = (212*C5 + 142*C6) >> 8;
+       B8=C8+C11;B11 =C8-C11;B9=C9+C10;B10=C9-C10;
+       B12 = C12 + C15;B15 = C12- C15;B13 = C13 + C14;B14 = C13-C14;
+       B16 = C16 + C28;B28 = C16 - C28;B17 = C17 + C29;B29 = C17 - C29;B18        =
+C18 + C30;B30 = C18 - C30;B19 = C19 + C31;B31 = C19 - C31;
+       B20 = C20 + C23;B23 = C20 - C23;B21 = C21 + C22;B22 = C21 - C22;
+       B24 = C24 + C27;B27 = C24 - C27;B25 = C25 + C26;B26 = C25 - C26;
+      /stage 5
+      AC = BC + B7;A7 = BO - B7;A1 = B1 + B6;A6 = B1 - B6;A2 = B2 + B5;A5 = B2
+- B5;A3 = B3 + B4;A4 = B3 - B4;
+      A8 = (197*B8 - 162*B15) >> 8;A15 = (162*B8 + 197*B15) >> 8;A9 = (120*B9
++ 225*B1 4) >> 8;A1 4 = (-225*B9 + 120*B1 4) >> 8;A1 0 = (244*B1 0 - 74*B1 3) >>
+8;A13 = (74*B10 + 244*B13) >> 8;A11 = (25*B11 + 254*B12) >> 8;A12 = (-254*B11
++ 25*B12) >> 8;
+      A16 = B16 + B23;A23 = B16 - B23;A17 = B17 + B22;A22 = B17 - B22;A18 =
+B18 + B21;A21 = B18 - B21;A19 = B19 + B20;A20 = B19 - B20;
+      A24 = B24 + B31;A31 = B24 - B31;A25 = B25 + B30;A30 = B25 - B30;A26 =
+B26 + B29;A29 = B26 - B29;A27 = B27 + B28;A28 = B27 - B28;
+      /stage 6
+      ZO    =AC+A15;Z1       =A1+A14;Z2      =A2+A13;Z3       =A3+A12;Z4        =A4
++A11;Z5    =A5+A1C;Z6        =A6+A9;Z7      =A7+A8;Z8      =A7-A8;Z9       =A6
+A9;Z10=A5-A1C;Z11 =A4-A11;Z12=A3-A12;Z13=A2-A13;Z14=A1
+A14;Z15 = AC  - Al5;
+                                         33
+
+       Z16 = (171*A16 + 189*A31) >> 8;Z31 = (-189*A16 + 171*A31) >> 8;Z17=
+(205*A17 - 152*A30) >> 8;Z30 = (152*A17 + 205*A30) >> 8;Z18 = (131 *A18 +
+219*A29) >> 8;Z29 = (-219*A18 + 131 *A29) >> 8;Z19 = (231 *A19 - 109*A28) >>
+8;Z28 = (109*A1 9 + 231 *A28) >> 8;Z20 = (86*A20 + 241 *A27) >> 8;Z27 = (-241 *A20
++ 86*A27) >> 8;Z21 = (248*A21      - 62*A26) >> 8;Z26 = (62*A21 + 248*A26) >> 8;Z22
+= (37*A22 + 253*A25) >> 8;Z25      = (-253*A22 + 37*A25) >> 8;Z23 = (255*A23
+12*A24) >> 8;Z24 = (12*A23 + 255*A24) >> 8;
+       /stage 7
+       YO = ZO + Z31;Y31 = ZO - Z31;Y1 = Z1 + Z30;Y30 = Z1 - Z30;Y2 = Z2 +
+Z29;Y29 = Z2 - Z29;Y3 = Z3 + Z28;Y28 = Z3 - Z28;Y4 = Z4 + Z27;Y27 = Z4 - Z27;Y5
+= Z5 + Z26;Y26 = Z5 - Z26;Y6 = Z6 + Z25;Y25 = Z6 - Z25;Y7 = Z7 + Z24;Y24 = Z7
+Z24;Y8 = Z8 + Z23;Y23 = Z8 - Z23;Y9 = Z9 + Z22;Y22 = Z9 - Z22;Y1 0 = Z1 0 +
+Z21;Y21 = Z10 - Z21;Y11 = Z11 + Z20;Y20 = Z11 - Z20;Y12 = Z12 + Z19;Y19 = Z12
+- Z19;Y13 = Z13 + Z18;Y18 = Z13 - Z18;Y14 = Z14 + Z17;Y17 = Z14 - Z17;Y15         =
+Z15 + Z16;Y16 = Z15 - Z16;
+       }
+       FIG. 12 is a flowchart illustrating a video decoding method according to an
+embodiment of the present invention.
+       Referring to FIG. 12, in operation 1210, the dequantizer 1120 receives a
+quantized NxN transformed block.        In operation 1220, the dequantizer 1120
+performs descaling on the quantized NxN transformed block to correct a difference
+between an NxN inverse-transform matrix for use in 1D IDCT with respect to the
+quantized NxN transformed block and a fast inverse-transform matrix produced
+based on the NxN inverse-transform matrix.        As described above, descaling may be
+performed simultaneously with dequantization, and descaling may be performed with
+respect to a quantized transformation coefficient by using the descaling matrix V or
+the descaling constant DQMat, which is determined according to the quantization
+parameter QP.
+                                             34
+
+        In operation 1230, the inverse-transformer 1130 produces an NxN
+inverse-transformed block by inversely transforming a descaled NxN transformed
+block using the fast inverse-transform matrix.     As described above, the fast
+inverse-transform matrix is the inverse matrix A- of the NxN fast transform matrix A
+acquired according to various embodiments of the present invention, and IDCT is
+performed using a fast transformation matrix formed of elements that are obtained by
+substituting the elements of an inverse-transform matrix used for IDCT with rational
+numbers or by multiplying the elements of the inverse-transform matrix by a power of
+2 and then rounding up the multiplied elements.
+        One or more exemplary embodiments can also be embodied as computer
+readable codes on a computer readable recording medium.           The computer readable
+recording medium is any data storage device that can store data which can be
+thereafter read by a computer system.       Examples of the computer readable
+recording medium include read-only memory (ROM), random-access memory (RAM),
+CD-ROMs, magnetic tapes, floppy disks, optical data storage devices, etc.         The
+computer readable recording medium can also be distributed over network coupled
+computer systems so that the computer readable code is stored and executed in a
+distributed fashion.
+        While the present invention has been particularly shown and described with
+reference to exemplary embodiments thereof, it will be understood by those of
+ordinary skill in the art that various changes in form and details may be made therein
+without departing from the spirit and scope of the present invention as defined by the
+following claims.
+        Throughout the description and claims of this specification, the word
+"comprise" and variations of the word, such as "comprising" and "comprises", is not
+intended to exclude other additives, components, integers or steps.
+        The discussion of documents, acts, materials, devices, articles and the like is
+included in this specification solely for the purpose of providing a context for the
+present invention.     It is not suggested or represented that any or all of these matters
+formed part of the prior art base or were common general knowledge in the field
+relevant to the present invention as it existed before the priority date of each claim of
+this application.
+                                              35
+
+The claims defining the invention are as follows:
+      1. A video encoding method comprising:
+     obtaining a transform block by transforming a residual block indicating
+differences between a current block and a predicted block of the current block;
+     determining a scaling constant for quantization of transform coefficients included
+in the transform block based on a quantization parameter;
+     quantizing the transform coefficients in the transform block based on the scaling
+constant;
+     entropy-coding the quantized transform block; and
+     outputting a bitstream including quantized transform block information indicating
+the quantized transform block,
+     wherein, where i denotes a remainder after the quantization parameter is
+divided by 6, the scaling constant for i=0 is 40, the scaling constant for i=1 is 45, the
+scaling constant for i=2 is 51, the scaling constant for i=3 is 57, the scaling constant
+for i=4 is 64, and the scaling constant for i=5 is 72.
+     2. A video encoding apparatus comprising a processor configured to:
+     obtain a transform block by transforming a residual block indicating differences
+between a current block and a predicted block of the current block, determine a
+scaling constant for quantization of transform coefficients included in the transform
+block based on a quantization parameter, quantize the transform coefficients in the
+transform block based on the scaling constant, entropy-coding the quantized
+transform block, and output a bitstream including quantized transform block
+information indicating the quantized transform block,
+     wherein, where i denotes a remainder after the quantization parameter is
+divided by 6, the scaling constant for i=0 is 40, the scaling constant for i=1 is 45, the
+scaling constant for i=2 is 51, the scaling constant for i=3 is 57, the scaling constant
+for i=4 is 64, and the scaling constant for i=5 is 72.
+                                            .qF
+
+     3. A non-transitory computer-readable recording medium comprising a bitstream,
+the bitstream comprising:
+     quantized transform block information indicating a quantized transform block of
+a current block;
+     quantization parameter information indicating a quantization parameter; and
+     prediction mode information indicating a prediction mode of the current block.
+     wherein,
+     the quantized transform block is derived by entropy-decoding the quantized
+transform block information,
+     transform coefficients in the quantized transform block are scaled by using a
+scaling constant that is determined based on the quantization parameter,
+     a transform block that includes the scaled transform coefficients is
+inverse-transformed to obtain a residual block indicating differences between the
+current block and a predicted block of the current block,
+     the predicted block of the current block is determined based on the prediction
+mode of the current block,
+     where i denotes a remainder after the quantization parameter is divided by 6,
+the scaling constant for i=0 is 40, the scaling constant for i=1 is 45, the scaling
+constant for i=2 is 51, the scaling constant for i=3 is 57, the scaling constant for i=4 is
+64, and the scaling constant for i=5 is 72.
+                                            27
+
+<removed-apn>   <removed-date>
+                           1/24
+
+<removed-apn>   <removed-date>
+                           2/24
+
+<removed-apn>   <removed-date>
+                           3/24
+
+<removed-apn>   <removed-date>
+                           4/24
+
+<removed-apn>   <removed-date>
+                           5/24
+
+<removed-apn>   <removed-date>
+                           6/24
+
+<removed-apn>   <removed-date>
+                           7/24
+
+<removed-apn>   <removed-date>
+                           8/24
+
+<removed-apn>   <removed-date>
+                           9/24
+
+<removed-apn>   <removed-date>
+                           10/24
+
+<removed-apn>   <removed-date>
+                           11/24
+
+<removed-apn>   <removed-date>
+                           12/24
+
+<removed-apn>   <removed-date>
+                           13/24
+
+<removed-apn>   <removed-date>
+                           14/24
+
+<removed-apn>   <removed-date>
+                           15/24
+
+<removed-apn>   <removed-date>
+                           16/24
+
+<removed-apn>   <removed-date>
+                           17/24
+
+<removed-apn>   <removed-date>
+                           18/24
+
+<removed-apn>   <removed-date>
+                           19/24
+
+<removed-apn>   <removed-date>
+                           20/24
+
+<removed-apn>   <removed-date>
+                           21/24
+
+<removed-apn>   <removed-date>
+                           22/24
+
+<removed-apn>   <removed-date>
+                           23/24
+
+<removed-apn>   <removed-date>
+                           24/24
+

@@ -1,0 +1,829 @@
+                                          ABSTRACT
+  Techniques for high dynamic range image processing are presented. Base layer data, first
+  checksum parameter, and residual ratio data for a high dynamic range (HDR) image are each
+  received. A second checksum parameter is computed for the base layer data based upon the first
+5 SOF after the last APP 11 marker segment and includes all following bytes up to and including the
+  EOI marker. The first and second checksum parameters are compared to determine if base layer
+  has been altered.
+
+                        TECHNIQUES FOR ENCODING, DECODING AND
+                       REPRESENTING HIGH DYNAMIC RANGE IMAGES
+    CROSS-REFERENCE TO RELATED APPLICATIONS
+  5 [0001]      This application claims the benefit of priority to United States Provisional Patent
+    Application No. 61/924,345 filed 7 January 2014, which is hereby incorporated by reference in its
+    entirety.
+    TECHNOLOGY OF THE INVENTION
+    [0002]      The present invention relates generally to high dynamic range digital images. The
+ 0  invention relates specifically to methods and apparatus for encoding and decoding high dynamic
+    range images, whether still or moving pictures, and to data structures containing digital high
+    dynamic range images.
+    BACKGROUND OF THE INVENTION
+    [0003]      Any discussion of the prior art throughout the specification should in no way be
+  5 considered as an admission that such prior art is widely known or forms part of common general
+    knowledge in the field.
+    [0004]      Human vision is capable of appreciating contrast ratios of up to 1:10,000. That is, a
+    person can take in a scene in which some parts of the scene are 10,000 times brighter than other
+    parts of the scene and see details in both the brightest and darkest parts of the scene. Further,
+ .0 human vision can adapt its sensitivity to brighter or darker scenes over a further 6 orders of
+    magnitude.
+    [0005]      Most conventional digital image formats (so-called 24-bit formats) use up to 24 bits to
+    store color and luminance information for each pixel in an image. For example, each of a red,
+    green and blue (RGB) value for a pixel may be stored in one byte (8 bits). Such formats are
+25  capable of representing brightness variations over only about two orders of magnitude (each byte
+    can store one of 256 possible values). There exist a number of standard formats for representing
+    digital images (which include both still and video images). These include JPEG (Joint
+    Photographic Experts Group), MPEG (Motion Picture Experts Group), AVI (Audio Video
+    Interleave), TIFF (Tagged Image File Format), BMP (Bit Map), PNG (Portable Network
+30  Graphics), GIF (Graphical Interchange Format), and others. Such formats may be called "output
+    referred standards" because they do not attempt to preserve image information beyond what can
+    be reproduced by electronic displays of the types most commonly available. Until recently,
+    displays such as computer displays, televisions, digital motion picture projectors and the like have
+    been incapable of accurately reproducing images having contrast ratios better than 1:1000 or so.
+35  [0006]      Display technologies being developed by the assignee, and others, are able to
+    reproduce images having high dynamic range (HDR). Such displays can reproduce images which
+                                                   -I -
+
+    more faithfully represent real-world scenes than conventional displays. There is a need for formats
+    for storing HDR images for reproduction on these displays and other HDR displays that will
+    become available in the future.
+    [0007]       A number of fonnats have been proposed for storing HDR images as digital data.
+  5 These formats all have various disadvantages. A number of these formats yield prohibitively large
+    image files that can be viewed only through the use of specialized software. Some manufacturers
+    of digital cameras provide proprietary RAW formats. These formats tend to be camera-specific
+    and to be excessive in terms of data storage requirements.
+    [0008]       There is a need for a convenient framework for storing, exchanging, and reproducing
+ 0  high dynamic range images. There is a particular need for such a framework which is backwards
+    compatible with existing image viewer technology.
+    SUMMARY
+    [0009]       One embodiment provides a method for decoding with edit detection, the method
+    comprising:
+  5         receiving base layer data for a high dynamic range (HDR) image, the base layer data
+    editable by a legacy image viewer;
+            receiving a first checksum parameter in American Standard Code for Information
+    Interchange (ASCII) representation for the base layer data and embedded in an Application 11
+    (APP 11) marker segment, the first checksum parameter to be utilized by an HDR decoder and
+ '0 ignored by the legacy image viewer;
+            receiving residual ratio data for the HDR image embedded in the APP 11 marker segment;
+            for the HDR decoder:
+                    computing a second checksum parameter for the base layer data; and
+                    comparing the first checksum parameter to the second checksum parameter; and
+25          decoding the HDR image based on the base layer data, the residual ratio data, and a result
+    of comparing the first checksum parameter to the second checksum parameter,
+            wherein the residual ratio data includes a plurality of segments.
+    [00010]      One embodiment provides a method for decoding with edit detection, the method
+    comprising:
+30          receiving base layer data for a high dynamic range (HDR) image, the base layer data
+    editable by a legacy image viewer;
+            receiving a first checksum parameter for the base layer data embedded in a segment for
+    HDR information, the first checksum parameter to be utilized by an HDR decoder and ignored by
+    the legacy image viewer;
+                                                    -2-
+
+            receiving residual ratio data for the HDR image embedded in the segment for HDR
+    information;
+            for the HDR decoder:
+                    computing a second checksum parameter for the base layer data; and
+  5                 comparing the first checksum parameter to the second checksum parameter; and
+            decoding the HDR image based on the base layer data, the residual ratio data, and a result
+    of comparing the first checksum parameter to the second checksum parameter,
+            wherein the residual ratio data includes a plurality of segments.
+    [00011]      Unless the context clearly requires otherwise, throughout the description and the
+ 0  claims, the words "comprise", "comprising", and the like are to be construed in an inclusive sense
+    as opposed to an exclusive or exhaustive sense; that is to say, in the sense of "including, but not
+    limited to".
+    BRIEF DESCRIPTION OF DRAWINGS
+    [00012]      The present invention is illustrated by way of example, and not by way of limitation, in
+  5 the figures of the accompanying drawings and in which like reference numerals refer to similar
+    elements and in which:
+    [000131      FIG. I illustrates an exemplary decoding process, according to an embodiment of the
+    present invention;
+    [00014]      FIG. 2 illustrates exemplary decoding process, according to another embodiment of
+ '0 the present invention;
+    [00015]      FIG. 3 illustrates exemplary data contained in an APPI 1 header segment, according to
+    an embodiment of the present invention;
+    [00016]      FIGS. 4A-4B illustrate exemplary segments for a residual ratio image;
+    [0010]       FIG. 5 illustrates an example hardware platform on which a computer or a computing
+25  device as described herein may be implemented.
+    DESCRIPTION OF EXAMPLE POSSIBLE EMBODIMENTS
+    [0011]       Example possible embodiments, which relate to HDR encoding, decoding, and data
+    structures, are described herein. In the following description, for the purposes of explanation,
+    numerous specific details are set forth in order to provide a thorough understanding of the present
+30  invention. It will be apparent, however, that the present invention may be practiced without these
+    specific details. In other instances, well-known structures and devices are not described in
+    exhaustive detail, in order to avoid unnecessarily occluding, obscuring, or obfuscating the present
+    invention. That said, US Patent No. 8,514,934, entitled "Apparatus and methods for encoding,
+    decoding, and representing high dynamic range images," is incorporated by reference herein for
+35  all purposes.
+                                                      -3 -
+
+    [0012]      According to one embodiment of the present invention, an HDR data structure is
+    configured to be readable by legacy image viewers. The legacy image viewers can read a tone map
+    information and ignore HDR information, such as a ratio data (as explained later). In some
+    embodiments, the data structure comprises a JFIF file and the tone map information comprises a
+  5 JPEG image. In some embodiments, the data structure comprises a MPEG file and the tone map
+    information comprises a frame of a MPEG video.
+    [0013]      Another aspect of the invention provides a data structure for representing a high
+    dynamic range image having an initial dynamic range. The data structure comprises a tone map
+    portion and a high dynamic range information portion. The tone map portion contains tone map
+ 0  information representing the image and has a dynamic range less than the initial dynamic range.
+    The high dynamic range information portion contains information describing ratios of
+    (luminance) values in the tone map portion to luminance values of the high dynamic range image.
+                RESIDUAL RATIO IMAGE
+    [0014]      One aspect of this invention provides methods for encoding high dynamic range image
+  5 data. The methods involve obtaining, or otherwise generating, a tone map information
+    corresponding to the high dynamic range image data. The tone map information has a dynamic
+    range lower than that of the high dynamic range image data. The method computes ratio data
+    comprising ratios of values in the high dynamic range image data and corresponding values in the
+    tone map information. The ratio data (or derivative information therefrom) and the tone map
+ '0 information can be stored and transmitted for decoding.
+    [0015]      Another aspect of this invention provides methods for decoding a codestream to
+    reconstruct a high dynamic range image. The methods involve receiving, or otherwise accessing, a
+    tone map information and corresponding ratio data (or derivative information therefrom). The
+    method computes a high dynamic range image utilizing the values in the tone map information
+25  and corresponding ratio data.
+    [0016]      Ratio data, as referred to in this application in its entirety, can be computed, without
+    limitation, (i) as mathematical division of numerator and denominator values, including without
+    limitation, further mathematical operations - such as logarithm of the ratio, or (ii) alternatively, as
+    subtraction of two logarithmic values, including without limitation, further mathematical
+30  operations. Typically, ratio data describes luminance, but can be used for chroma channels (e.g.,
+    Cr, Cb) as well. For the sake of clarity, ratio data is sometimes described herein as residual data or
+    included with residual data.
+    [0017]      FIG. 1 illustrates an exemplary decoding process according to an embodiment of the
+    present invention. The process begins with a legacy decoder block which reconstructs the base
+35  image. This image is then optionally chroma upsampled, followed by an inverse decorrelation
+                                                      -4-
+
+    block. The output of this transformation is a low-dynamic range, backward compatible image with
+    eight bits per sample in, for example, an RGB-type color space.
+    [0018]       The low-dynamic range components are further mapped by the base mapping and
+    color space conversion block to a floating point image which is called a precursor image. The
+  5 precursor image is optionally converted to HDR color space and luminance can be calculated. The
+    noise level maybe used to avoid division by zero and to reduce the compression artifacts which
+    can be amplified in following blocks.
+    [0019]       The residual decoder path uses the residual data that is embedded in the codestrean in
+    the APPI I markers. This data is reconstructed and then optionally upsampled. It is then processed
+ 0  by a residual mapping and inverse decorrelation block. This block maps the residual data to
+    floating point domain which is optionally inversely decorrelated. This mapping can use the
+    luminance computed by the base mapping and color space conversion block. The mapped residual
+    data and the precursor image are processed by the HDR reconstruction block to produce a
+    reconstructed HDR Image.
+  5 [0020]       FIG. 2 illustrates exemplary decoding process according to another embodiment of the
+    present invention. The decoding process relies on a layered approach by decomposing an HDR
+    image into a base layer and an HDR residual ratio layer. The base layer is a tone mapped image
+    tone mapped from the original floating point HDR with either a local or global tonemapper. This
+    codestream will be the backwards compatible with, accessible by, legacy decoders. The residual
+ '0 ratio layer contains HDR quantized log luminance ratio and the chrominance residual difference,
+    this data is put together and represented as a single residual ratio image.
+    [00211       Since the residual data is hidden in the APP 11 markers, legacy decoders can skip over
+    this residual image and only access the base image codes stream, and thus this decoding process is
+    backwards compatible. However, decoders implementing the present invention can combine the
+25  two layers to reconstruct an HDR image.
+    [0022]       In FIG. 2, the upper path which comprise of blocks B 1, B2, and B3 can be the standard
+    flow of a legacy decoder and outputs a backwards compatible lower dynamic range (LDR) image
+    in typically sRGB space. This base image data is then mapped into linear HDR space and
+    processed by the color space conversion operation in block B4. This block converts the LDR
+30  image into the color space of the original HDR image, and it also maps the image to floating point
+    value and called linear pre RGB2, it can also be referred to as "LPRGB2." A noise floor value
+    specified in the parameter codestream is added to the luminance component of the LPRGB2 to
+    avoid divide by 0 and to avoid amplifying any noise that could occur due to operations
+    downstream from this block B4 for small values.
+                                                      -5-
+
+    [0023]       In FIG. 2, the lower path starting from B5 begins with the residual data of the
+    high-dynamic range image, and is represented by the ISO/IEC 10918-1 codestream format (which
+    is incorporated by reference for all purposes, and to show desired formats). This codestream is
+    embedded in the APP 11 marker as a residual data segment described below. After being decoded
+  5 by the decoder the chroma upsampling step is performed by B6 to bring all components to full
+    resolution, e.g., 4:4:4.
+    [00241       The residual ratio data is then separated by B7 into floating point linear ratio
+    luminance values and a linear residual color difference value. The incoming residual luminance
+    values are inverse quantized according to parameters in the codestream. A specific embodiment,
+ 0  this is either provided by an explicit lookup table in the parameter segment in the codestream. If
+    this table is not present, then using the min and max, referred to as In1, InO in the parameters
+    segment, and an inverse log map is calculated. Similarly, the incoming chroma residual sample
+    values are inverse quantized according to the minimum and maximum parameters stored in the
+    parameter segment of the codestream as cb0, cbl and cr0, crl, if present.
+  5 [0025]       The chroma values are then processed by B8, the YCbCr to RGB2 block and will
+    convert the linear dequantized YCbCr to a linear residue RGB2 in the HDR color space,
+    alternatively referred to as "LRRGB2." Finally, blocks B9 and B10 constructs an HDR image by
+    first adding the linear pre RGB2 to the linear residue RGB2 in B9 and then multiplying the result
+    by the linear ratio luminance in B10.
+ 10          APPI 1 MARKER
+    [0026]       As shown in FIG. 3, the APPl 1 marker segment is broken into a parameter data
+    segment and a data segment. The parameter segment has two or more (e.g., 3) types of segments,
+    such as a parameter ASCII type segment, residual segment, and a parameter binary type segment.
+    This structure for the APPI 1 marker segment can be used in connection with any embodiment of
+25  the invention described herein, including without limitation, the exemplary embodiments
+    reflected in FIGS. 1 and 2.
+             CHECKSUM FOR EDIT DETECTION
+    [00271       A parameter data segment (PDS) carries parameters encoded, as ASCII or binary text,
+    as payload data. The last parameter in the segment is a checksum of the base layer codestream. In
+30  a specific embodiment, the ckb (ASCII) or chksum (binary, 16 bits) parameter is a checksum of the
+    base layer codestream computed by summing all bytes in the base layer codestream. The
+    checksum includes the first SOF (e.g., start of frame) marker after the last APP I1 marker segment
+    and includes all following bytes up to and including the EOI (e.g., end of frame) marker. It can be
+    used by the decoder to detect an edit of the base layer, which may result in undesirable artifacts
+35  when the high dynamic range (HDR) image is decoded. In a specific embodiment, the checksum
+                                                      -6-
+
+    is position (or order) dependent, such as a Fletcher's checksum (e.g., Fletcher-16, Fletcher -32,
+    Flectcher-64). See Fletcher, J. G. (January 1982). "An Arithmetic Checksum for Serial
+    Transmissions," IEEE Transactions on Communications, COM-30 (1): 247-252 for additional
+    information, which is incorporated herein by reference for all purposes.
+  5 [0028]         In an alternative embodiment, the PDS can indicate the use of a more complex hash
+    algorithm than checksum. A more complex hash algorithm reduces the possibilities of hash
+    collisions, e.g., undetectable alterations in the data when different input data results in same hash
+    value. According, a hash value generated for the original base layer should probabilistically be
+    unlikely to match if the base layer is altered. Exemplary hash functions can be, or implemented by:
+ 0           (i)       nonlinear lookup table;
+             (ii)      cryptographic hash function (e.g., HAIFA, Merkle-Damgird, unique block
+             interation, and the like);
+             (iii)     non- cryptographic hash function (xor, product, addition, rotation);
+             (iv)      randomized that selects a hashing function among a predefined set;
+  5          (v)       cyclic redundancy check(s); and
+             (vi)      checksum(s) - e.g., Fletcher, Adler-32.
+    [0029]         In yet other alternative embodiments,        fingerprinting or media watermarking
+    techniques       can   be   signaled by    the  PDS    and   verified   during  decoding    or  image
+    reproduction/rendering.
+ '0 [0030]         The checksum, hash function or the other described alternatives for base layer edit
+    detection can be used in connection with any embodiment of the invention described herein,
+    including without limitation, the exemplary embodiments reflected in FIGS.                   1 and 2.
+    Additionally, based on the teaching herein, a checksum, hash function or alternative can be used
+    for edit detection of the residual ratio layer too.
+25           ENCRYPTION/DECRYPTION OF THE RESIDUE LAYER IMPLEMENTED ON A
+    PER SEGMENT BASIS
+    [0031]         Another parameter within the PDS or elsewhere can be an encryption parameter, such
+    as an encryption key. This information can be used to decrypt the ratio residue layer, for example,
+    on a per segment basis of the codestream. A segment can be an independently decodable sequence
+30  of entropy encoded bytes of compressed image data. In other words, according to an embodiment
+    of the present invention, a different encryption parameter can be provided and used for each
+    segment. The encryption parameter and associated processing can be used in connection with any
+    embodiment of the invention described herein, including without limitation, the exemplary
+    embodiments reflected in FIGS. 1 and 2.
+35           INVERSE TONE MAPPING IN THE DEGAMMA LUT/MAPPING LUT
+                                                      -7-
+
+    [0032]       A degamma lookup table (LUT) described above (as block B4 in FIG. 2) is a 256 entry
+    table loaded by a default Rec. 601 table (ITU-R Recommendation BT.601, available at
+    http://www.itu.int/rec/R-REC-BT.601-7-201103-I/en, which is incorporated by reference) which
+    is typically an inverse linear and power function of 2.4. If it is in an alternate color space, such as
+  5 Adobe RGB by Adobe Systems, Inc., the look up table can be sent in header information.
+    Additionally, the degamma LUT can include an inverse tone mapping function/curve, such as for
+    reverse histogram equalization or inverse Reinhard tone mapper. In some cases, the degamma
+    LUT with inverse tone mapping can reduce memory used for the residual ratio layer. For
+    additional information on the Reinhard tone mapper, see
+ 0  http://www.cs.utah.edu/~reinhard/cdrom/tonemap.pdf ("Photographic Tone Reproduction for
+    Digital Images"), which is incorporated by reference herein for all purposes.
+             BINARY HEADER SEGMENT
+    [0033]       The APP 11 marker segment can include binary parameter data, as shown as "Type 3"
+    in FIG. 3. The Type 3 segment and its associated processing can be used in connection with any
+  5 embodiment of the invention described herein, including without limitation, the exemplary
+    embodiments reflected in FIGS. 1 and 2.
+             SEGMENT INDEX AND START LOCATION FOR THAT SEGMENT
+    [0034]       In an embodiment of the present invention, the span and extent of segments for
+    residual ratio image need to be coincident with a base layer image. For example, a residual ratio
+ '0 image can be partitioned into a plurality of segments, contiguous and non-contiguous. A set of
+    these segments of the residual ratio image need not correspond to a complete image, but can
+    define one or more portions of an image. This functionality allows HDR reconstruction from a
+    portion of the base layer image, but not the entire base layer image. For example, an encryption
+    parameter can be provided for one segment (e.g., left half image, top half image) for HDR
+25  reconstruction, while residual ratio information for another segment (e.g., right half image, bottom
+    half image) remains encrypted for limited base layer reproduction.
+    [0035]       Each segment of the residual ratio image can be specified by coordinate references
+    (e.g., x and y coordinates for one of the four corners if rectangular segment) and its length and
+    width. If segment is a different geometric shape, then it can be defined by a center position and a
+30  radius/diameter or the like. FIGS. 4A-4B illustrate exemplary segments of the residual ratio
+    image, which can used in connection with any embodiment of the present invention, including
+    without limitation, the exemplary embodiments reflected in FIGS. 1 and 2.
+             IMPLEMENTATION MECHANISMS - HARDWARE OVERVIEW
+    [0100]       According to one embodiment, the techniques described herein are implemented by
+35  one or more special-purpose computing devices. The special-purpose computing devices may be
+                                                     -8-
+
+    hard-wired to perform the techniques, or may include digital electronic devices such as one or
+    more application-specific integrated circuits (ASICs) or field programmable gate arrays (FPGAs)
+    that are persistently programmed to perform the techniques, or may include one or more general
+    purpose hardware processors programmed to perform the techniques pursuant to program
+  5 instructions in firmware, memory, other storage, or a combination. Such special-purpose
+    computing devices may also combine custom hard-wired logic, ASICs, or FPGAs with custom
+    programming to accomplish the techniques. The special-purpose computing devices may be
+    desktop computer systems, portable computer systems, handheld devices, networking devices or
+    any other device that incorporates hard-wired and/or program logic to implement the techniques.
+ 0  [0101]       For example, FIG. 5 is a block diagram that illustrates a computer system 1600 upon
+    which an embodiment of the invention may be implemented. Computer system 1600 includes a
+    bus 1602 or other communication mechanism for communicating information, and a hardware
+    processor 1604 coupled with bus 1602 for processing information. Hardware processor 1604 may
+    be, for example, a general purpose microprocessor.
+  5 [0102]       Computer system 1600 also includes a main memory 1606, such as a random access
+    memory (RAM) or other dynamic storage device, coupled to bus 1602 for storing information and
+    instructions to be executed by processor 1604. Main memory 1606 also may be used for storing
+    temporary variables or other intermediate information during execution of instructions to be
+    executed by processor 1604. Such instructions, when stored in non-transitory storage media
+ '0 accessible to processor 1604, render computer system 1600 into a special-purpose machine that is
+    customized to perform the operations specified in the instructions.
+    [0103]       Computer system 1600 further includes a read only memory (ROM) 1608 or other
+    static storage device coupled to bus 1602 for storing static information and instructions for
+    processor 1604. A storage device 1610, such as a magnetic disk or optical disk, is provided and
+25  coupled to bus 1602 for storing information and instructions.
+    [0104]       Computer system 1600 may be coupled via bus 1602 to a display 1612, such as a liquid
+    crystal display, for displaying information to a computer user. An input device 1614, including
+    alphanumeric and other keys, is coupled to bus 1602 for communicating information and
+    command selections to processor 1604. Another type of user input device is cursor control 1616,
+30  such as a mouse, a trackball, or cursor direction keys for communicating direction information and
+    command selections to processor 1604 and for controlling cursor movement on display 1612. This
+    input device typically has two degrees of freedom in two axes, a first axis (e.g., x) and a second
+    axis (e.g., y), that allows the device to specify positions in a plane.
+    [0105]       Computer system 1600 may implement the techniques described herein using
+35  customized hard-wired logic, one or more ASICs or FPGAs, firmware and/or program logic
+                                                      -9-
+
+    which in combination with the computer system causes or programs computer system 1600 to be a
+    special-purpose machine. According to one embodiment, the techniques as described herein are
+    performed by computer system 1600 in response to processor 1604 executing one or more
+    sequences of one or more instructions contained in main memory 1606. Such instructions may be
+  5 read into main memory 1606 from another storage medium, such as storage device 1610.
+    Execution of the sequences of instructions contained in main memory 1606 causes processor 1604
+    to perform the process steps described herein. In alternative embodiments, hard-wired circuitry
+    may be used in place of or in combination with software instructions.
+    [0106]      The term "storage media" as used herein refers to any non-transitory media that store
+ 0  data and/or instructions that cause a machine to operation in a specific fashion. Such storage
+    media may comprise non-volatile media and/or volatile media. Non-volatile media includes, for
+    example, optical or magnetic disks, such as storage device 1610. Volatile media includes dynamic
+    memory, such as main memory 1606. Common forms of storage media include, for example, a
+    floppy disk, a flexible disk, hard disk, solid state drive, magnetic tape, or any other magnetic data
+  5 storage medium, a CD-ROM, any other optical data storage medium, any physical medium with
+    patterns of holes, a RAM, a PROM, and EPROM, a FLASH-EPROM, NVRAM, any other
+    memory chip or cartridge.
+    [0107]      Storage media is distinct from but may be used in conjunction with transmission
+    media. Transmission media participates in transferring information between storage media. For
+ '0 example, transmission media includes coaxial cables, copper wire and fiber optics, including the
+    wires that comprise bus 1602. Transmission media can also take the form of acoustic or light
+    waves, such as those generated during radio-wave and infra-red data communications.
+    [0108]      Various forms of media may be involved in carrying one or more sequences of one or
+    more instructions to processor 1604 for execution. For example, the instructions may initially be
+25  carried on a magnetic disk or solid state drive of a remote computer. The remote computer can
+    load the instructions into its dynamic memory and send the instructions over a telephone line
+    using a modem. A modem local to computer system 1600 can receive the data on the telephone
+    line and use an infra-red transmitter to convert the data to an infra-red signal. An infra-red detector
+    can receive the data carried in the infra-red signal and appropriate circuitry can place the data on
+30  bus 1602. Bus 1602 carries the data to main memory 1606, from which processor 1604 retrieves
+    and executes the instructions. The instructions received by main memory 1606 may optionally be
+    stored on storage device 1610 either before or after execution by processor 1604.
+    [0109]      Computer system 1600 also includes a communication interface 1618 coupled to bus
+    1602. Communication interface 1618 provides a two-way data communication coupling to a
+35  network link 1620 that is connected to a local network 1622. For example, communication
+                                                      - 10 -
+
+    interface 1618 may be an integrated services digital network (ISDN) card, cable modem, satellite
+    modem, or a modem to provide a data communication connection to a corresponding type of
+    telephone line. As another example, communication interface 1618 may be a local area network
+    (LAN) card to provide a data communication connection to a compatible LAN. Wireless links
+  5 may also be implemented. In any such implementation, communication interface 1618 sends and
+    receives electrical, electromagnetic or optical signals that carry digital data streams representing
+    various types of information.
+    [0110]      Network link 1620 typically provides data communication through one or more
+    networks to other data devices. For example, network link 1620 may provide a connection through
+ 0  local network 1622 to a host computer 1624 or to data equipment operated by an Internet Service
+    Provider (ISP) 1626. ISP 1626 in turn provides data communication services through the world
+    wide packet data communication network now commonly referred to as the "Internet" 1628.
+    Local network 1622 and Internet 1628 both use electrical, electromagnetic or optical signals that
+    carry digital data streams. The signals through the various networks and the signals on network
+  5 link 1620 and through communication interface 1618, which carry the digital data to and from
+    computer system 1600, are example forms of transmission media.
+    [0111]      Computer system 1600 can send messages and receive data, including program code,
+    through the network(s), network link 1620 and communication interface 1618. In the Internet
+    example, a server 1630 might transmit a requested code for an application program through
+ '0 Internet 1628, ISP 1626, local network 1622 and communication interface 1618.
+    [0112]      The received code may be executed by processor 1604 as it is received, and/or stored
+    in storage device 1610, or other non-volatile storage for later execution.
+             EQUIVALENTS, EXTENSIONS, ALTERNATIVES AND MISCELLANEOUS
+    [0113]      In the foregoing specification, possible embodiments of the invention have been
+25  described with reference to numerous specific details that may vary from implementation to
+    implementation. Thus, the sole and exclusive indicator of what is the invention, and is intended by
+    the applicants to be the invention, is the set of claims that issue from this application, in the
+    specific form in which such claims issue, including any subsequent correction. Any definitions
+    expressly set forth herein for terms contained in such claims shall govern the meaning of such
+30  terms as used in the claims. Hence, no limitation, element, property, feature, advantage or attribute
+    that is not expressly recited in a claim should limit the scope of such claim in any way. The
+    specification and drawings are, accordingly, to be regarded in an illustrative rather than a
+    restrictive sense.
+             ADDITIONAL REFERENCES
+35  [0114]      The following references, in addition to references cited above, are incorporated by
+                                                    - 11 -
+
+  reference herein for all purposes:
+      (i)   ITU-T Rec. T.81 | ISO/IEC 10918-1: Information Technology - Digital Compression
+              and Coding of Continuous Tone Still Images - Requirements and Guidelines
+      (ii)  ITU-T Rec. T.86 ISO/IEC 10918-4: Information technology -- Digital compression and
+5             coding of continuous-tone still images: Registration of JPEG profiles, SPIFF profiles,
+              SPIFF tags, SPIFF colour spaces, APPn markers, SPIFF compression types, and
+              Registration Authorities
+      (iii) ITU-T Rec. T.871 | ISO/IEC 10918-5: Information technology -- Digital compression
+              and coding of continuous-tone still images: JPEG File Interchange Format
+0     (iv)  ITU-T Rec. T.801 | ISO/IEC 15444-1: Information technology - JPEG 2000 Image
+              Coding System; and
+      (v)   IEC 60559 Binary floating-point arithmetic for microprocessor systems.
+                                                 - 12 -
+
+    CLAIMS
+    1.      A method for decoding with edit detection, the method comprising:
+            receiving base layer data for a high dynamic range (HDR) image, the base layer data
+  5 editable by a legacy image viewer;
+            receiving a first checksum parameter in American Standard Code for Information
+    Interchange (ASCII) representation for the base layer data and embedded in an Application 11
+    (APP 11) marker segment, the first checksum parameter to be utilized by an HDR decoder and
+    ignored by the legacy image viewer;
+ 0          receiving residual ratio data for the HDR image embedded in the APP 11 marker segment;
+            for the HDR decoder:
+                     computing a second checksum parameter for the base layer data; and
+                     comparing the first checksum parameter to the second checksum parameter; and
+            decoding the HDR image based on the base layer data, the residual ratio data, and a result
+  5 of comparing the first checksum parameter to the second checksum parameter,
+            wherein the residual ratio data includes a plurality of segments.
+    2.      The method of claim 1, further comprising:
+            receiving an encryption parameter in the APPI 1 marker segment; and
+ 10         utilizing the encryption parameter to decrypt the residual ratio data,
+            wherein utilizing the encryption parameter to decrypt the residual ratio data is performed
+    on a per segment basis, and wherein one segment uses a different encryption parameter than
+    another segment.
+25  3.      The method of claim 1 or claim 2, wherein at least one of the plurality of segments is
+    specified by a length and a width, wherein the at least one of the plurality of segments is a
+    rectangular segment.
+    4.      The method of claim 1 or claim 2, wherein at least one of the plurality of segments is
+30  specified by a radius.
+    5.      A method for decoding with edit detection, the method comprising:
+            receiving base layer data for a high dynamic range (HDR) image, the base layer data
+    editable by a legacy image viewer;
+                                                    - 13 -
+
+            receiving a first checksum parameter for the base layer data embedded in a segment for
+    HDR information, the first checksum parameter to be utilized by an HDR decoder and ignored by
+    the legacy image viewer;
+            receiving residual ratio data for the HDR image embedded in the segment for HDR
+  5 information;
+            for the HDR decoder:
+                     computing a second checksum parameter for the base layer data; and
+                     comparing the first checksum parameter to the second checksum parameter; and
+            decoding the HDR image based on the base layer data, the residual ratio data, and a result
+ 0  of comparing the first checksum parameter to the second checksum parameter,
+            wherein the residual ratio data includes a plurality of segments.
+    6.      The method of claim 5, further comprising:
+            receiving an encryption parameter in the segment for HDR information; and
+  5         utilizing the encryption parameter to decrypt the residual ratio data,
+            wherein utilizing the encryption parameter to decrypt the residual ratio data is performed
+    on a per segment basis, and wherein one segment uses a different encryption parameter than
+    another segment.
+ '0 7.      The method of claim 6, wherein the plurality of segments uses a plurality of different
+    encryption parameters.
+    8.      The method of any one of claims 5 to 7, wherein at least one of the plurality of segments is
+    specified by a length and a width, wherein the at least one of the plurality of segments is a
+25  rectangular segment.
+    9.      The method of any one of claims 5 to 7, wherein at least one of the plurality of segments is
+    specified by a radius, wherein the at least one of the plurality of segments is a circular segment.
+                                                    - 14 -
+
+              <U+272A><U+272B><U+272C><U+272D><U+272D><U+272B><U+272E><U+272F><U+272D><U+272B>
+<removed-date>
+                                                                                                                                   <U+2730><U+2731><U+2732>
+                                                                                                                                                                                                                                                              <U+271D><U+2720>
+                                                                                                                                                                                                                                                        <U+2715>
+                                                                                                                                                                                                                                             <U+270C><U+271F> <U+261B> <U+271F><U+2714><U+2715>
+                                                                                                                                                                                                             <U+2702><U+2702>                                <U+271D><U+2714><U+2715> <U+2714><U+2716><U+271F> |<U+270F>
+                                                                                                                                                                                             <U+2713><U+2716>|                  <U+2747>                               <U+25B2> <U+2717> <U+25B2>
+                                                                                                                                                                                             <U+2718>
+                                <U+271D><U+271E>                               <U+271D><U+271E>                                                                                                                                                                    <U+270C><U+271F> <U+271D>|<U+2714><U+261E> <U+2737>
+                                                                 <U+271F>
+<removed-apn>
+                                <U+271F>                                     <U+270F><U+270E>                                                                                                                                     <U+2704><U+2702>                          <U+271D><U+2715><U+2714> <U+271D><U+270D> <U+271B><U+2747>
+                                     <U+270F><U+270E>                                                                                                                                                      <U+261E><U+261E>                                             <U+25B2> <U+2717> <U+2717>
+                                                                 <U+2749><U+274D><U+2717>                                                                                                                                              <U+2747>
+                                <U+2749><U+25B2><U+2717>                                                                                                                                                                <U+2746>
+                                                                           <U+2715><U+2714><U+261B>                                                                                                      <U+2747><U+271B> <U+2737>
+                                                                           <U+2716><U+2720>                                                                                           <U+270C><U+271F>             <U+2717>
+                                                                |                                                                                                       <U+271D><U+2715><U+2714>         <U+271D><U+270C>                                                                                      <U+260E><U+2747>
+                                                          <U+2749><U+274D><U+2717> <U+2716><U+270C><U+2715><U+270D>                                                                                                      <U+25B2>                P
+                                                                  <U+261B><U+2720>                                                                                                                                                                                  <U+2716><U+261B><U+270C> <U+2747> <U+2737>
+                                                                     <U+271D><U+2717>                                                                             <U+2721><U+2720> <U+270C><U+271D><U+261E>                                                                  <U+2729><U+2747>                           <U+2748><U+271A> <U+271B>
+                                                                                                                                                      <U+271F><U+271E> <U+261B><U+2720>                                                                      <U+271D><U+2720>
+                                                                                                                                                        <U+271D><U+25B2> <U+271D>                                                          <U+270C><U+261B>         <U+2715><U+271F>                        <U+2748> <U+2717>
+                                                                                                                                                             <U+2749>                                         <U+2715><U+2714><U+261B>                       <U+2715><U+2714>
+                                                                                                                                                                                                       <U+270C><U+271D><U+270D>            <U+2713><U+261B><U+2724>
+                                                                                                                                                                                                                                 |<U+25B2><U+270F>
+                                                           <U+270C><U+261B><U+2713>                                                                                 <U+271C><U+2747>                <U+271B><U+2717><U+2747><U+2736>         <U+271E><U+2714><U+2715>
+                                                                                                                                                                              <U+2712><U+2712>
+                                                                                                                                                                                                       ¦<U+2715>             <U+271D><U+2714><U+270D>
+                                                                                                                                                                                                                      <U+261B><U+2723>                              |<U+25B2><U+270F> <U+271F><U+2720>
+                                                                                                                                                                                                                                                             <U+271D><U+2713>                        <U+2712><U+2605>             <U+2701><U+2747>
+                                                           <U+261B><U+2748> <U+2715><U+261B><U+2714>                                                             <U+270C><U+2748>                                                                       <U+261B><U+2748>                                                                              <U+274A>
+                                               <U+2715><U+261B><U+2714>
+                                                                                         <U+271E><U+2714><U+2715>
+                                                                                                                              <U+271A><U+2748> <U+261B><U+2716> <U+271B>   <U+2747><U+2736>                                    <U+271F>                                                                                 <U+2759>
+                            <U+271D><U+270D> <U+2716><U+271F><U+2713>                           <U+2719> <U+270C><U+271D>¦<U+270D>                      <U+2712><U+2712> <U+271D> <U+2715><U+261B><U+2714><U+2716>
+                                                                                                                                <U+2768>     <U+2717>                                       <U+2718>
+                                                                                                                                                                              <U+271D><U+270D>
+                                                                                                                                                                                                       <U+271D><U+2720>
+                                                                                                                                                                                                       <U+271F><U+2712>
+                                                                                                                                                                                                                      <U+2719>
+                                                                                                                                                                                                                      <U+271D><U+2720>
+                            <U+270C><U+271D> <U+271D><U+270C>                             <U+271E><U+2715><U+2714> <U+2715>                        <U+271F> <U+270C><U+270D> <U+271F><U+2713>                                                                                                                    <U+2715><U+271F>                         <U+2712><U+271F>                  <U+2712><U+271F>
+                                                                 <U+2712><U+2712> <U+261B><U+2748>                      <U+2718><U+2713> <U+271D>¦ <U+271D><U+270C><U+270C>                                                                         <U+271F><U+2747>                       <U+2759><U+270C>                                                                              <U+2712><U+271F>
+                              ¦<U+2715> <U+270C><U+261B>                                <U+271F> <U+271D><U+2720>                       <U+271F>| <U+2715><U+270E> <U+261B>                                                                                                  <U+2713><U+261B><U+261B>            <U+2715><U+2714>                         <U+2718>                   <U+2718><U+270C>                <U+2718>              <U+2727><U+2747>
+                                <U+270E> <U+2720><U+271D>                                <U+2718> <U+271F>                         <U+261E><U+2714><U+270D> <U+2719> <U+2720><U+271D>                                                                                                              |<U+270F>                         <U+271A><U+2748>                                    <U+2768>
+                                               <U+2749>                     <U+271D><U+270D> <U+2712>                                <U+2749>                                                                                             <U+2748>              <U+25B2>                                              <U+2748>
+                                                                     <U+271F><U+2747> <U+2759>
+                                                                                                 <U+271D><U+2717>                                      <U+271E><U+2715><U+2714> <U+2722><U+2747>
+                                                                                                                                    <U+271F> <U+2713><U+2712>
+                                                                                                                                     <U+261B><U+270C><U+270F> <U+271F><U+270F>
+                                                                                                      <U+271E><U+2714><U+2715>                             <U+2711><U+2748> <U+270D>                                                                                                                                <U+271E>                 <U+2725><U+2747>
+                                               <U+271E><U+2714><U+2715>                                              <U+271F> <U+2713><U+2712>                                        <U+2712><U+276F>                                                                                                                     <U+271F> <U+2715><U+2714><U+2713><U+2712>
+                            <U+271F> <U+2713><U+2712>                                                                                                                                                                                                                                    <U+261B><U+270C><U+270F> <U+271F><U+270F>
+                             <U+261B><U+270C><U+270F> <U+271F><U+270F>                                                              <U+261B><U+270C><U+270F> <U+271F><U+270F>                                                                                                                                                              <U+2711><U+2748> <U+270D>
+                              <U+2711><U+2748> <U+270D>                                                                <U+2711><U+2748> <U+270D>                                                                                                                                                                      <U+2712><U+276F>
+                                 <U+2712><U+276F>                                                                  <U+2712><U+276F>
+                                                                                                                         <U+2702><U+2706>             <U+2702>
+                                                                                                                         <U+2701><U+2702> <U+270C><U+271D> <U+271D><U+271E><U+271F> <U+2747>                                                                                                         <U+2706><U+2702><U+2701> <U+270C>                               <U+271F><U+2716>              <U+2726><U+2747>
+                                                                                                                           <U+260E><U+2704> <U+261E><U+261B> <U+270F><U+270E>                                                                                                             <U+2702><U+260E> <U+271D><U+261E>                            <U+271F><U+2749>
+                <U+2702><U+2706>                                                                                                           <U+2702> <U+2720><U+271D> <U+271D>                                                                                                                                              <U+2713><U+271F>
+                <U+2701><U+2702> <U+2721>                      <U+270C><U+271D> <U+271D><U+271E><U+271F>                                 <U+2713><U+271F> <U+270C><U+271D>
+                                                                                   |<U+2714><U+261E> <U+261E><U+261B>
+                                                                                                            <U+2713><U+271F>
+                                                                                                            |<U+2714><U+261E> <U+271F><U+2716>
+                                                                                                                              <U+2702><U+2701> <U+2749> <U+271F><U+270D>                                                                                                             <U+2704><U+2702> <U+261B><U+2720>                          |<U+261E><U+2714>
+                  <U+260E><U+2704> <U+2720><U+271F>                     <U+261E>        <U+270E><U+270F>                                                                  <U+275A>            <U+2747>                                                                                                             <U+2702><U+2701> <U+271D><U+2749>
+                    <U+2702> <U+271E><U+271D>                  <U+261B><U+2720>
+                                          <U+271D><U+2749> <U+271D><U+270D>                                       <U+271D><U+270D><U+2717> <U+2720><U+271D><U+2749>                  <U+271D><U+270D><U+2717> <U+2749>
+                                                                                                                     <U+271F>
+                                                                                                                                                                                                                                             <U+275A>                                   <U+271D><U+270D><U+2717>
+                     <U+2702><U+2701> <U+25B2>                    <U+271F><U+2747>
+                <U+275A>
+
+              <U+272A><U+272B><U+272C><U+272D><U+272D><U+272B><U+272E><U+272F><U+272D><U+272B>
+<removed-date>
+                                                      <U+2737><U+2731><U+2732>
+                                       <U+271F><U+2716>                                                        <U+271F><U+2716>
+                                       <U+271F><U+2749>                                                        <U+271F><U+2749>
+                                       <U+270C><U+271D>                                                        <U+270C><U+271D>
+                                       <U+2716><U+271D> <U+2704>                                                      <U+2716><U+271D> <U+2704>
+                                                    <U+2722>                                                           <U+2722>
+                                         <U+271F><U+270C><U+270F> <U+2702><U+2702>                                                    <U+271F><U+270C><U+270F> <U+2702><U+2702>
+                                          <U+271F>P <U+2701>                                                      <U+271F>P <U+2701>
+                                              <U+270E> <U+2729><U+25BC><U+2725>                                                 <U+2721><U+270C> <U+2729><U+25BC><U+2725>
+<removed-apn>
+                                          <U+2748><U+2759> <U+2605>                                                        <U+271F><U+2715><U+2714> <U+2605>
+                                               <U+2746> <U+271F><U+2718>                <U+271F><U+2716> <U+260E><U+2704>
+                                                                     <U+271F><U+2749> <U+2702>                                  <U+2747> <U+271F><U+2718>
+                                       <U+271F><U+2713><U+261B>  <U+261E>                                                    <U+271F><U+261B><U+2713>     <U+261E>
+                                       <U+2721><U+271F>                              <U+261E><U+271F> <U+2729><U+2701><U+2725>                    <U+2721><U+271F>
+                                             P                           <U+2713><U+261B><U+2721> <U+2605><U+25BC>                        P
+                                                                            <U+271F>P <U+271F><U+2718>
+                                 <U+2716><U+271F><U+271F>   <U+2605><U+271D>                                                   <U+2605><U+271D>
+                                 <U+2749>     <U+261E><U+2715> <U+270D>                                                 <U+261E><U+2715> <U+270D>
+                                         <U+2716><U+2715><U+270E> <U+271D><U+2716><U+2721>                                              <U+2716><U+2715><U+270E> <U+271D><U+2716><U+2721>
+                                          <U+271D> <U+2747>                                                  <U+271D> <U+2747>
+                                       <U+271D><U+2759>  <U+271E><U+270F> <U+2722>                                             <U+271D><U+2759>  <U+271E><U+270F> <U+2722>
+                           <U+2713>| <U+271D><U+2716>
+                             <U+2723> <U+2721><U+2747>
+                                       <U+2715><U+261B><U+2714> <U+271D>                                                <U+2715><U+261B><U+2714> <U+271D>
+                           <U+271E><U+2715><U+2714>            <U+270C><U+271D><U+270D> <U+2716><U+2721><U+2747>                  <U+2605><U+271D>
+                                                                   <U+261E><U+2715> <U+270D>                        <U+270C><U+271D><U+270D> <U+2716><U+2721><U+2747>
+                           <U+2716><U+270C><U+2759> <U+2749><U+2749>            <U+2771>                       <U+2716><U+2715><U+270E> <U+2716><U+271D><U+2721>                      <U+2771>
+                              <U+2749><U+270E> <U+2781>                                    <U+271D> <U+2747>
+                                       <U+271D><U+2713><U+2714>P <U+271D><U+2716>                     <U+271D><U+2759>  <U+271E><U+270F> <U+2722>                 <U+271D><U+2713><U+2714>P <U+271D><U+2716>
+                                         <U+261B><U+270C> <U+2721><U+2747>                                                <U+261B><U+270C> <U+2721><U+2747>
+                           <U+2711><U+2716> <U+271D><U+2716><U+270D>          P                                                    P
+                             <U+271E><U+2715> <U+2721>
+                           <U+271D><U+25B2> <U+2722>   <U+2747>
+                                       <U+271D><U+2712>                   <U+271D><U+2716><U+2721><U+270D>   <U+271D><U+2712>                <U+271D><U+2716><U+2721><U+270D>   <U+271D><U+2712>                    <U+271D><U+2716><U+2721><U+270D>
+                                            <U+2721><U+275A> <U+2747>                   <U+2721><U+275A> <U+2747>                     <U+2721><U+275A> <U+2747>
+                                                            <U+2702>         <U+2702>                        <U+2702>
+                           <U+2702><U+2702> <U+271D><U+2716><U+270D>                                                                                        <U+2716><U+2715>
+                             PP <U+2721><U+2747>             <U+2716><U+2715>
+                               <U+2746> <U+2722>                <U+271D>                                                                      <U+271D>
+                                                    <U+271E><U+271D><U+270F>                                                                  <U+271E><U+271D><U+270F>
+                                                     <U+2759><U+270E>                         <U+2716><U+2715>                                       <U+2759><U+2721>
+                                                     <U+2748><U+2759>                         <U+271D>                                        <U+270C><U+271F>
+                                                                                <U+271E><U+270F>                                       <U+2715><U+2714>
+                                                        <U+270C><U+271D><U+2746>                     <U+271D><U+2759>
+                                                                                <U+2713><U+271F>                                       <U+270C><U+271D><U+2747>
+                                                         <U+2716>                                                       <U+2716>
+                                       <U+2702> <U+271D><U+270F>                                 <U+2722> |                                <U+271C> <U+271D><U+270F>
+                                        <U+271D><U+2712> <U+271F><U+270C>                           <U+271D><U+2712> <U+261E><U+2714><U+270D>                             <U+271D><U+2712> <U+271F><U+270C>
+                                          <U+2721><U+275A> <U+271F>P                           <U+2721><U+275A> <U+271D><U+2717>                              <U+2721><U+275A> <U+271F>P
+
+              <U+272A><U+272B><U+272C><U+272D><U+272D><U+272B><U+272E><U+272F><U+272D><U+272B>
+<removed-date>
+                                                                   <U+2738><U+2731><U+2732>
+                                                          <U+2702><U+2716>                      <U+2716><U+2715><U+271C>
+                                                          <U+2715><U+271D>                      <U+271D>
+                                                                                  <U+271E><U+271D><U+270F>
+                                                          <U+271E><U+270F>
+<removed-apn>
+                                                          <U+271D><U+2759>                      <U+2759>
+                           <U+2702><U+2721>   <U+2704>
+                           <U+2702><U+2605><U+272D>
+                                                                                        <U+2721><U+271C><U+272D>
+                                <U+25BC>
+                                                                   <U+2716><U+2715><U+2722>
+                                                                                           <U+2704>
+                                                                   <U+271D>                    <U+2605><U+271C>
+                                                                   <U+271E><U+271D><U+270F>
+                                                                                           <U+25BC>
+                                                   <U+2721><U+2722><U+272D>             <U+2759>
+                                                      <U+2704>
+                                                   <U+2605><U+2722> <U+25BC>
+                                                          <U+2716><U+2715><U+2722>
+                                                          <U+271D>
+                                                          <U+271E><U+271D><U+270F>
+                                                          <U+2759>
+                           <U+2721><U+2722><U+272D>
+                                <U+2704>
+                           <U+2605><U+2722>   <U+25BC>
+                                             <U+2702><U+2716>                    <U+2716><U+2715><U+271C>                         <U+2729><U+2716>
+                                             <U+2715><U+271D>                    <U+271D>                           <U+2715><U+271D>
+                                             <U+271E><U+271D><U+270F>                   <U+271E><U+271D><U+270F>                         <U+271E><U+271D><U+270F>
+                                             <U+2759>                     <U+2759>                           <U+2759>
+                                    <U+2702><U+2721>   <U+2704>
+                                                          <U+2721><U+271C><U+272D>
+                                                               <U+2704>
+                                                                         <U+2729><U+2721>   <U+2704>
+                                    <U+2702><U+2605><U+272D>                   <U+2605><U+271C>             <U+2729><U+2605><U+272D>
+                                                               <U+25BC>              <U+25BC>
+                                         <U+25BC>
+
+              <U+272A><U+272B><U+272C><U+272D><U+272D><U+272B><U+272E><U+272F><U+272D><U+272B>
+<removed-date>
+                                                                                                                           <U+2732><U+2731><U+2732>
+                                                                                                                            <U+271E>
+                                                                           <U+273D>
+                                                                                                                            <U+271F>
+                                                                       <U+271F>
+                                                                                                                            <U+271E>
+                                                                       <U+271E>
+                                                                                                                            <U+2736>
+                                                                       <U+2736>
+                                                                                                                                                                                 <U+2706>
+                                                                                           <U+275A>
+                                                                                           <U+274A>
+                                                                                                                                                                                 <U+260E>
+                                                                                                                                                 <U+25B2>
+                                                                                                                                                                                                                         <U+275A>
+                                                                                                                                                                                                         <U+271F>
+                                                                                                                                                                                                                                     <U+2720>
+                                                                                           ¦
+                                                                                                                                                 <U+2746>
+                                                                                                                                                                                 <U+2759>
+                                                                                               <U+2702>
+                                                                                                                                                                                                                             <U+2701>
+                                                                                                                                                                                                         <U+271F>                       <U+271F>
+                                                                                           <U+260E>
+                                                                                                                                             <U+2748>
+<removed-apn>
+                                                                                               <U+2701>
+                                                                                                                                                                                 <U+25C6>
+                                                                                                                                                                                                         <U+271E>                       <U+271E>
+                                                                                                                                                                                                                         <U+2759>
+                                                                                           <U+274A>
+                                                                                                                                             <U+2759>
+                                                                                                                                                                                 <U+275A>                       <U+2736>                       <U+2736>
+                                                                                                                                                                                                                             <U+274D>
+                                                                                           <U+275A>
+                                                                                                                                                 <U+25B2>
+                                                                                                                                                                                 <U+274A>
+                                                                                           ¦
+                                                                                                                                                                                 ¦
+                                   <U+260E>
+                                   <U+274A>
+                                                           <U+2735>
+                                                           <U+2738>
+                                   <U+2704>
+                                                                                                                                 <U+2706>
+                                                           <U+271E>
+                                   <U+260E>
+                                                           <U+2736>
+                                                                                                                                 <U+260E>
+                                   <U+274A>
+                                                                                                                                                                 <U+2706>
+                                                                                                                                 <U+2759>
+                                       <U+2701>
+                                                                                                                                                                                                     <U+2735>
+                                                                                                                                                                 ¦
+                                                                                                                                 <U+25C6>
+                                                                                                                                                                                                     <U+271F>
+                                                                                                                                                                     <U+25B2>
+                                                                                                                                 <U+275A>
+                                                                                                                                                                                                     <U+271E>
+                                                                                                                                 <U+274A>
+                                                                                                                                                                                                     <U+2736>
+                                                                                                                                 ¦
+                                                                                                                                                                                                                     <U+2735>
+                                                                                                                                                                                                                     <U+2735>
+                                                                                                                                                                                                                     <U+271E>
+                           <U+274A>
+                                                                                                                                                                                                                     <U+2736>
+                                                   <U+274A>
+                           <U+25CF>
+                                                                                   <U+2735>
+                                                                                                                                             ¦
+                                                   <U+2748>
+                               <U+2746>
+                                                                                   <U+2736>
+                                                                                                                                             <U+2759>
+                           <U+260E>
+                                                   <U+2704>
+                                                                                   <U+271E>
+                                                                                                                                                                                 <U+274A>
+                                                                                   <U+2736>
+                                                                                                                                             <U+275A>
+                                                   <U+274A>
+                           <U+2759>
+                                                                                                                                                                                 <U+2748>
+                           <U+275A>                                                                                                                         <U+2746>
+                                                       <U+2749>
+                                                                                                                                                                                     <U+2746>
+                               <U+2701>
+                                                                                                                                             <U+2748>
+                                                                                                                                                                                                                 <U+273D>
+                                                                                                                                                                                 <U+271D>
+                                                                                                                                                                                                             <U+2736>
+                                                                                                                                             ¦
+                                                                                                                                                                                 <U+260E>                           <U+271E>
+                                                                                                                                                                                                             <U+2736>
+                                                                                                                                             P
+                                                                                                                                                                                 <U+274A>
+                                                                                                                                                                                 <U+275A>
+                                                                                                                                             <U+25BC>
+                                                                                                                                                                                 ¦
+                                                                                                           <U+271F>
+                                                                                                                                             <U+25BC>
+                                                                                                           <U+2735>
+                                                                                                                                             <U+2759>
+                                                                                                           <U+271E>
+                                                                   <U+273D>
+                                           <U+25BC>
+                                                                                                                                             <U+2748>
+                                                                                                           <U+2736>
+                                                               <U+2735>
+                                           <U+2759>
+                                                               <U+271E>
+                                                                                                               <U+2701>
+                                                               <U+2736>
+                                           <U+260E>
+                                                                                                       P
+                                                                                                       <U+2747>
+                                                                                                                                                         <U+260E>
+                                                                                                                                                         <U+2759>
+                                                                                                                                                             <U+2701>
+                                                                                                                                                                                             <U+2720>
+                                                                                                                                                             <U+2701>
+                                                                                                                                                                                         <U+2735>
+                                                       <U+2768>
+                                                                                                                                                         <U+274A>
+                                                                                                                                                                                         <U+271E>
+                                                   <U+260E>
+                                                                                                                                                         <U+2748>
+                                                                                                                                                                                         <U+2736>
+                                                                                       <U+271E>
+                           ¦
+                                                   <U+2759>
+                                                                                                                                                         <U+2759>
+                                                                                       <U+2735>
+                               <U+2746>
+                                                                                       <U+271E>
+                                                                                                                                                         <U+260E>
+                                                   <U+25BC>
+                                                                                       <U+2736>
+                           <U+25BC>
+                                                                                                                                                             <U+2702>
+                                                   <U+274A>
+                                                   <U+25BC>
+                                                                                               <U+274A>
+                                                                                               <U+2748>
+                                                                                                                                                                             <U+25B2>
+                                                                                                                                     <U+260E>
+                                               <U+2768>
+                                                                                               <U+2704>
+                                                                                                                                                                         <U+2759>
+                                               <U+2746>
+                                                                                                                                     <U+2759>
+                                                                               <U+271F>                                       <U+2720>                                                                         <U+271E>
+                                                                                               <U+274A>
+                                                                                                                                                                         <U+260E>
+                                               <U+25B2>
+                                                                                                                                         <U+2701>
+                                                                               <U+2736>                                   <U+2736>                                                                             <U+2736>
+                                                                                                   <U+2749>                                                                     <U+275A>
+                                               <U+2702>
+                                                                               <U+271E>                                   <U+271E>                                                                             <U+271E>
+                                                                                                                                     <U+260E>
+                                                                                                                                                                         ¦
+                                               <U+2701>                                               <U+275A>
+                                                                               <U+2736>                                   <U+2736>                                                                             <U+2736>
+                                                                                                                                     P
+                                                                                                                                                                         <U+2759>
+                                                                                               P
+                                               <U+2749>
+                                                                                                                                     <U+2748>
+                                                                                                                                                                         <U+2748>
+                                                                                                   <U+2702>
+                                                                                               ¦
+

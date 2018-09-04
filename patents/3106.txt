@@ -1,0 +1,968 @@
+                                      35
+                                ABSTRACT
+           A NAL unit header in the conventional method is inefficient,
+   even in cases where a value of nal_ref flag is uniquely determined
+   according to a value of nal-unit_type, since respective bits are assigned
+ 5 to nal ref flag and nal unit-type.    A solution to this problem is a
+   video predictive encoding device provided with an input device to input
+   pictures forming a video sequence, and an encoding unit to encode the
+   pictures by either intra prediction or inter prediction to generate
+   compressed picture data, and to packetize the compressed image data
+10 along with packet header information.     The packet header information
+   contains a picture type, and wherein the encoding unit determines the
+   picture type so as to uniquely indicate whether encoded picture data is
+   used for reference in decoding of another picture.   Reference should be
+   made to Fig. 1.
+15
+   1401518 1
+
+        00
+        z:
+          j k  ~     00   c
+              CC
+      U-1
+o-                                2
+    CC
+       CDD
+             CC
+                   LUI
+                 U-                    L
+    CCD
+    0q
+ CA
+                                    2
+                        (             cc
+                            1/10w
+
+                                       1
+   VIDEO PREDICTIVE ENCODING DEVICE, VIDEO PREDICTIVE
+   ENCODING         METHOD,       VIDEO      PREDICTIVE       ENCODING
+   PROGRAM, VIDEO PREDICTIVE DECODING DEVICE, VIDEO
+   PREDICTIVE DECODING METHOD, AND VIDEO PREDICTIVE
+ 5 DECODING PROGRAM
+   [0001] This application is a divisional application of Australian Patent
+   Application No. <removed-apn>, filed on 4 March 2016, which is itself a
+   divisional application of Australian Patent Application No. 2013284741,
+   filed on 6 July 2012, and the disclosures of both are incorporated by
+10 reference in their entirety.
+   Technical Field
+   [0002] The present invention relates to a video predictive encoding
+   device, a video predictive encoding method, a video predictive encoding
+   program, a video predictive decoding device, a video predictive
+15 decoding method, and a video predictive decoding program.
+   Background
+   [0003] In the conventional video compression technology, a bit stream
+   is encapsulated in a network abstraction layer (NAL) unit.     The NAL
+   unit provides a self-contained packet and gives a video layer identity in
+20 different network environments.     A header of the NAL unit contains
+   information used in a system layer.       The header of the NAL unit
+   becomes a part of the packet header used in a packet network, and is
+   designed to operate by media aware network elements (MANEs).
+   [0004] The NAL unit header in the conventional technology includes
+   1401518 1
+
+                                         2
+   the following syntax elements:       nalref flag which indicates whether
+   the NAL unit is used for reference in a decoding process of another
+   NAL unit; nalunittype which indicates a type of a content transmitted
+   by the NAL unit, where the NAL unit contains information such as a
+ 5 parameter    set,  a  coded   slice,   or a   supplemental   enhancement
+   information (SEI) message; and temporal_id which indicates a temporal
+   identifier of the NAL unit.
+   [0005] The conventional technology is described in Benjamin Bross et
+   al., "High efficiency video coding (HEVC) text specification draft 7,"
+10 Joint Collaborative Team on Video Coding (JCT-VC) of ITU-T SG16
+   WP3 and ISO/IEC JTC1/SC29/WG1 1, 9th Meeting: Geneva, CH, 27th
+   April - 7th May 2012
+   SUMMARY
+   [0006] As the MANEs are designed to check the minimum number of
+15 bytes at the head of a packet, the NAL unit header is a limited resource.
+   In the conventional technology, the NAL unit header is only 2 bytes.
+   For this reason, all syntax elements of the NAL unit header are
+   important and should transmit as much information as possible and be
+   unrelated to the other syntax elements.
+20 [0007] In most of NAL unit types, nal ref flag needs to be set at a
+   fixed value, and thus nal_refflag is not needed.      In the specification
+   described in Non Patent Literature 1, there are only three kinds of NAL
+   unit types whose nalref flag can take the value of 0 or 1.    In the other
+   NAL unit types defined in the specification, the value of nalrefflag is
+   1401518  1
+
+                                         3
+   fixed.    This is shown in Table 1.
+   Table 1
+     NAL unit type range      Possible nalrefflag   Fixed / Variable
+                                                    nal ref flag
+     1 to 3                   0 or 1                Variable
+     4 to 8                   1                     Fixed
+     25 to 28                 1                    [Fixed
+     29 to 31                 0                     Fixed
+            Table 1 is a table showing correspondence between the values of
+ 5 nalunit-type (NAL unit type range column) and the possible values of
+   the nalrefflag (Possible nalref flag column).         In this case, the NAL
+   unit types of nal unit type can have values of 1, 2, or 3 and the value of
+   nalref flag can be 0 or 1.      The remaining NAL unit types are reserved
+   or not specified.
+10 [0007] Although the value of nalref flag is uniquely determined
+   according to the value of nalunittype as described above, the
+   conventional technique assigns respective bits to nal ref flag and
+   nalunit-type, which is an inefficient design.
+   [0008] A solution to the above problem is to infer the value of
+15 nalref flag from the NAL unit type, without explicitly sending
+   nalref flag in the NAL unit header.       Three NAL unit types in which it
+   is inferred that nalrefflag is 1 are added to the three NAL unit types
+   the content of which can be a reference picture or a non-reference
+   picture.   For the original three NAL unit types, it is inferred that
+20 nalref flag is 0.
+   [0009] According to a first aspect, there is provided a video predictive
+   1401518_1
+
+                                        4
+   encoding device comprising: input means that inputs a plurality of
+   pictures forming a video sequence; and encoding means which encodes
+   the pictures to generate compressed picture data, and encapsulates the
+   compressed picture data in a NAL unit with NAL unit header
+ 5 information, wherein the plurality of pictures forming the video
+   sequence are separated into a plurality of temporal layers, the NAL unit
+   header information contains a nal unittype, and wherein the encoding
+   means determines the nalunit_type so as to uniquely indicate whether
+   encoded picture data is used for reference in decoding of another picture
+10 in the same temporal layer.
+   [0009a] According to a second aspect, there is provided a video
+   predictive   decoding   device   comprising:   input means    that inputs
+   compressed picture data for a plurality of pictures forming a video
+   sequence, where the compressed picture data is encapsulated in a NAL
+15 unit with NAL unit header information; and decoding means which
+   decodes    the NAL unit header        information   and reconstructs the
+   compressed picture data as reconstructed picture data, wherein the
+   plurality of pictures forming the video sequence are separated into a
+   plurality of temporal layers, the NAL unit header information contains a
+20 nalunittype uniquely indicating whether reconstructed picture data is
+   used for reference in decoding of another picture in the same temporal
+   layer, and wherein the decoding means reconstructs the compressed
+   picture data based on the nalunittype.
+   [0009b] According to a third aspect, there is provided a video predictive
+25 encoding method comprising: an input step of inputting a plurality of
+   1401518  1
+
+                                        5
+   pictures forming a video sequence; and an encoding step of encoding
+   the pictures to generate compressed picture data, and encapsulating the
+   compressed picture data in a NAL unit with NAL unit header
+   information, wherein the plurality of pictures forming the video
+ 5 sequence are separated into a plurality of temporal layers, the NAL unit
+   header information contains a nalunit_type, and wherein the encoding
+   step determines the nal unittype so as to uniquely indicate whether
+   encoded picture data is used for reference in decoding of another picture
+   in the same temporal layer.
+10 [0009c] According to a fourth aspect, there is provided a video
+   predictive decoding method comprising: an input step of inputting
+   compressed picture data for a plurality of pictures forming a video
+   sequence, where the compressed picture data is encapsulated in a NAL
+   unit with NAL unit header information; and a decoding step of decoding
+15 the NAL unit header information and reconstructing the compressed
+   picture data as reconstructed picture data, wherein the plurality of
+   pictures forming the video sequence are separated into a plurality of
+   temporal   layers,  the  NAL     unit  header   information   contains  a
+   nalunittype uniquely indicating whether reconstructed picture data is
+20 used for reference in decoding of another picture in the same temporal
+   layer, and wherein the decoding step reconstructs the compressed
+   picture data based on the nalunittype.
+   [0010] In order to solve the foregoing problem, a video predictive
+   encoding device according to an aspect of the present disclosure
+25 comprises input means that inputs a plurality of pictures forming a
+   1401518  1
+
+                                         6
+   video sequence; and encoding means which encodes the pictures by
+   either intra prediction or inter prediction to generate compressed picture
+   data, and which packetizes the compressed picture data along with
+   packet header information, wherein the packet header information
+ 5 contains a picture type, and wherein the encoding means determines the
+   picture type so as to uniquely indicate whether encoded picture data is
+   used for reference in decoding of another picture. An encoding means of
+   a video predictive encoding device according to one aspect of the
+   present disclosure determines the picture type so as to uniquely indicate
+10 whether encoded picture data is used for reference in decoding of
+   another picture in the same temporal layer.
+   [0011] A video predictive decoding device according to an aspect of the
+   present disclosure comprises input means which inputs compressed
+   picture data resulting from encoding of a plurality of pictures forming a
+15 video sequence by either intra prediction or inter prediction and
+   packetization of the compressed picture data with packet header
+   information; and decoding means which reconstructs the packet header
+   information and the compressed picture data, wherein the packet header
+   information contains a picture type uniquely indicating whether
+20 reconstructed picture data is used for reference in decoding of another
+   picture, and wherein the decoding means determines, based on the
+   picture type, whether reconstructed picture data is used for reference in
+   decoding of another picture.
+   [0012] In the video predictive decoding device according to an aspect
+25 of the present disclosure the decoding means determines whether
+   1401518  1
+
+                                         7
+   reconstructed picture data is used for reference in decoding of another
+   picture, based on a correspondence table in which the picture type is
+   previously stored in association with information indicative of whether
+   reconstructed picture data is used for reference in decoding of another
+ 5 picture. A decoding means of a video predictive decoding device
+   according to an aspect of the present disclosure determines, based on the
+   picture type, whether reconstructed picture data is used for reference in
+   decoding of another picture in the same temporal layer.
+   [0013] A video predictive encoding method according to an aspect of
+10 the present     disclosure  is  a   video  predictive  encoding   method
+   comprising: an input step of inputting a plurality of pictures forming a
+   video sequence; and an encoding step of encoding the pictures by either
+   intra prediction or inter prediction to generate compressed picture data,
+   and packetizing the compressed picture data with packet header
+15 information, wherein the packet header information contains a picture
+   type, and wherein the encoding step determines the picture type so as to
+   uniquely indicate whether encoded picture data is used for reference in
+   decoding of another picture. An encoding step of a video predictive
+   encoding method according to an aspect of the present disclosure
+20 determines the picture type so as to uniquely indicate whether encoded
+   picture data is used for reference in decoding of another picture in the
+   same temporal layer.
+   [0014] A video predictive decoding method according to an aspect of
+   the present     disclosure  is  a   video  predictive  decoding   method
+25 comprising: an input step of inputting compressed picture data resulting
+   1401518  1
+
+                                       8
+   from encoding of a plurality of pictures forming a video sequence by
+   either intra prediction or inter prediction and packetization of the
+   compressed picture data with packet header information; and a decoding
+   step of reconstructing the packet header information and the compressed
+ 5 picture data as reconstructed picture data, wherein the packet header
+   information contains a picture type uniquely indicating whether the
+   reconstructed picture data is used for reference in decoding of another
+   picture, and wherein the decoding step determines, based on the picture
+   type, whether reconstructed picture data is used for reference in
+10 decoding of another picture.
+   [0015] In the video predictive decoding method according to an aspect
+   of the present disclosure the decoding step determines whether
+   reconstructed picture data is used for reference in decoding of another
+   picture, based on a correspondence table in which the picture type is
+15 previously stored in association with information indicative of whether
+   reconstructed picture data is used for reference in decoding of another
+   picture. A decoding step of a video predictive decoding method
+   according to an aspect of the present disclosure determines, based on
+   the picture type, whether reconstructed picture data is used for reference
+20 in decoding of another picture in the same temporal layer.
+   [0016] A video predictive encoding program according to an aspect of
+   the present disclosure     is a video predictive      encoding program
+   comprising: an input module which inputs a plurality of pictures
+   forming a video sequence; and an encoding module which encodes the
+25 pictures by either intra prediction or inter prediction to generate
+   1401518  1
+
+                                       9
+   compressed picture data, and which packetizes the compressed picture
+   data along with packet header information, wherein the packet header
+   information contains a picture type, and wherein the encoding module
+   determines the picture type so as to uniquely indicate whether encoded
+ 5 picture data is used for reference in decoding of another picture. An
+   encoding module of a video predictive encoding program according to
+   an aspect of the present disclosure determines the picture type so as to
+   uniquely indicate whether encoded picture data is used for reference in
+   decoding of another picture in the same temporal layer.
+10 [0017] A video predictive decoding program according to an aspect of
+   the present disclosure     is a video predictive      decoding program
+   comprising: an input module which inputs compressed picture data
+   resulting from encoding of a plurality of pictures forming a video
+   sequence by either intra prediction or inter prediction and packetization
+15 of the compressed picture data with packet header information; and a
+   decoding module which reconstructs the packet header information and
+   the compressed picture data, wherein the packet header information
+   contains a picture type uniquely indicating whether reconstructed
+   picture data is used for reference in decoding of another picture, and
+20 wherein the decoding module determines, based on the picture type,
+   whether reconstructed picture data is used for reference in decoding of
+   another picture.
+   [0018] In the video predictive decoding program according to an aspect
+   of the present disclosure the decoding module determines whether
+25 reconstructed picture data is used for reference in decoding of another
+   1401518 1
+
+                                       10
+   picture, based on a correspondence table in which the picture type is
+   previously stored in association with information indicative of whether
+   reconstructed picture data is used for reference in decoding of another
+   picture. A decoding module of a video predictive decoding program
+ 5 according to an aspect of the present disclosure determines, based on the
+   picture type, whether reconstructed picture data is used for reference in
+   decoding of another picture in the same temporal layer.
+   [0019] An effect according to aspects of the disclosure is to save the
+   bits used for nalrefflag and enable use thereof as other indication
+10 information.    This is more efficient utilization of the NAL unit header.
+   Another utilization method is to enable extension of the NAL unit types
+   from 6 bits to 7 bits.    At present the existing NAL unit types are
+   assigned to half of 64 values of nal-unit-type available and the other 32
+   values of nalunittype are reserved, and can be used in defining new
+15 NAL unit types in the future.      By using three out of these reserved
+   values of NAL unit types and extending the bit count of the NAL unit
+   types to 7 bits, it becomes feasible to define 93 (128 - 32 - 3     = 93)
+   further NAL units in the future.
+   BRIEF DESCRIPTION OF THE DRAWINGS
+20 [0020] Fig. 1 is a block diagram showing a video predictive encoding
+   device according to an embodiment of the present invention.
+           Fig. 2 is a block diagram showing a video predictive decoding
+   device according to an embodiment of the present invention.
+           Fig. 3 is a flowchart showing processing of a video predictive
+   1401518  1
+
+                                      11
+   encoding method according to an embodiment of the present invention.
+           Fig. 4 is a flowchart showing a detailed part of processing of the
+   video predictive encoding method according to an embodiment of the
+   present invention.
+ 5         Fig. 5 is a flowchart showing processing of a video predictive
+   decoding method according to an embodiment of the present invention.
+           Fig. 6 is a flowchart showing a detailed part of processing of the
+   video predictive decoding method according to an embodiment of the
+   present invention.
+10         Fig. 7 is a hardware configuration of a computer for executing a
+   program stored in a storage medium.
+           Fig. 8 is a perspective view of a computer for executing a
+   program stored in a storage medium.
+           Fig. 9 is a block diagram showing a configuration example of a
+15  video predictive encoding program.
+           Fig. 10 is a block diagram showing a configuration example of a
+   video predictive decoding program.
+   Embodiments of the Invention
+   [0021] Embodiments of the present invention will be described below
+20 using Figs. 1 to 10.
+   [0022] First, a video predictive encoding method will be described.
+   Fig. 1 is a block diagram showing a video predictive encoding device
+   1401518 1
+
+                                       12
+   according to an embodiment of the present invention.            Reference
+   numeral 101 denotes an input terminal, 102 a block partition unit, 103 a
+   predicted signal generation unit, 104 a frame memory, 105 a subtraction
+   unit, 106 a transform unit, 107 a quantization unit, 108 a de-quantization
+ 5 unit, 109 an inverse transform unit, 110 an addition unit, 111 an entropy
+   encoding unit, 112 an output terminal, and 113 an input terminal.     The
+   input terminal 101 corresponds to an input means.         The subtraction
+   unit 105, transform unit 106, quantization unit 107, and entropy
+   encoding unit 111      correspond to an encoding means.           The de
+10 quantization unit 108, inverse transform unit 109, and addition unit 110
+   correspond to a decoding means.
+   [0023] Concerning the video predictive encoding device configured as
+   described above, the operation thereof will be described below.          A
+   video signal consisting of a plurality of pictures is fed to the input
+15 terminal 101.    A picture of an encoding target is partitioned into a
+   plurality of regions by the block partition unit 102.  In the embodiment
+   according to the present invention, the target picture is partitioned into
+   blocks each consisting of 8x8 pixels, but it may be partitioned into
+   blocks of any size or shape other than the foregoing.         A predicted
+20 signal is then generated for a region as a target of an encoding process
+   (which will be referred to hereinafter as a target block).            The
+   embodiment according to the present invention employs two types of
+   prediction methods.      Namely, they are inter prediction and intra
+   prediction.
+25 [0024] In the inter prediction, reconstructed pictures having been
+   1401518  1
+
+                                         13
+   encoded and thereafter reconstructed are used as reference pictures and
+   motion information to provide the predicted signal with the smallest
+   error from the target block is determined from the reference pictures.
+   This process is called motion estimation.       Depending upon situation,
+ 5 the target block may be further partitioned into sub-regions and an inter
+   prediction method can be determined for each of the sub-regions.         In
+   this case, the most efficient partition method for the entire target block
+   and motion information of each sub-region are determined out of
+   various partition methods.      In embodiments according to the present
+10 invention, the operation is carried out in the predicted signal generation
+   unit 103, the target block is fed via line L102, and the reference pictures
+   are fed via line L104.    The reference pictures to be used herein are a
+   plurality of pictures which have been encoded and reconstructed in the
+   past.   The details are the same as in the methods of MPEG-2 or 4 and
+15 H.264    which    are the conventional       technologies.     The motion
+   information and sub-region partition method determined as described
+   above are fed via line L 112 to the entropy encoding unit 111 to be
+   encoded thereby and then the encoded data is output from the output
+   terminal 112.     Information (reference index) indicating from which
+20 reference picture the predicted signal is derived out of the plurality of
+   reference pictures is also sent via line L 112 to the entropy encoding unit
+   111.    The predicted signal generation unit 103 derives reference
+   picture signals from the frame memory 104, based on the reference
+   pictures and motion information, corresponding to the sub-region
+25 partition method and each sub-region, and generates the predicted signal.
+   The inter-predicted signal generated in this manner is fed via line L103
+   1401518  1
+
+                                        14
+   to the subtraction unit 105.
+   [0025] In the intra prediction, an intra-predicted signal is generated
+   using reconstructed pixel values spatially adjacent to the target block.
+   Specifically,   the   predicted  signal   generation   unit  103   derives
+ 5 reconstructed pixel signals in the same frame from the frame memory
+   104 and extrapolates these signals to generate the intra-predicted signal.
+   The information about the method of extrapolation is fed via line L112
+   to the entropy encoding unit 111 to be encoded thereby, and then the
+   encoded data is output from the output terminal 112.            The intra
+10 predicted signal generated in this manner is fed to the subtraction unit
+   105.    The method of generating the intra-predicted signal in the
+   predicted signal generation unit 103 is the same as the method of H.264
+   being the conventional technology.        The predicted signal with the
+   smallest error is selected from the inter-predicted signals obtained as
+15 described above, and the selected predicted signal is fed to the
+   subtraction unit 105.
+   [0026] The subtraction unit 105 subtracts the predicted signal (fed via
+   line L103) from the signal of the target block (fed via line L102) to
+   generate a residual signal.     This residual signal is transformed by a
+20 discrete cosine transform by the transform unit 106 to form transform
+   coefficients, which are quantized by the quantization unit 107.   Finally,
+   the entropy encoding unit 111          encodes the quantized transform
+   coefficients and the encoded data is output along with the information
+   about the prediction method from the output terminal 112.
+   1401518  1
+
+                                       15
+   [0027] For the intra prediction or the inter prediction of the subsequent
+   target block, the compressed signal of the target block is subjected to
+   inverse processing to be reconstructed.          Namely, the quantized
+   transform coefficients are inversely quantized by the de-quantization
+ 5 unit 108 and then transformed by an inverse discrete cosine transform
+   by the inverse transform unit 109, to reconstruct a residual signal.   The
+   addition unit 110 adds the reconstructed residual signal to the predicted
+   signal fed via line L103 to reconstruct a signal of the target block and
+   the reconstructed signal is stored in the frame memory 104.            The
+10 present embodiment employs the transform unit 106 and the inverse
+   transform unit 109, but it is also possible in other embodiments to use
+   other   transform   processing    instead   of  these   transform    units.
+   Depending upon the situation, in some embodiments the transform unit
+   106 and the inverse transform unit 109 may be omitted.
+15 [0028] Input data from the input terminal 113 includes display order
+   information of each picture, a type of encoding of each picture (intra
+   predictive   encoding,   inter  predictive   encoding,   or  bidirectional
+   predictive encoding), and information about the NAL unit type, and the
+   predicted signal generation unit 103 operates based on these pieces of
+20 information.    These pieces of information are also fed via line L 113 to
+   the entropy encoding unit 111 to be encoded thereby, and the encoded
+   data is output from the output terminal 112.        The operation of the
+   entropy encoding unit 111 for encoding of the NAL unit type will be
+   described later.
+25 [0029] Next, a video predictive decoding method will be described.
+   1401518  1
+
+                                      16
+   Fig. 2 is a block diagram showing a video predictive decoding device
+   according to an embodiment of the present invention.            Reference
+   numeral 201 denotes an input terminal, 202 a data analysis unit, 203 a
+   de-quantization unit, 204 an inverse transform unit, 205 an addition unit,
+ 5 206 an output terminal, 207 a frame memory, 208 a predicted signal
+   generation unit, and 209 a frame memory management unit.        The input
+   terminal 201 corresponds to an input means.       The data analysis unit
+   202, de-quantization unit 203, inverse transform unit 204, and addition
+   unit 205 correspond to a decoding means.      In other embodiments, the
+10 decoding means may be means other than the foregoing.        Furthermore,
+   in embodiments the decoding means may be configured without the
+   inverse transform unit 204.
+   [0030] Concerning the video predictive decoding device configured as
+   described above, the operation thereof will be described below.
+15 Compressed data resulting from compression encoding by the video
+   predictive encoding device is input through the input terminal 201.
+   This compressed data contains the residual signal resulting from
+   predictive encoding of each target block obtained by partitioning of a
+   picture into a plurality of blocks, and the information related to the
+20 generation of the predicted signal.     The information related to the
+   generation of the predicted signal includes, in addition to the NAL unit
+   type, the information about block partitioning (size of block), the
+   motion information, and the aforementioned reference index in the case
+   of the inter prediction, and includes the information about the
+25 extrapolation method from reconstructed surrounding pixels in the case
+   1401518 1
+
+                                        17
+   of the intra prediction.
+   [0031] The data analysis unit 202 extracts the residual signal of the
+   target block, the information related to the generation of the predicted
+   signal including the NAL unit type, the quantization parameter, and the
+ 5 display order information of the picture from the compressed data.
+   The operation for extraction of the NAL unit type in the data analysis
+   unit 202 will be described later.   The residual signal of the target block
+   is inversely quantized on the basis of the quantization parameter (fed via
+   line L202) by the de-quantization unit 203.     The result is transformed
+10 by an inverse discrete cosine transform by the inverse transform unit
+   204.
+   [0032] Next, the information related to the generation of the predicted
+   signal such as the display order information of the target picture, the
+   encoding type of the picture, the NAL unit type, and the reference index
+15 is fed via line L206 to the predicted signal generation unit 208.       The
+   predicted signal generation unit 208 accesses the frame memory 207,
+   based on the information related to the generation of the predicted
+   signal, to derive a reference signal from a plurality of reference pictures
+   (via line L207) and generate a predicted signal.     This predicted signal
+20 is fed via line L208 to the addition unit 205, the addition unit 205 adds
+   this predicted signal to the reconstructed residual signal to reconstruct a
+   target block signal, and the signal is output via line L205 from the
+   output terminal 206 and simultaneously stored into the frame memory
+   207.
+   1401518  1
+
+                                          18
+   [0033] Reconstructed          pictures to be   used    for  decoding      and
+   reconstruction of the subsequent picture are stored in the frame memory
+   207.
+   [0034] Table 2 and Table 3 are tables indicating choices of two types of
+ 5 syntaxes concerning use modes of two bytes of the NAL unit header.
+   Table 2
+      nal unit( NumBytesInNALunit) {                              Descriptor
+         forbiddenzerobit                                         f(1)
+         reserved                                                 u(1)
+         nal unit type                                            u(6)
+         temporal-id                                              u(3)
+         reserved one_5bits                                       u(5)
+        .... (The rest of the NAL unit)
+   Table 3
+      natunit( NumBytesinNALunit) {                             Descriptor
+        forbidden zerobit                                       f(1)
+        nal unittype                                            u(7)
+        temporalid                                              u(3)
+        reserved one_5bits                                      u(5)
+            (The rest of the NAL unit)
+10           In Tables 2 and 3, numbers in parentheses in the Descriptor
+   column indicate bit counts of corresponding items.
+   [0035] In the NAL unit header syntax of Table 2, nalrefflag is
+   replaced by a reserved bit (reserved).     This bit is ignored by currently
+   existing decoding devices, but it can be assigned a new meaning or
+15 semantics for future decoding devices.          It is noted that the bit
+   1401518    1
+
+                                      19
+  arrangement in Table 2 is just for description and the reserved bit may
+  be located at another place in the 2-byte header.
+  [0036] In the NAL unit header syntax of Table 3, nal unit-type is
+  assigned 7 bits and at most 128 different kinds of nalunittype can be
+5 defined thereby.   In the present embodiment the assignment of 7 bits to
+  nalunittype was selected, but the bit saved in nalref flag may be
+  assigned to temporalid.
+  [0037] Table 4 shows the NAL unit types in the present embodiment.
+  1401518 1
+
+                                       20
+Table 4
+  nalunit-type       Category        Content of NAL unit and     nalrefflag
+                                      RBSP syntax structure
+         0                       Unspecified
+         1        Other slice    Coded slice of a non-RAP, non-      0
+                                 TFD and non-TLA picture
+                                 slice layer rbsp()
+         2       TFD slice       Coded slice of a TFD picture        0
+                                 slicelayerrbsp( )
+         3       TLA slice       Coded slice of a non-TFD TLA        0
+                                 picture
+                                 slice.layerrbsp( )
+         4       RAP slice       Coded slice of a CRAT picture        1
+                                 slicelayer_rbsp(   )
+         5       RAP slice       Coded slice of an CRANT              1
+                                 picture
+                                 slicelayerrbsp()
+         6       RAP slice       Coded slice of a BLCT picture        1
+                                 slicejlayerarbsp( )
+         7       RAP slice       Coded slice of a BLCNT               1
+                                 picture
+                                 slice layer rbsp()
+         8       RAP slice       Coded slice of an IDR picture        1
+                                 slicelayer_rbsp( )
+         9        Other slice    Coded slice of a non-RAP, non-       1
+                                 TFD and non-TLA picture
+                                 slicejlayerrbsp()
+        10       TFD slice       Coded slice of a TFD picture         1
+                                 slice layerrbsp()
+        11        TLA slice      Coded slice of a non-TFD TLA         I
+                                picture
+                                 slicelayerrbsp()
+      12..24                     Reserved
+        25        Parameter      Video parameter set                  1
+                  Set            videoparametersetrbsp()
+        26        Parameter      Sequence parameter set               I
+                  Set            seqparaieterset rbsp()
+        27        Parameter      Picture parameter set                I
+                  Set            picparametersetrbsp()
+        28        Parameter      Adaptation parameter set             1
+        29
+                  Set
+                  Information
+                                 apsrbs    (p()
+                                 Access unit delimiter               0
+                                 accessunit-delimiter rbsp()
+        30        Information    Filler data                         0
+                                 fillerdata_rbsp()
+        31        Information    Supplemental        enhancement      0
+                                 information (SEI)
+                                 sei rbsp()
+      32..47                     Reserved
+      48..63                     Unspecified
+          Table 4 is a table showing values of nalref flag estimated from
+the values of nalunittype.        The NAL unit types can be grouped into a
+1401518    1
+
+                                       21
+   plurality of categories, as shown in the second column of Table 4. The
+   categories are as described below.
+   1) RAP slice: NAL unit including a coded slice of a random access
+   picture.
+ 5 2) TLA slice: NAL unit including a coded slice of temporal layer access.
+   3) TFD slice: NAL unit including a coded slice of a picture tagged for
+   discard.
+   4) Other slice: NAL unit including a coded slice except for the above
+   slices.
+10 5) Parameter set: NAL unit including a video, sequence, picture, or
+   adaptation parameter set.
+   6) Information: NAL unit including an access delimiter, filler data, or
+   supplemental enhancement information (SEI).
+   [0038] In the present embodiment, three new kinds of NAL unit types
+15 corresponding to 9, 10, and 11 as values of nalunittype (picture types)
+   are added to nal unittype in the conventional technology.     The NAL
+   units with these values of nalunit-type include the same slice types as
+   the NAL units with the respective values of nalunittype of 1, 2, and 3.
+   nalunittype: 1 includes a coded slice of a non-RAP, non-TFD, and
+20 non-TLA picture, nalunittype: 2 includes a coded slice of a TFD
+   picture, and nalunittype: 3 includes a coded slice of a non-TFT
+   picture and a TLA picture.
+   1401518  1
+
+                                        22
+           The present embodiment is different from the conventional
+   technology in that the values 1, 2, and 3 are the coded slices belonging
+   to non-reference pictures and the values 9, 10, and 11 are the coded
+   slices belonging to reference pictures.
+ 5 [0039] The values assigned to the respective categories are not limited
+   to those described above.         Furthermore,   each category may be
+   extended to some sub-categories and these sub-categories may be
+   assigned new values, using the reserved values in Table 4.
+   [0040] Fig. 3 shows the operation of the video predictive encoding
+10 device for encoding of the NAL unit header in the present embodiment.
+   In step 118, the video predictive encoding device derives video data to
+   be packetized.    In step 120, the device encodes the first bit of the NAL
+   unit always     fixed to   0.    In   step  130, the device      determines
+   nalunittype and encodes it.            In step  140 the device encodes
+15 temporal_id and in step 150 the device encodes reserved five bits
+   (reservedone_5 bits), completing the NAL unit header.          In step 160,
+   the device packetizes the remaining payload (payload) and terminates
+   the processing.
+   [0041] Fig. 4 shows the details of the process in the determination and
+20 encoding of nal unit type in step 130 above.
+   [0042] In step 210, the video predictive encoding device determines
+   whether the data to be packetized is a coded slice belonging to any one
+   of random access pictures (RAPs); when the data is a coded slice
+   belonging to any one of RAPs (YES), the device goes to step 220.          If
+   1401518  1
+
+                                        23
+   not (NO) the device goes to step 230.
+   [0043] In step 220, the video predictive encoding device encodes
+   nalunittype by a number from 4 to 8 to infer that nalref flag is 1,
+   according to the RAP type, and then moves to step 140.
+ 5 [0044] In step 230, the video predictive encoding device determines
+   whether the data to be packetized is a parameter set, and when the data
+   is determined to be a parameter set (YES), the device moves to step 240.
+   If the data is not a parameter set (NO), the device moves to step 250.
+   [0045] In step 240, the video predictive encoding device encodes
+10 nalunittype by a number from 25 to 28 to infer that nalref flag is 1,
+   according to the parameter set, and then the device moves to step 140.
+   [0046] In step 250, the video predictive encoding device determines
+   whether the data to be packetized is information data, and when the data
+   is information data (YES), the device moves to step 260.      If not (NO)
+15 the device moves to step 270.
+   [0047] In step 260, the video predictive encoding device encodes
+   nalunittype by a number from 29 to 31 to infer that nalref flag is 0,
+   according to the information type, and then moves to step 140.
+   [0048] In step 270, the video predictive encoding device determines
+20 whether the data to be packetized is a reference picture, and when the
+   data is a reference picture (YES), the device moves to step 280.     If the
+   data is not a reference picture (NO), the device moves to step 290.    The
+   determination of whether or not the data is a reference picture is made
+   1401518  1
+
+                                         24
+   based on the reference information between pictures output from the
+   predicted signal generation unit.
+   [0049] The conditional branching in step 270 may be arranged as
+   follows.    In step 270 the video data must be determined as either a
+ 5 reference picture or a non-reference picture.        In step 270 the video
+   predictive encoding device determines whether the picture is a reference
+   picture, and when the picture is a reference picture (YES), the device
+   moves to step 280.      If the picture is not a reference picture (NO), the
+   device moves to step 290.
+10 [0050] In step 280, the video predictive encoding device encodes
+   nalunittype by a number from 9 to 11 to infer that nal ref flag is 1,
+   according to the slice type, and then moves to step 140.
+   [0051] In step 290, the video predictive encoding device encodes
+   nalunittype by a number from 1 to 3 to infer that nal ref flag is 0,
+15 according to the slice type, and then the device moves to step 140.
+   [0052] Fig 5 shows operation of the video predictive decoding device
+   for decoding of the NAL unit header in the present embodiment.            In
+   step 3 10, the video predictive decoding device derives a next packet for
+   decoding.       In   step    320,   the  device    decodes   the   first  bit
+20 (forbidden_zero bit) of the NAL unit always fixed to 0.         In step 330,
+   the device decodes nalunittype and sets the value of nal ref flag.        In
+   step 340 the device decodes temporalid and in step 350 the device
+   decodes the reserved five bits (reservedone_5 bits) to complete the
+   NAL unit header.       In step 360 the device reads out the remaining
+   1401518  1
+
+                                      25
+   payload from the packet and then terminates the processing.
+   [0053] Fig. 6 shows the details of the process in the decoding of
+   nalunittype and the setting of the value of nalrefflag in step 330
+   above.
+ 5 [0054] In step 400, the video predictive decoding device decodes the
+   NAL unit header to derive the value of nalunittype.
+   [0055] In step 410, the video predictive decoding device determines
+   whether the value of nal unittype is a number from 1 to 3, and when
+   the value is any one of 1 to 3 (YES), the NAL unit includes one of the
+10 coded slices of non-reference pictures and therefore the device moves to
+   step 420.   If value of nalunittype is not a number from 1 to 3 (NO),
+   the device moves to step 430.
+   [0056] In step 420, the video predictive decoding device sets the value
+   of nalref flag to 0 and then moves to step 340.
+15 [0057] In step 430, the video predictive decoding device determines
+   whether the value of nal unittype is a number from 4 to 11, and when
+   the value is any one of 4 to 11 (YES), the NAL unit includes one of the
+   coded slices of random access pictures or coded slices of reference
+   pictures, and therefore the device moves to step 440.     If the value of
+20 nalunittype is not a number from 4 to 11 (NO) the device moves to
+   step 450.
+   [0058] In step 440, the video predictive decoding device sets the value
+   of nalref flag to 1 and then moves to step 340.
+   1401518 1
+
+                                       26
+   [0059] In step 450, the video predictive decoding device determines
+   whether the value of nal unit-type is a number from 25 to 28, and when
+   the value is any one of 25 to 28 (YES), the NAL unit includes a
+   parameter set and then the device moves to step 460.      If the value of
+ 5 nalunittype is not a number from 25 to 28 (NO), the device moves to
+   step 470.
+   [0060] In step 460, the video predictive decoding device sets the value
+   of nalref flag to 1 and then moves to step 340.
+   [0061] In step 470, the video predictive decoding device determines
+10 whether the value of nal unit-type is a number from 29 to 31, and when
+   the value is any one of 29 to 31 (YES), the NAL unit includes
+   information data and then the device moves to step 480.    If the value of
+   nalunittype is not a number from 29 to 31 (NO), nal unit-type is an
+   invalid value and the device moves to step 490.
+15 [0062] In step 480, the video predictive decoding device sets the value
+   of nalref flag to 0 and then moves to step 340.
+   [0063] In step 490, the video predictive decoding device determines
+   that the value of nalref flag is undefined, and then the device moves to
+   step 340.
+20 [0064] In the present embodiment the aforementioned             setting of
+   nalref flag is performed through the logical determination, but the
+   value of nalref flag may also be set using a reference table of
+   nalref flag against index of nalunit-type in other embodiments.
+   Table 5 is an example of the reference table of nalref flag against
+   1401518  1
+
+                                       27
+   index of nal_unittype.
+   Table 5
+     NAL unit type range            Inferred value of nalrefjflag
+      1 to 3                        0
+     4 to 11                        1
+     25 to28                        1
+     29 to 31                       0
+           In Table 5, the thirty two entries of nalref flag are set to the
+ 5 same values as in the last column of Table 4.
+   [0065] The aforementioned nalref flag estimation or setting method is
+   not limited to the video predictive decoding device but can also be
+   applied to the MANEs.
+   [0066] In the present embodiment the video predictive decoding device
+10 may select not performing the setting of nalref flag and may directly
+   use the value of nal_unittype in determining whether a decoded picture
+   is a reference picture.    This can be explained as follows by use of a
+   logical expression.   When nal_unittype of the relevant picture is 1, 2,
+   or 3, the relevant picture is a non-reference picture.     Otherwise, the
+15 relevant picture is a reference picture and is stored for use as reference
+   of another picture.
+   [0067] In the present embodiment the definition of reference picture
+   and non-reference picture is applied to the entire video data.  However,
+   in embodiments where the video data is subjected to a selective frame
+20 drop process to discard pictures in a higher temporal layer, this
+   definition may no longer be accurate.
+   1401518_1
+
+                                        28
+   [0068] Under such circumstances, some reference pictures can be
+   pictures that are not used for reference.     To avoid this situation, in
+   some embodiments the reference pictures with nalunittype of 9, 10,
+   and 11 and the non-reference pictures with nalunittype of 1, 2, and 3
+ 5 may be defined as described below.
+   [0069] A reference picture is a picture to be used for inter prediction by
+   any other picture in the same temporal layer as the foregoing picture.
+   [0070] A non-reference picture is a picture that is not to be used for
+   inter prediction by any other picture in the same temporal layer as the
+10 foregoing picture.
+   [0071] In the conventional method described in Non Patent Literature 1,
+   the inter prediction is instructed by a content of a reference picture set
+   (RPS) to define which pictures can be used for inter prediction.       For
+   this reason, the foregoing definition may be described as follows.
+15 [0072] A non-reference picture (with nal unittype of 1, 2, or 3) is not
+   included in the RPS of any other picture in the same temporal layer as
+   the foregoing picture.
+   [0073] A reference picture (with nalunit type of 9, 10, or 11) is
+   included in the RPS of any other picture in the same temporal layer as
+20 the foregoing picture.
+   [0074] A video predictive encoding program and a video predictive
+   decoding program for letting a computer function as the foregoing video
+   predictive encoding device and video predictive decoding device can be
+   1401518  1
+
+                                       29
+   provided as programs stored in a storage medium.      Examples of such
+   storage   media    include   disks,   CD-ROMs,     DVDs,   and   ROMs,
+   semiconductor memories, and so on.
+   [0075] Fig. 7 is a drawing showing a hardware configuration of a
+ 5 computer for executing a program stored in a storage medium and Fig. 8
+   a perspective view of a computer for executing a program stored in a
+   storage medium.      The computer can be embodied in a DVD player, a
+   set-top box, a cell phone, etc., provided with a CPU, and be configured
+   to perform processing and control by software.
+10 [0076] As shown in Fig. 7, the computer 30 is provided with a reading
+   device 12 such as a disk drive unit, a CD-ROM drive unit, or a DVD
+   drive unit, a working memory (RAM) 14 on which an operating system
+   is resident, a memory 16 for storing programs stored in the storage
+   medium 10, a monitor unit 18 like a display, a mouse 20 and a keyboard
+15 22 as input devices, a communication device 24 for transmission and
+   reception of data or the like, and a CPU 26 for controlling execution of
+   programs.     When the storage medium 10 is put into the reading device
+   12, the computer 30 becomes          accessible to the video predictive
+   encoding or decoding program stored in the storage medium 10, through
+20 the reading device 12 and becomes able to operate as the video
+   predictive encoding or decoding device, based on the video predictive
+   encoding or decoding program.
+   [0077] As shown in Fig. 8, the video predictive encoding program or
+   the video predictive decoding program may be provided in the form of
+   1401518 1
+
+                                        30
+   computer data signal 40 superimposed on a carrier wave, through a
+   network.     In this case, the computer 30 can execute the video
+   predictive encoding program or the video predictive decoding program
+   after the video predictive encoding program or the video predictive
+ 5 decoding program is received by the communication device 24 and is
+   stored into the memory 16.
+   [0078] Specifically, as shown in Fig. 9, the video predictive encoding
+   program P 100 is a video predictive encoding program provided with an
+   input module P 101 to implement input of a plurality of pictures forming
+10 a video sequence, and an encoding module P102 to encode the pictures
+   by either the intra prediction or the inter prediction to generate
+   compressed picture data, and to packetize the compressed picture data
+   with packet header information, wherein the packet header information
+   contains a picture type and wherein the encoding module P102
+15 determines the picture type so as to uniquely indicate whether encoded
+   picture data is used for reference in decoding of another picture.
+   [0079] Similarly, as shown in Fig. 10, the video predictive decoding
+   program P200 is a video predictive decoding program provided with an
+   input module P201 to implement input of compressed picture data
+20 resulting from encoding of a plurality of pictures forming a video
+   sequence by either the intra prediction or the inter prediction and
+   packetization thereof along with packet header information, and a
+   decoding module P202 to reconstruct the packet header information and
+   the compressed picture data, wherein the packet header information
+25 contains a picture type to uniquely indicate whether reconstructed
+   1401518  1
+
+                                       31
+   picture data is used for reference in decoding of another picture and
+   wherein the decoding module P202 determines, based on the picture
+   type, whether reconstructed picture data is used for reference in
+   decoding of another picture.
+ 5 [0080] The     decoding    module     P202   may    determine    whether
+   reconstructed picture data is used for reference in decoding of another
+   picture, based on a correspondence table in which the picture type is
+   previously stored in association with information indicative of whether
+   reconstructed picture data is used for reference in decoding of another
+10 picture.
+   List of Reference Signs
+   [0081] 101 input terminal; 102 block partition unit; 103 predicted signal
+   generation unit; 104 frame memory; 105 subtraction unit; 106 transform
+   unit; 107 quantization unit; 108 de-quantization unit; 109 inverse
+15 transform unit; 110 addition unit; 111 entropy encoding unit; 112 output
+   terminal; 113 input terminal; 201 input terminal; 202 data analysis unit;
+   203 de-quantization unit; 204 inverse transform unit; 205 addition unit;
+   206 output terminal; 207 frame memory; 208 predicted               signal
+   generation unit.
+20
+   1401518  1
+
+                                         32
+   CLAIMS
+   1.      A video predictive decoding method comprising:
+           an input step of inputting compressed picture data for a plurality
+   of pictures forming a video sequence, where the compressed picture
+ 5 data includes a reference picture set (RPS) and is encapsulated in a NAL
+   unit with NAL unit header information; and
+           a decoding step of decoding the NAL unit header information
+   and the RPS, and reconstructing the compressed picture data as
+   reconstructed picture data,
+10         wherein the plurality of pictures forming the video sequence are
+   separated into a plurality of temporal layers,
+           the RPS identifies a set of pictures which is used for inter
+   prediction of the associated picture,
+           the NAL unit header information contains a nalunittype
+15 uniquely indicating whether the reconstructed picture data is used for
+   inter prediction in the decoding of other pictures of the same temporal
+   layer or not, and
+           the RPS of the other pictures does not include a non-reference
+   picture of the same temporal layer.
+20
+   2.      The video predictive decoding method according to claim 1,
+           wherein     the  NAL     unit    header information   contains   a
+   nalunittype uniquely indicating whether the reconstructed picture data
+   is used for inter prediction in the decoding of subsequent pictures of the
+25 same temporal layer in decoding order or not, and
+   1401518  1
+
+                                         33
+           the RPS of the subsequent pictures in decoding order does not
+   include a non-reference picture of the same temporal layer.
+   3.      A video predictive decoding device comprising:
+ 5         input means that inputs compressed picture data for a plurality
+   of pictures forming a video sequence, where the compressed picture
+   data includes a reference picture set (RPS) and is encapsulated in a NAL
+   unit with NAL unit header information; and
+           decoding means that decodes the NAL unit header information
+10 and the RPS, and reconstructs the compressed picture data as
+   reconstructed picture data,
+           wherein the plurality of pictures forming the video sequence are
+   separated into a plurality of temporal layers,
+           the RPS identifies a set of pictures which is used for inter
+15 prediction of the associated picture,
+           the NAL unit header information contains a nal unittype
+   uniquely indicating whether the reconstructed picture data is used for
+   inter prediction in the decoding of other pictures of the same temporal
+   layer or not, and
+20         the RPS of the other pictures does not include a non-reference
+   picture of the same temporal layer.
+   4.      The video predictive decoding device according to claim 3,
+           wherein     the NAL      unit    header information   contains   a
+25 nalunittype uniquely indicating whether the reconstructed picture data
+   is used for inter prediction in the decoding of subsequent pictures of the
+   1401518  1
+
+                                        34
+  same temporal layer in decoding order or not, and
+          the RPS of the subsequent pictures in decoding order does not
+  include a non-reference picture of the same temporal layer.
+5                             NTT DOCOMO, INC.
+              Patent Attorneys for the Applicant/Nominated Person
+                            SPRUSON & FERGUSON
+  1401518  1
+
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>

@@ -1,0 +1,2617 @@
+                                         [ABSTRACT]
+            A video decoding method, comprising:
+            obtaining a prediction mode related to a current block from a video signal;
+ 5          obtaining prediction samples of the current block by performing intra
+   prediction on the current block based on the intra prediction mode;
+            scanning transform coefficients of the current block based on a scanning type
+   of the current block, the scanning type of the current block being determined based on a
+   direction of an intra-prediction mode of the current block;
+10          obtaining    dequantized  transform coefficients     of the   current block by
+   dequantizing the transform coefficients;
+            obtaining residual samples of the current block by performing an inverse
+   transform on the dequantized transform coefficients, the inverse-transform being
+   performed in a horizontal direction and a vertical direction,
+15          wherein the inverse-transform is performed by using one of discrete cosine
+   transform (DCT) and discrete sine transform (DST), and
+            wherein when a size of the current block is 4x4, the DST is applied both in the
+   horizontal direction and the vertical direction regardless of the direction of the intra
+   prediction mode;
+20          reconstructing the current block using the residual samples and the prediction
+   samples; and
+            applying a deblocking filter on the reconstructed current block.
+
+                                               1
+               ENCODING METHOD AND DECODING METHOD, AND DEVICE
+                                        USING SAME
+   [Technical Field]
+ 5 [1]     The present invention relates to video encoding and decoding technology and,
+   more particularly, to a method of determining a frequency transform method and/or a
+   scanning method for a chroma signal and an apparatus using the method.               The
+   present application is a divisional application of Australian patent application number
+   <removed-apn>, the contents of which are incorporated herein by way of reference.
+10
+   [Background Art]
+   [2]     As broadcast having High Definition (HD) resolution is extended and served
+   nationwide and worldwide, many users are being accustomed to images having high
+   resolution and high picture quality.   Accordingly, lots of institutes are giving impetus
+15 to the development of the next-image device.
+   [3]     As there is a growing interest in Ultra High Definition (UHD) having
+   resolution 4 times higher than HDTV along with HDTV, there is a need for
+   technology in which an image having higher resolution and higher picture quality is
+   compressed and processed.
+20 [4]     In order to compress an image, information about the pixels of a current picture
+   can be encoded by prediction.     For example, inter-prediction technology in which a
+   value of a pixel included in a current picture is predicted from temporally anterior
+   and/or posterior pictures and/or intra-prediction technology in which a value of a pixel
+   included in a current picture is predicted using information about a pixel included in
+25 the current picture can be used.
+
+                                              2
+   [5]     Pixel information includes a luma signal regarding luma and a chroma signal
+   regarding chroma.      A luma signal and a chroma signal may be handled equally or
+   differently depending on the fact that a human being' sense of sight is more sensitive
+   to luma.
+ 5 [6]     Accordingly, a method of effectively handling a chroma signal and a luma
+   signal separately is problematic.
+   [7]     Aspects of the present invention provide a method and apparatus for increasing
+   encoding/decoding efficiency in video encoding/decoding.
+   [8]     Further aspects of the present invention provide an efficient frequency
+10 transform method and apparatus for a chroma signal and an efficient scanning method
+   and apparatus for a chroma signal.
+   [9]     In an aspect of the present invention, there is provided a video decoding
+   method, comprising: obtaining a prediction mode related to a current block from a
+   video signal; obtaining prediction samples of the current block by performing intra
+15 prediction on the current block based on the intra prediction mode; scanning transform
+   coefficients of the current block based on a scanning type of the current block, the
+   scanning type of the current block being determined based on a direction of an intra
+   prediction mode of the current block; obtaining dequantized transform coefficients of
+   the current block by dequantizing the transform coefficients; obtaining residual
+20 samples of the current block by performing an inverse-transform on the dequantized
+   transform coefficients, the inverse-transform being performed in a horizontal direction
+   and a vertical direction, wherein the inverse-transform is performed by using one of
+   discrete cosine transform (DCT) and discrete sine transform (DST), and wherein when
+   a size of the current block is 4x4, the DST is applied both in the horizontal direction
+25 and the vertical direction regardless of the direction of the intra prediction mode;
+
+                                              3
+   reconstructing the current block using the residual samples and the prediction samples;
+   and applying a deblocking filter on the reconstructed current block.
+   [10]    In another aspect of the present invention, there is provided a video encoding
+   method, comprising: scanning transform coefficients of a current block based on a
+ 5 scanning type of the current block, the scanning type of the current block being
+   determined based on a direction of an intra-prediction mode of the current block;
+   obtaining dequantized transform coefficients of the current block by dequantizing the
+   transform coefficients; obtaining residual samples of the current block by performing
+   an inverse-transform on the dequantized transform coefficients, the inverse-transform
+10 being performed in a horizontal direction and a vertical direction, wherein the inverse
+   transform is performed by using one of discrete cosine transform (DCT) and discrete
+   sine transform (DST), and wherein when a size of the current block is 4x4, the DST is
+   applied both in the horizontal direction and the vertical direction regardless of the
+   direction of the intra prediction mode; reconstructing the current block using the
+15 residual samples and prediction samples of the current block; and applying a
+   deblocking filter on the reconstructed current block.
+   [11]    In another aspect of the present invention, there is provided a non-transitory
+   computer-readable medium storing a bitstream formed by a video encoding method,
+   the method comprising: scanning transform coefficients of a current block based on a
+20 scanning type of the current block, the scanning type of the current block being
+   determined based on a direction of an intra-prediction mode of the current block;
+   obtaining dequantized transform coefficients of the current block by dequantizing the
+   transform coefficients; obtaining residual samples of the current block by performing
+   an inverse-transform on the dequantized transform coefficients, the inverse-transform
+25 being performed in a horizontal direction and a vertical direction, wherein the inverse-
+
+                                              4
+   transform is performed by using one of discrete cosine transform (DCT) and discrete
+   sine transform (DST), and wherein when a size of the current block is 4x4, the DST is
+   applied both in the horizontal direction and the vertical direction regardless of the
+   direction of the intra prediction mode; reconstructing the current block using the
+ 5 residual samples and prediction samples of the current block; and applying a
+   deblocking filter on the reconstructed current block.
+   [12]    Here, a scanning type for a luma signal can be equally used as a scanning type
+   for a chroma signal.     In another embodiment, a scanning type for a chroma signal
+   may be determined using the same method as a method of determining a scanning type
+10 for a luma signal can be used.
+   [13]    In accordance with aspects of the present invention, encoding/decoding
+   efficiency   can be improved in video encoding/decoding.             More particularly,
+   according to aspects of the present invention, frequency transform and/or scan for a
+   chroma signal can be performed efficiently.
+15 [14]    Furthermore, in selecting a frequency transform method and a scanning method
+   for a chroma signal, the encoding efficiency of the residual signal of the chroma signal
+   can be improved using a method and apparatus for applying a frequency transform
+   method to the chroma signal depending on an intra-prediction direction mode of the
+   chroma signal and deriving a scanning direction for the chroma signal.
+20
+   [Description of Drawings]
+   [15]    FIG. 1 is a block diagram showing the construction of a video encoding
+   apparatus in accordance with an embodiment of the present invention.
+   [16]    FIG. 2 is a block diagram showing the construction of a video decoding
+25 apparatus in accordance with an embodiment of the present invention.
+
+                                               5
+   [17]    FIG. 3 shows a brief example of a method of partitioning a CU within an LCU
+   when encoding a picture.
+   [18]    FIG. 4 schematically illustrating examples regarding the partition structures of
+   a PU.
+ 5 [19]    FIG. 5 shows a brief example of the partition structure of TUs within a CU.
+   [20]    FIG. 6 schematically illustrates intra-prediction modes.
+   [21]    FIG. 7 is a diagram schematically illustrating the relationship of Equation 1.
+   [22]    FIG. 8 is a diagram illustrating an example of up-right diagonal scanning for
+   important group flags and transform coefficients.
+10 [23]    FIG. 9 is a flowchart illustrating an example of a method of determining a
+   scanning direction according to a frame prediction direction.
+   [24]    FIG. 10 is a flowchart schematically illustrating another example of a method
+   of determining a scanning direction according to a frame prediction direction.
+   [25]    FIG. 11 is a flowchart illustrating an example of a method of selecting a
+15 frequency transform method for a residual picture.
+   [26]    FIG. 12 is a flowchart illustrating an example of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.
+   [27]    FIG. 13 is a flowchart illustrating another example of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.
+20 [28]    FIG. 14 is a flowchart illustrating an embodiment of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.
+   [29]    FIG. 15 is a flowchart illustrating another embodiment of a method of deriving
+   a scanning direction for a chroma signal according to the present embodiment.
+   [30]    FIG. 16 is a flowchart illustrating an example of a method of selectively
+25 deriving a frequency transform method for the residual picture of a chroma signal
+
+                                               6
+   based on an intra-prediction direction mode for the chroma signal according to the
+   present embodiment.
+   [31]    FIG. 17 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+ 5 based on an intra-prediction direction mode for the chroma signal according to the
+   present embodiment.
+   [32]    FIG. 18 is a flowchart illustrating an example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode for a luma signal in relation to an
+10 IntraFromLuma (LM) encoding mode for the chroma signal according to the present
+   embodiment.
+   [33]    FIG. 19 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode for a luma signal in relation to the
+15 IntraFromLuma (LM) encoding mode of the chroma signal according to the present
+   embodiment.
+   [34]    FIG. 20 is a flowchart illustrating an example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode according to the present embodiment.
+20 [35]    FIG. 21 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode according to the present embodiment.
+   [36]    FIG. 22 shows an example of a difference in the resolution between a luma
+   block and a chroma block.
+25
+
+                                               7
+   [37]    FIG. 23 is another example illustrating a difference in the resolution between a
+   luma block and a chroma block.
+   [38]    FIG. 24 shows another example of an encoding apparatus according to the
+   present invention.
+ 5 [39]    FIG. 25 shows another example of a decoding apparatus according to the
+   present invention.
+   [Mode for Invention]
+   [40]    Some exemplary embodiments of the present invention are described in detail
+10 with reference to the accompanying drawings.            Furthermore, in describing the
+   embodiments of this specification, a detailed description of the known functions and
+   constitutions will be omitted if it is deemed to make the gist of the present invention
+   unnecessarily vague.
+   [41]    In this specification, when it is said that one element is 'connected'        or
+15 'coupled' with the other element, it may mean that the one element may be directly
+   connected or coupled with the other element or a third element may be 'connected' or
+   'coupled' between the two elements.       Furthermore, in this specification, when it is
+   said that a specific element is 'included', it may mean that elements other than the
+   specific element are not excluded and that additional elements may be included in the
+20 embodiments of the present invention or the scope of the technical spirit of the present
+   invention.
+   [42]    Terms, such as the first and the second, may be used to describe various
+   elements, but the elements are not restricted by the terms.   The terms are used to only
+   distinguish one element from the other element.     For example, a first element may be
+25 named a second element without departing from the scope of the present invention.
+
+                                              8
+   Likewise, a second element may be named a first element.
+   [43]    Furthermore, element modules described in the embodiments of the present
+   invention are independently shown to indicate different and characteristic functions,
+   and it does not mean that each of the element modules is formed of a piece of separate
+ 5 hardware or a piece of software.      That is, the element modules are arranged and
+   included, for convenience of description, and at least two of the element modules may
+   form one element module or one element may be divided into a plurality of element
+   modules and the plurality of divided element modules may perform functions.         An
+   embodiment into which the elements are integrated or embodiments from which some
+10 elements are separated are also included in the scope of the present invention, unless
+   they depart from the essence of the present invention.
+   [44]    Furthermore, in the present invention, some elements are not essential elements
+   for performing essential functions, but may be optional elements for improving only
+   performance.     The present invention may be implemented using only essential
+15 elements for implementing the essence of the present invention other than elements
+   used to improve only performance, and a structure including only essential elements
+   other than optional elements used to improve only performance is included in the
+   scope of the present invention.
+   [45]    FIG. 1 is a block diagram showing the construction of a video encoding
+20 apparatus in accordance with an embodiment of the present invention.
+   [46]    Referring to FIG. 1, the video encoding apparatus 100 includes a motion
+   prediction module 111, a motion compensation module 112, an intra-prediction
+   module 120, a switch 115, a subtractor 125, a transform module 130, a quantization
+   module 140, an entropy encoding module 150, a dequantization module 160, an
+25 inverse transform module 170, an adder 175, a filter module 180, and a reference
+
+                                               9
+   picture buffer 190.
+   [47]    The video encoding apparatus 100 can perform encoding on an input picture in
+   intra-mode or inter-mode and output a bit stream as a result of the encoding.     In this
+   specification intra-prediction has the same meaning as intra-frame prediction, and
+ 5 inter-prediction has the same meaning as inter-frame prediction.     In the case of intra
+   mode, the switch 115 can switch to intra mode.     In the case of inter-mode, the switch
+    115 can switch to inter-mode.       The video encoding apparatus 100 can generate a
+   prediction block for the input block of an input picture and then encode the residual
+   between the input block and the prediction block.      Here, the input picture can mean
+10 the original picture.
+   [48]    In the case of intra-mode, the intra-prediction module 120 can generate the
+   prediction block by performing spatial prediction using values of the pixels of an
+   already encoded block neighboring a current block.
+   [49]    In the case of inter-mode, the motion prediction module 111 can obtain a
+15 motion vector by searching a reference picture, stored in the reference picture buffer
+    190, for a region that is most well matched with the input block in a motion prediction
+   process.     The motion compensation module 112 can generate the prediction block by
+   performing motion compensation using the motion vector and the reference picture
+   stored in the reference picture buffer 190.       Here, the motion vector is a two
+20 dimensional (2-D) vector used in inter-prediction, and the motion vector can indicate
+   an offset between a current block and a block within a reference picture.
+   [50]    The subtractor 125 can generate a residual block based on the residual between
+   the input block and the generated prediction block.     The transform module 130 can
+   perform transform on the residual block and output a transform coefficient according
+25 to the transformed block.      Furthermore, the quantization module 140 can output a
+
+                                                10
+   quantized coefficient by quantizing the received transform coefficient using at least
+   one of a quantization parameter and a quantization matrix.        Here, the quantization
+   matrix can be inputted to an encoder, and the inputted quantization matrix can be
+   determiend to be used in the encoder.
+ 5 [51]     The entropy encoding module 150 can perform entropy encoding based on
+   values calculated by the quantization module 140 or an encoding parameter value
+   calculated in an encoding process and output a bit stream according to the entropy
+   encoding.    If entropy encoding is used, the size of a bit stream for a symbol to be
+   encoded can be reduced because the symbol is represented by allocating a small
+10 number of bits to a symbol having a high incidence and a large number of bits to a
+   symbol having a low incidence.       Accordingly, the compression performance of video
+   encoding can be improved through entropy encoding.         The entropy encoding module
+    150 can use such encoding methods as exponential Golomb, Context-Adaptive Binary
+   Arithmetic Coding (CABAC),          and Context-Adaptive Binary Arithmetic Coding
+15 (CABAC) for the entropy encoding.
+   [52]     The video encoding apparatus according to the embodiment of FIG. 1 performs
+   inter-prediction encoding, that is, inter-frame prediction encoding, and thus a currently
+   encoded picture needs to be decoded and stored in order to be used as a reference
+   picture.   Accordingly, a quantized coefficient is dequantized by the dequantization
+20 module 160 and is then inversely transformed by the inverse transform module 170.
+   The dequantized and inversely transformed coefficient is added to the prediction block
+   through the adder 175, thereby generating a reconstructed block.
+   [53]     The reconstructed block experiences the filter module 180.    The filter module
+    180 can apply one or more of a deblocking filter, a Sample Adaptive Offset (SAO),
+25 and an Adaptive Loop Filter (ALF) to the reconstructed block or the reconstructed
+
+                                               11
+   picture.   The filter module 180 may also be called an adaptive in-loop filter.      The
+   deblocking filter can remove block distortion generated at the boundary of blocks.
+   The SAO can add a proper offset value to a pixel value in order to compensate for a
+   coding error.    The ALF can perform filtering based on a value obtained by comparing
+ 5 a reconstructed picture with the original picture.    The reconstructed block that has
+   experienced the filter module 180 can be stored in the reference picture buffer 190.
+   [54]     FIG. 2 is a block diagram showing the construction of a video decoding
+   apparatus in accordance with an embodiment of the present invention.
+   [55]     Referring to FIG. 2, the video decoding apparatus 200 includes an entropy
+10 decoding module 210, a dequantization module 220, an inverse transform module 230,
+   an intra-prediction module 240, a motion compensation module 250, a filter module
+   260, and a reference picture buffer 270.
+   [56]     The video decoding apparatus 200 can receive a bit stream outputted from an
+   encoder, perform decoding on the bit stream in intra-mode or inter-mode, and output a
+15 reconstructed picture, that is, a restored picture. In the case of intra-mode, a switch
+   can switch to intra-mode.     In the case of inter-mode, the switch can switch to inter
+   mode.     The video decoding apparatus 200 can obtain a reconstructed residual block
+   from the received bit stream, generate a prediction block, and then generate a
+   reconstructed block, that is, a restored, by adding the reconstructed residual block to
+20 the prediction block.
+   [57]     The entropy decoding module 210 can generate symbols including a symbol
+   having a quantized coefficient form by performing entropy decoding on the received
+   bit stream according to a probability distribution.   In this case, an entropy decoding
+   method is similar to the aforementioned entropy encoding method.
+25
+
+                                              12
+   [58]    If an entropy decoding method is used, the size of a bit stream for each symbol
+   can be reduced because the symbol is represented by allocating a small number of bits
+   to a symbol having a high incidence and a large number of bits to a symbol having a
+   low incidence.
+ 5 [59]    The quantized coefficient is dequantized by the dequantization module 220 and
+   is inversely transformed by the inverse transform module 230.         As a result of the
+   dequantization/inverse transform of the quantized coefficient, a reconstructed residual
+   block can be generated.
+   [60]    The quantization matrix used in dequantization is also called a scaling list.
+10 The dequantization module 220 can generate a dequantized coefficient by applying the
+   quantization matrix to a quantized coefficient.
+   [61]    Here, the dequantization module 220 can perform dequantization in response to
+   quantization used in an encoder.     For example, the dequantization module 220 can
+   perform dequantization by inversely applying a quantization matrix, used in an
+15 encoder, to a quantized coefficient.
+   [62]    The quantization matrix used in dequantization in the video decoding apparatus
+   200 may be received from the bit stream, or a default matrix already included in an
+   encoder and/or a decoder may be used as the quantization matrix used in
+   dequantization in the video decoding apparatus 200.     Information about a transmitted
+20 quantization matrix can be received through a sequence parameter set or a picture
+   parameter set for each transform block size to which a quantization matrix size or a
+   quantization matrix is applied.    For example, 4x4 quantization matrices for a 4x4
+   transform block can be reduced, 8x8 matrices for an 8x8 transform block can be
+   reduced, 16x16 matrices for a 16x16 transform block can be reduced, and 32x32
+25 matrices for a 32x32 transform block can be reduced.
+
+                                              13
+   [63]    In the case of intra-mode, the intra-prediction module 240 can generate a
+   prediction block by performing spatical prediciton using pixel values of an already
+   decoded block neighboring a current block. In the case of inter-mode, the motion
+   compensation module 250 can generate a prediction block by performing motion
+ 5 compensation using a motion vector and a reference picture stored in the reference
+   picture buffer 270.
+   [64]    The residual block and the prediction block are added together by an adder 255.
+   The added block experiences the filter module 260.     The filter module 260 can apply
+   at least one of a deblocking filter, an SAO, and an ALF to the reconstructed block or
+10 the reconstructed picture.   The filter module 260 outputs a reconstructed picture, that
+   is, a reconstructed picture.  The reconstructed picture can be stored in the reference
+   picture buffer 270 and can be used for inter-frame prediction.
+   [65]    In HEVC, in order to encode a picture efficiently, encoding can be performed
+   in a Coding Unit (hereinafter referred to as a 'CU').
+15 [66]    FIG. 3 shows a brief example of a method of partitioning a CU within a
+   Largest Coding Unit (hereinafter referred to as an 'LCU') when encoding a picture.
+   [67]    A picture inputted to the encoding apparatus is sequentially partitioned per
+   LCU as in FIG. 3, and a partition structure can be determined in the LCU.
+   [68]    The partition structure means a distribution of CUs for efficiently encoding a
+20 picture within an LCU.     The distribution of the CUs can be specified by determining
+   whether or not each CU will be partitioned into four CU the size of which has been
+   reduced by half horizontally and vertically.      Likewise, the partitioned CU can be
+   recursively partitioned into four CUs the size of which has been reduced by half
+   horizontally and vertically.
+25
+
+                                              14
+   [69]    Here, the partition of the CU may be performed up to a predetermined depth.
+   Information about the depth indicates the size of a CU, and the information is stored in
+   all the CUs.    The depth of an LCU that is a basis is 0, and the depth of a Smallest
+   Coding Unit (hereinafter referred to as an 'SCU') is a predetermined maximum depth.
+ 5 [70]    The depth of a CU is increased by 1 whenever partition is performed by half
+   from an LCU horizontally and vertically.        A CU on which partition has not been
+   performed in each depth has a 2Nx2N size.         If partition is performed on a CU, the
+   CU having a 2Nx2N size before the partition is partitioned into four CUs each having
+   an NxN size.
+10 [71]    The size of a CU is reduced to half whenever the depth of the CU is increased
+   by 1.    FIG. 3 shows an example in which the size of an LCU having a minimum
+   depth of 0 is a 64x64 pixel and the size of an SCU having a maximum depth of 3 is an
+   8x8 pixel.
+   [72]    In the example of FIG. 3, the CU (LCU) of the 64x64 pixel has a depth of 0,
+15 the CU of a 32x32 pixel has a depth of 1, the CU of a 16x16 pixel has a depth of 2,
+   and the CU (SCU) of the 8x8 pixel has a depth of 3.
+   [73]    Furthermore, information about whether or not a CU will be partitioned is
+   represented by 1-bit partition information for each CU.       The partition information is
+   included in all CUs other than an SCU.        If a CU is not partitioned, a value of the
+20 partition information can be set to 0.   If a CU is partitioned, a value of the partition
+   information can be set to 1.
+   [74]    A Prediction Unit (hereinafter referred to as a 'PU') is a unit of prediction.
+   [75]    FIG. 4 schematically illustrating examples regarding the partition structures of
+   a PU.
+25
+
+                                               15
+   [76]    As in the example of FIG. 4, one CU can be partitioned into several PUs, and
+   prediction can be performed on the PUs.
+   [77]    A Transform Unit (hereinafter referred to as a 'TU') is a basic unit used in a
+   spatial transform and quantization process within a CU.      A TU can have a rectangular
+ 5 or square form.
+   [78]    Each CU can have one or more TU blocks, and the TU block has a quad-tree
+   structure.
+   [79]    FIG. 5 shows a brief example of the partition structure of TUs within a CU.
+   As shown, TUs within a CU 510 can have various sizes depending on a quad-tree
+10 structure.
+   [80]    In intra-prediction   encoding/decoding,     prediction encoding according to
+   directivity can be performed from blocks neighboring a current block.
+   [81]    In intra-prediction, encoding/decoding are performed using a total of 36
+   prediction modes including 33 angular prediction modes and 3 non-angular prediction
+15 modes.
+   [82]    FIG. 6 schematically illustrates intra-prediction modes.
+   [83]    From among the 36 intra-prediction direction modes, the 3 modes without
+   directivity include a planar mode IntraPlanar, a mean mode 'IntraDC (DC)', and a
+   mode 'IntraFromLuma         (LM)' in which a chroma signal is predicted from a
+20 reconstructed luma signal.    In intra-prediction, all the 3 non-angular modes may be
+   used or only some of the 3 non-angular modes may be used.         For example, only the
+   planar mode and the mean mode may be used and the LM may not be used.
+   [84]    Encoding for the 36 intra-prediction direction modes can be applied to each of
+   a luma signal and a chroma signal.        In the case of a luma signal, the LM can be
+25 excluded.    In the case of a chroma signal, encoding on an intra-prediction direction
+
+                                                  16
+   mode can be performed according to three methods as in Table 1.
+   [85]     <Table 1>
+   [861
+        Intra-prediction          Intra-prediction direction mode for luma signal
+      direction mode for        0         26         10          1        X(O<=x<35)
+         chroma signal
+                0              34          0          0          0       0(PLANAR)       EM
+                1              26         34         26         26         26(VER)
+                2              10         10         34         10         10(HOR)
+                3               1          1          1         34          1 (DC)
+                4              LM         LM         LM        LM             LM         LM
+                5               0         26         10          1             X         DM
+   [87]     Table 1 includes a Derived Mode (DM) in which an intra-prediction direction
+ 5 mode for a luma signal is used as an intra-prediction direction mode for a chroma
+   signal without change and an Explicit Mode (EM) in which a real intra-prediction
+   direction mode is encoded.         Intra-prediction direction modes for a chroma signal
+   encoded in the EM include a planar mode PLANAR, a mean mode DC, a horizontal
+   mode HOR, a vertical mode VER, and a mode located at an eighth place in a vertical
+10 direction, that is, Ver+8 or No. 34 mode.        There is the LM in which a chroma signal
+   is predicted from a reconstructed luma signal.
+   [88]     A mode having the best efficiency can be selected from the three mode
+   encoding/decoding methods; DM, EM, and LM.
+   [89]     A method      'IntraFromLuma'        of predicting a chroma signal from a
+15 reconstructed luma signal sample may be used as a method of performing
+   encoding/decoding by predicting a chroma signal.                In this technique, a linear
+   correlation between a chroma signal and a luma signal is used.          Here, an example of
+   the used linear correlation is illustrated in Equation 1.
+   [90]     <Equation 1>
+20 [91]     Predc[x,]= a -RecL'[X,y]+ P
+   [92]     FIG. 7 is a diagram schematically illustrating the relationship of Equation 1.
+
+                                               17
+   [93]    Predc[x,y] of Equation 1 indicates a predicted value of a chroma signal in FIG.
+   7, and RecL[X,y] indicates a value calculated from a luma signal according to Equation
+   2 in order to satisfy a 4:2:0 sampling ratio of a chroma signal.
+   [94]    <Equation 2>
+ 5 [95]    RecL'[,y]=(RecL[2x,2y]+ RecL[2x,2y+ ])>>1
+   [96]    In Equation 2, a a value and a    P value  indicate weight a and a compensation
+   value  P between a down-sampled     luma signal and a down-sampled chroma signal.
+   [97]    A residual picture, that is, a difference with the original picture, can be
+   generated using a prediction picture for the chroma signal obtained according to
+10 Equations 1 and 2.
+   [98]    The residual picture is subject to frequency domain transform, quantization,
+   and entropy encoding.       Furthermore, the frequency domain transform can include
+   integer transform, integer Discrete Cosine Transform (DCT), integer Discrete Sine
+   Transform (DST), or intra-prediction mode-dependent DCT/DST.
+15 [99]    As described above, the residual pictures of the original picture and the
+   prediction picture can be subject to frequency domain transform and quantization and
+   the subject to entropy encoding.        Here, in order to increase entropy encoding
+   efficiency, coefficients having a 2-D form quantized picture can be rearranged into
+   coefficients having a 1-D form.
+20 [100]   In a prior art, a zigzag scanning method is used.            In contrast, in this
+   specification, an up-right diagonal scanning method other than the zigzag scanning
+   method can be used as a scanning method for quantization coefficients.      Furthermore,
+   frequency domain transform can include integer transform, integer DCT, integer DST,
+   or intra-prediction mode-dependent DCT/DST.
+25
+
+                                               18
+   [101]   Quantization coefficients for a specific block can be grouped into 4x4
+   subblocks and then encoded/decoded.
+   [102]   FIG. 8 is a diagram illustrating an example of an up-right diagonal scanning
+   method for important group flags and transform coefficients.
+ 5 [103]   FIG. 8 shows an example in which a 16x16 block is partitioned into 16 4x4
+   subblocks and the 16 4x4 subblocks are encoded.
+   [104]   FIG. 8(a) shows a basic scanning method, and FIG. 8(b) schematically shows a
+   case where quantization coefficients are actually scanned and the results of the
+   scanning.
+10 [105]   In a decoding process, whether or not a transform coefficient is present in each
+   subblock can be checked through significantcoeff groupflag (sigGrpFlag) parsed
+   from a bit stream.    When a value of significant coeff groupflag is 1, it means that
+   any one quantized transform coefficient is present in a corresponding 4x4 subblock.
+   In contrast, when a value of significantcoeffgroupflag is 0, it means that a
+15 quantized transform coefficient is not present in a corresponding 4x4 subblock.      Up
+   right scanning is basically applied to a scanning direction for the 4x4 subblock in FIG.
+   8 and a scanning direction for significant coeff groupflag.
+   [106]   FIG. 8 shows an example in which an up-right diagonal scanning method is
+   applied, but a scanning method for quantization coefficients includes an up-right
+20 diagonal scanning method, a horizontal scanning method, and a vertical scanning
+   method.
+   [107]   In inter-prediction, the up-right diagonal scanning method can be basically
+   used.    In intra-prediction, the up-right diagonal scanning method, the horizontal
+   scanning method, and the vertical scanning method can be selectively used.
+25
+
+                                                 19
+   [1081    In intra-prediction, a different scanning direction can be selected depending on
+   an intra-prediction direction and may be applied to both a luma signal and a chroma
+   signal.
+   [1091    Table 2 illustrates an example of a method of determining a scanning direction
+ 5 depending on a frame prediction direction.
+   [1101 <Table 2>
+                                                  log2TrafoSize - 2
+     IntraPredModeValue
+                                  0              1               2             3
+                0                 0              0               0             0
+                1                 0              0               0             0
+              2-5                 0              0               0             0
+              6-14                2              2               0             0
+             15 -21               0              0               0             0
+             22-30                1              1               0             0
+             31-35                0              0               0             0
+   [1111    In Table 2, 'IntraPredModeValue' indicates an intra-prediction direction.    The
+   intra-prediction direction corresponds to an IntraPredMode value in a luma signal and
+10 corresponds to an IntraPredModeC            value in a chroma signal.         Furthermore,
+   'log2TrafoSize' indicates that the size of a current transform block is represented
+   using 'log'.
+   [1121    For example, when IntraPredModeValue is 1, it means an 'IntraDC' mode.
+   When 'log2TrafoSize-2' is 1, it means an 8x8 block.
+15 [1131    Furthermore,     in   Table    2,   numbers     0,   1, or   2   determined   by
+   IntraPredModeValue and log2TrafoSize specifies a scanning direction.          For example,
+   in Table 2, 2 indicates up-right diagonal scanning, 1 indicates horizontal scanning, and
+   2 indicates vertical scanning.
+
+                                               20
+   [114]   FIG. 9 is a flowchart illustrating an example of a method of determining a
+   scanning direction according to a frame prediction direction.
+   [115]   In FIG. 9, IntraPredMode indicates an intra-prediction direction mode for a
+   luma signal, and IntraPredModeC indicates an intra-prediction direction mode for a
+ 5 chroma signal.       IntraPredMode(C) may be a luma signal or a chroma signal
+   depending on the component of the signal.          ScanType indicates a residual signal
+   scanning direction and includes up-right (DIAG; Up-right        =  0) scanning, horizontal
+   (HOR; Horizontal     = 1) scanning, and vertical (VER; Vertical  = 2) scanning.
+   [116]   The example of FIG. 9 can be performed in an encoder apparatus and a
+10 decoder apparatus.      Furthermore, the example of FIG. 9 may be performed within a
+   specific module within the encoder apparatus and the decoder apparatus.
+   [117]   FIG. 10 is a flowchart schematically illustrating another example of a method
+   of determining a scanning direction according to a frame prediction direction.
+   [118]   In the example of FIG. 10, a scanning method for a luma signal and a scanning
+15 method for a chroma signal are differently represented.       In FIG. 10, an index is an
+   indicator indicating the size of transform, and an index value according to each
+   transform size can be calculated as follows.
+   [119]   If a transform size is 64x64, an index is 1. If a transform size is 32x32, an
+   index is 2.   If a transform size is 16x16, an index is 3.  If a transform size is 8x8, an
+20 index is 4.    If a transform size is 4x4, an index is 5.  If a transform size is 2x2, an
+   index is 6.
+   [120]   From FIG. 10, it can be seen that scanning according to an intra-prediction
+   direction is applied to an 8x8 transform size and a 4x4 transform size in the case of a
+   luma signal and is applied to a 4x4 transform size, that is, the smallest size, in the case
+25 of a chroma signal.        Furthermore, if scanning according to an intra-prediction
+
+                                                21
+   direction is applied, up-right (DIAG; Up-right   = 0) scanning can be applied.
+   [121]   In order to encode quantization coefficients in intra-prediction, a scanning
+   direction obtained from Table 2 can be used as a scanning direction for a 4x4 subblock
+   and a scanning direction for significant coeff groupflag as in FIG. 8.
+ 5 [122]   As described above, in an encoding process, a residual picture for the original
+   picture and the prediction picture are subject to frequency domain transform and
+   quantization and then subject to entropy encoding.           Here, in order to increase
+   encoding efficiency due to the frequency domain transform, integer transform, integer
+   DCT, integer DST, or intra-prediction mode-dependent DCT/DST can be applied
+10 selectively and adaptively depending on the size of a block.
+   [123]   Furthermore, in a decoding process, a residual picture is subject to entropy
+   decoding, dequantization, and frequency domain inverse transform.           Here, integer
+   inverse transform, integer inverse DCT, integer inverse DST, or intra-prediction
+   mode-dependent DCT/DST can be applied selectively and adaptively depending on
+15 the size of a block.
+   [124]   FIG. 11 is a flowchart illustrating an example of a method of selecting a
+   frequency transform method for a residual picture.
+   [125]   First, if a current block has been subjected to intra-frame encoding and is not a
+   block of a luma signal, integer transform or integer DCT is performed in a frequency
+20 transform method for the residual pictures of the luma signal and the chroma signal of
+   the current block.
+   [126]   If not (i.e., the current block has been subjected to intra-frame encoding and is
+   a block of a luma signal), an intra-prediction direction mode 'IntraPredMode' for the
+   luma signal of the current block is obtained.
+25
+
+                                                22
+   [127]   Next, it is checked whether or not the current block is a block having a 4x4 size
+   (iWidth  ==   4).  If, as a result of the check, the current block is not a block having a
+   4x4 size (iWidth    ==  4), integer transform or integer DCT is performed in a frequency
+   transform method for the residual pictures of the luma signal and the chroma signal of
+ 5 the current block.
+   [128]   If, as a result of the check, the current block is a block having a 4x4 size
+   (iWidth == 4), an intra-prediction direction mode of the current block is checked.
+   [129]   If, as a result of the check, the intra-prediction direction mode of the current
+   block is 2 or more and 10 or less, integer DST is performed in a frequency transform
+10 method for the luma signal of the current block in a horizontal direction and integer
+   DCT is performed in a frequency transform method for the luma signal of the current
+   block in a vertical direction.
+   [130]   Integer DCT is performed in a frequency transform method for the chroma
+   signal of the current block in both horizontal and vertical directions.
+15 [131]   If, as a result of the check, the intra-prediction direction mode of the current
+   block is 0 or is 11 or more and 25 or less, integer DST is performed in a frequency
+   transform method for the luma signal of the current block in both horizontal and
+   vertical directions.
+   [132]   Integer DCT is performed in a frequency transform method for the chroma
+20 signal of the current block in both horizontal and vertical directions.
+   [133]   If, as a result of the check, the intra-prediction direction mode of the current
+   block is 26 or more and 34 or less, integer DCT is performed in a horizontal direction
+   and integer DST is performed in a vertical direction in a frequency transform method
+   for the luma signal of the current block.
+25
+
+                                                     23
+   [134]     Integer DCT is performed in both horizontal and vertical directions in a
+   frequency transform method for the chroma signal of the current block.
+   [135]     If not, integer DCT is performed in both horizontal and vertical directions in a
+   frequency transform method for the residual pictures of the luma signal and the
+ 5 chroma signal of the current block.
+   [136]     In FIG. 11, iWidth is an indicator indicating the size of transform, and a value
+   of iWidth according to each transform size can be calculated as follows.
+   [137]     If a transform size is 64x64, iWidth       = 64.    If a transform size is 32x32, iWidth
+   = 32.     If a transform size is 16x16, iWidth       =  16.    If a transform size is 8x8, iWidth =
+10 8.    If a transform size is 4x4, iWidth    =  4.     If a transform size is 2x2, iWidth   = 2.
+   [138]     In relation to FIG. 11, a transform process for scaled transform coefficients is
+   as follows.
+   [139]     <Transform process for scaled transform coefficients>
+   [140]        In this case, the input is as follows.
+15 [141]     - The width of a current transform block: nW
+   [142]     - The height of the current transform block: nH
+   [143]     - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+   [144]     - An index for the luma signal and the chroma signal of a current block: cldx
+20 [145]     - If cldx is 0, it means a luma signal, and if cldx is 1 or cldx is 2, it means a
+   chroma signal.        Furthermore, if cldx is 1, it means Cb in a chroma signal, and if cldx
+   is 2, it means Cr in a chroma signal.
+   [146]       In this case, the output is as follows.
+   [147]     - An array for a residual signal obtained by inversely transforming the scaled
+25 transform coefficients: (nWxnH) array r
+
+                                                    24
+   [148]   If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra', a value of Log2(nW*nH) is 4, and a value of cIdx is 0, parameters
+   horizTrType and vertTrType according to Table 3 are used depending on intra
+   prediction direction modes for           a luma signal.    If not, the parameters horizTrType
+ 5 and vertTrType are set to 0.
+   [149]   <Table 3>
+   [150]
+     IntraPredMod    0    1 2  3 4     5 6      7 8    9  10   11 12 13    14 15   16 17
+           C
+      vertTrType     1 0    0  0   0   0    0   0 0    0   0    1  1   1   1   1   1   1
+      horizTrType    1 0     1 1 1     1 1,        1   1 I   I     1   1   1   1 I     1
+     IntraPredMod      18   19 20 21     22 23    24 25 26 27 28 29 30 31         32 33  34
+      vertTrType        1    1   1   1      1   1  1   1   1    1  1   1   1   1   1  1   1
+      horizTrType       1    I   1   I     1    I  1   1   0   0   0   0   0   0   0  0  0
+   [151] An inverse transform process is performed on the scaled transform coefficients
+10 using the parameters horizTrType and vertTrType.               First, the sizes nW and nH and
+   scaled transform coefficients array 'nWxnH array d' of the current block and the
+   parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction using them, and an array 'nWxnH array e' is outputted.
+   [152] Next, the array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+15 derived as in Equation 3.
+   [153]   <Equation 3>
+   [154]   gij = Clip3(-32768,32767,(ej+64)>>7)
+   [155]   Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+   the parameter vertTrType are received, and 1-D inverse transform is performed in a
+20 vertical direction using them.
+
+                                                25
+   [156]   Next, an array 'nWxnH array r' for the residual signals is set based on cIdx as
+   in Equation 4.
+   [157]   <Equation 4>
+   [158]   rij = (fij+(1 <<(shift-1)))>>shift
+ 5 [159]   In Equation 4, 'shift'      = 20 - BitDepthy when cIdx is 0.        'shift'  = 20
+   BitDepthc when cldx is not 0.        BitDepth indicates the number of bits (e.g., 8 bits) for
+   a current picture.
+   [160]   As described above, a method (IntraFromLuma) of predicting a chroma signal
+   from a reconstructed luma signal sample may be used as a method of predicting a
+10 chroma signal.
+   [161]   A residual signal (an error signal: residual) for a chroma component encoded
+   using the IntraFromLuma method is basically scanned in an up-right (Up-right             = 0)
+   direction and then encoded because there is no intra-frame direction mode.
+   [162]   However, since the IntraFromLuma method is based on similarity between a
+15 luma signal and a chroma signal, there is a good possibility that a residual signal for
+   the chroma signal obtained by the IntraFromLuma method may have a similar
+   characteristic to a residual signal for the luma signal.          Accordingly, encoding
+   efficiency for the residual signal of the chroma signal can be improved using this
+   characteristic.
+20 [163]   Furthermore, encoding efficiency can be improved by differently applying
+   integer DCT and integer DST to a 4x4 luma signal block in horizontal and vertical
+   directions depending on an intra-prediction direction mode of a luma signal.               In
+   contrast, only integer DCT is performed on a conventional 4x4 chroma signal block.
+   [164]   There is a possibility that the residual picture of a chroma signal may have a
+25 similar characteristic to the residual picture of a luma signal.   Accordingly, in order
+
+                                               26
+   to improve encoding efficiency, a selective frequency transform method based on an
+   intra-prediction direction mode applied to the residual picture of the luma signal can
+   also be applied to the residual picture of the chroma signal.
+   [165]   Furthermore, the method (Intra_FromLuma) of predicting a chroma signal
+ 5 from a reconstructed luma signal sample, that is, a method of predict a chroma signal,
+   is based on similarity between the luma signal and the chroma signal.      Accordingly,
+   there is a good possibility that a residual signal for the chroma signal obtained by the
+   IntraFromLuma method has a similar characteristic to a residual signal for the luma
+   signal.   As a result, if a selective frequency transform method is applied to the
+10 residual signal of the chroma signal based on the above characteristic, encoding
+   efficiency can be improved.
+   [166]   As described above, the IntraFromLuma method is an intra-prediction method
+   using similarity between a luma signal and a chroma signal.     A scanning direction for
+   the residual signal of a chroma signal can be derived from an intra-prediction direction
+15 for a luma signal based on the similarity between the luma signal and the chroma
+   signal.
+   [167]   In this specification, a method and apparatus for deriving a scanning direction
+   for a chroma signal are described in more detail below.
+   [168]   [Embodiment 1] A method and apparatus for deriving a scanning direction for
+20 a chroma signal based on an intra-prediction direction mode of a luma signal
+   [169]   FIG. 12 is a flowchart illustrating an example of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.
+   [170]   In the example of FIG. 12, the derivation of a scanning direction for a chroma
+   signal can be determined by an intra-prediction direction mode of a luma signal.      In
+25 other words, a scanning direction for a luma signal can be applied to a chroma signal
+
+                                                 27
+   without change.      Accordingly, there is an advantage in that complexity is reduced
+   because it is not necessary to derive calculation for deriving a scanning direction for a
+   chroma signal.
+   [171]   The operation of FIG. 12 can be performed in the encoding apparatus of FIG. 1
+ 5 and the decoding apparatus of FIG. 2.
+   [172]   Referring to FIG. 12, whether or not the luma component of a current block has
+   been subjected to intra-prediction is determined at step S1210.        If, as a result of the
+   determination, it is determined that the current block has not been subjected to intra
+   prediction (i.e., subjected to inter-prediction), up-right diagonal scanning is performed
+10 on the chroma component and the luma component of the current block at step S 1260.
+   That is, up-right diagonal scanning is performed on both a scan type for the luma
+   component of the current block and a scan type for the chroma component of the
+   current block.
+   [173]   If, as a result of the determination, it is determined that the luma component of
+15 the current block has been subjected to intra-prediction, whether or not an intra
+   prediction mode for the luma component of the current block is 6 or more and 14 or
+   less is determined at step S1220.       That is, whether an intra-prediction mode for the
+   luma component of the current block is an intra-prediction mode in a horizontal
+   direction or an intra-prediction mode in a direction close to horizontality is determined
+20 at step S1220.
+   [174]   If, as a result of the determination, it is determined that the intra-prediction
+   mode for the luma component of the current block is 6 or more and 14 or less, vertical
+   scanning is performed on the luma component and the chroma component of the
+   current block at step S1240.       That is, vertical scanning is performed on both a scan
+25 type for the luma component of the current block and a scan type for the chroma
+
+                                               28
+   component of the current block.
+   [175]   If the luma component of the current block has been subjected to intra
+   prediction, but it is determined that the intra-prediction mode for the luma component
+   of the current block is not 6 or more and 14 or less, whether or not an intra-prediction
+ 5 mode for the luma component of the current block is 22 or more and 30 or less is
+   determined at step S1230.      That is, whether the intra-prediction mode for the luma
+   component of the current block is an intra-prediction mode in a vertical direction or an
+   intra-prediction mode in a direction close to verticality is determined.
+   [176]   If, as a result of the determination, it is determined that the intra-prediction
+10 mode for the luma component of the current block is 22 or more and 30 or less,
+   horizontal scanning is performed on the luma component and the chroma component
+   of the current block at step S1250.    That is, horizontal scanning is performed on both
+   a scan type for the luma component of the current block and a scan type for the
+   chroma component of the current block.
+15 [177]   If the luma component of the current block has been subjected to intra
+   prediction, but it is determined that the intra-prediction mode for the luma component
+   of the current block is not 6 or more and 14 or less and is not 22 or more and 30 or less,
+   up-right diagonal scanning is performed on the luma component and the chroma
+   component of the current block at step S 1260.
+20 [178]   FIG. 13 is a flowchart illustrating another example of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.          The
+   example of FIG. 13 can have an advantage in that a scanning method for a luma signal
+   and a scanning method for a chroma signal are unified.
+   [179]   The operation of FIG. 13 can be performed in the encoding apparatus of FIG. 1
+25 and the decoding apparatus of FIG. 2.
+
+                                                 29
+   [180]    Referring to FIG. 13, first, whether or not a current block has been subjected to
+   intra-prediction is determined at step S 1310.
+   [181]    If, as a result of the determination, it is determined that a current block has not
+   been subjected to intra-prediction, up-right diagonal scanning is performed on the
+ 5 luma signal and the chroma signal of the current block at step S 1390.
+   [182]    If, as a result of the determination, it is determined that the current block has
+   been subjected to intra-prediction, the size of the current block is changed into an
+   index at step S1320.       For example, an index to specify the size of the current block
+   can be set.
+10 [183]   Next, information about the intra-prediction of the current block mode, that is,
+   IntraPredMode, can be obtained at step S1330. IntraPredMode, that is, information
+   indicative of an intra-prediction mode for the current block, can be obtained based on
+   FIG. 6.
+   [184]    Whether or not the index set for the current block at step S 1320 is greater than
+15 3 and smaller than 6 is determined at step S1340.         If, as a result of the determination,
+   it is determined that the index for the current block is not greater than 3 and smaller
+   than 6, up-right diagonal scanning is performed on the luma signal and the chroma
+   signal of the current block at step S 1390.
+   [185]    If, as a result of the determination, it is determined that the index for the
+20 current block is greater than 3 and smaller than 6, whether or not an intra-prediction
+   mode for the chroma signal of the current block is 6 or more and 14 or less is
+   determined at step S1350. If, as a result of the determination, it is determined that the
+   intra-prediction mode for the chroma signal of the current block is 6 or more and 14 or
+   less, vertical scanning is performed on the chroma signal of the current block at step
+25 S1370.
+
+                                              30
+   [186]   If, as a result of the determination, it is determined that the intra-prediction
+   mode for the chroma signal of the current block is not 6 or more and 14 or less,
+   whether or not the intra-prediction mode for the chroma signal of the current block is
+   22 or more and 30 or less is determined at step S1360.           If, as a result of the
+ 5 determination, it is determined that the intra-prediction mode for the chroma signal of
+   the current block is 22 or more and 30 or less, horizontal scanning is performed on the
+   chroma signal of the current block at step S1380.
+   [187]   If, as a result of the determination, it is determined that the intra-prediction
+   mode for the chroma signal of the current block is not 6 or more and 14 or less and is
+10 not 22 or more and 30 or less, up-right diagonal scanning is performed on the chroma
+   signal of the current block at step S1390.
+   [188] Unlike in the example of FIG. 12, in the example of FIG. 13, an intra
+   prediction mode for the chroma signal of the current block is determined and a scan
+   type is determined based on a result of the determination.      Like in the example of
+15 FIG. 12, however, a scanning method for a chroma signal and a luma signal is
+   determined as the same method.
+   [189]   In other words, the flowchart of FIG. 13 can be equally applied to the scanning
+   of a luma signal.   The reason why IntraPredMode(C) is indicated using parentheses at
+   steps S1350 and S1360 is that an intra-prediction mode for the luma signal can be
+20 specified by IntraPredMode and applied and an intra-prediction mode for the chroma
+   signal can be specified by IntraPredModeC and applied.
+   [190] Accordingly, the flowchart of FIG. 13 can be equally applied to a luma signal
+   and a chroma signal, and a scanning type for the luma signal and a scanning type for
+   the chroma signal can be determined as the same method.       Here, the scanning type is
+25 any one of vertical scanning, horizontal scanning, and up-right diagonal scanning.
+
+                                                          31
+   11911 Table 4 is obtained by incorporating the examples of FIGS. 12 and 13 into a
+   syntax structure for a Transform Unit (hereinafter referred to as a 'TU').
+   11921 Table 4 shows an example of the TU syntax according to the present
+   embodiment 1.
+ 5 11931 <Table 4>
+   [194]
+    transform unit( x0, vO, xC, yC, log2TrafoWidth, log2TrafoHeight, trafoDepth, blkldx) Descriptor
+          log2TrafoSize (( log2TrafoWidth + log2TrafoHeight ) >>           1)
+          log2TrafoSizeC ( (log2TrafoSize = Log2MinTrafoSizeC) ?
+                             log2TrafoSize : log2TrafoSize - 1)
+          if( PredMode == MODE INTRA) {
+             scanldx = ScanTvpe[ log2TrafoSize - 2 ][ IntraPredMode ]
+             scanldxC = scanldx
+             scanIldx = 0
+             scanldxC      0
+   11951 In Table 4, transformunit indicates order of bit streams for one TU block.
+   log2TrafoSize indicates a result of right shift operation for the sum of log2TrafoWidth
+10 and log2TrafoHeight and indicates the size of a TU block for a luma signal.
+   log2TrafoSizeC indicates the size of a TU block for a chroma signal.
+   11961 PredMode indicates an encoding mode for a current block. PredMode is 'Intra'
+   in the case of intra-frame encoding and is 'Inter' in the case of inter-frame encoding.
+   scanIdx indicates information about a scanning direction for the luma signal of a
+15 current TU block and includes an up-right direction DIAG (Up-right = 0), a horizontal
+   direction HOR (Horizontal           =  1), and a vertical direction VER (Vertical = 2).
+   11971 scanIdxC indicates information about a scanning direction for the chroma
+   signal of a current TU block and includes an up-right direction DIAG (Up-right = 0), a
+   horizontal direction HOR (Horizontal               =  1), and a vertical direction VER (Vertical = 2).
+
+                                                32
+   [198]    ScanType is determined based on the table of a method of determining a
+   scanning direction according to a frame prediction direction of Table 2.
+   [199]    IntraPredMode indicates information about an intra-prediction direction for a
+   luma signal.        IntraPredModeC     indicates information about an intra-prediction
+ 5 direction for a chroma signal.
+   [200]    In relation to Table 4, a transform coefficient level can be parsed in a
+   transCoeffLevel array.       Here, if PredMode is Intra, a different scanning direction is
+   applied depending on an intra-prediction direction mode.       This scanning direction can
+   be obtained from the ScanType array in Table 2.
+10 [201] A scanning direction for a luma signal can be used as a scanning direction for a
+   chroma signal without change.
+   [202]    [Embodiment 2-1] A method and apparatus for applying a scanning direction
+   for a luma signal to a chroma signal without change when an intra-prediction direction
+   mode for the chroma signal is 'IntraFromLuma'
+15 [203]    FIG. 14 is a flowchart illustrating an embodiment of a method of deriving a
+   scanning direction for a chroma signal according to the present embodiment.
+   [204]    Referring to FIG. 14, whether or not an intra-prediction direction mode for the
+   chroma signal of a current block is an intra-prediction mode is determined at step
+   S1410.     If, as a result of the determination, it is determined that an intra-prediction
+20 mode has not been applied to the current block, up-right diagonal scanning is
+   performed on the current block at step S1480.
+   [205]    If, as a result of the determination, it is determined that the current block has
+   been subjected to intra-prediction, whether or not the intra-prediction mode for the
+   chroma signal of the current block is IntraFromLuma is determined at step S1420.
+25 If, as a result of the determination, it is determined that the intra-prediction mode for
+
+                                                33
+   the chroma signal of the current block is IntraFromLuma, an intra-prediction mode
+   for the luma signal of the current block is set as the intra-prediction mode for the
+   chroma signal of the current block at step S 1440.
+   [206]   In other words, if the intra-prediction mode for the chroma signal of the current
+ 5 block is IntraFromLuma, a scanning direction for the chroma signal can be derived
+   by inputting the intra-prediction direction mode of the luma signal to the intra
+   prediction direction mode of the chroma signal.          That is, if the intra-prediction
+   direction mode of the chroma signal is IntraFromLuma, the scanning direction for the
+   luma signal can be used as the scanning direction for the chroma signal.
+10 [207]   Next, whether or not the intra-prediction mode for the chroma signal of the
+   current block is 6 or more and 14 or less is determined at step S1430.     If, as a result
+   of the determination, it is determined that the intra-prediction mode for the chroma
+   signal of the current block is 6 or more and 14 or less, vertical scanning is performed
+   on the chroma signal of the current block at step S 1460.
+15 [208]   If, as a result of the determination, it is determined that the intra-prediction
+   mode for the chroma signal of the current block is not 6 or more and 14 or less,
+   whether or not the intra-prediction mode for the chroma signal of the current block is
+   22 or more and 30 or less is determined at step S1450.            If, as a result of the
+   determination, it is determined that the intra-prediction mode for the chroma signal of
+20 the current block is 22 or more and 30 or less, horizontal scanning is performed on the
+   chroma signal of the current block at step S 1470.
+   [209]   If the intra-prediction mode for the chroma signal of the current block is not 6
+   or more and 14 or less and is not 22 or more and 30 or less, up-right diagonal scanning
+   is performed on the chroma signal of the current block at step S 1480.
+25
+
+                                                 34
+   [210]   [Embodiment 2-2] A method and apparatus for applying a scanning direction
+   for a luma signal to a chroma signal without change when the intra-prediction
+   direction of the chroma signal is the same as the intra-prediction direction of the luma
+   signal or an intra-prediction mode for the chroma signal is IntraFromLuma
+ 5 [211]   FIG. 15 is a flowchart illustrating another embodiment of a method of deriving
+   a scanning direction for a chroma signal according to the present embodiment.
+   [212]   From FIG. 15, it can be seen that a DM method (i.e., a method of using an
+   intra-prediction direction mode for a luma signal as an intra-prediction direction mode
+   for a chroma signal or it means that the intra-prediction direction of the chroma signal
+10 becomes equal to the intra-prediction direction of the luma signal) and the LM
+   (IntraFromLuma) method are unified into one.
+   [213]   First, whether or not a current block has been subjected to intra-prediction is
+   determined at step S1505.      If, as a result of the determination, it is determined that an
+   intra-prediction mode has not been applied to the current block, up-right diagonal
+15 scanning is performed on the current block at step S 1575.
+   [214]   If, as a result of the determination, it is determined that the current block has
+   been subjected to intra-prediction, the width of the current block is changed into an
+   index at step S1510.
+   [215]   Whether or not a target sample to be determined is a luma signal is determined
+20 at step S1515.     If, as a result of the determination, it is determined that the target
+   sample is not a luma signal, whether or not the DM or LM is applied to the current
+   block is determined at step S1530.            If, as a result of the determination, it is
+   determined that the target sample is a luma signal, information about an intra
+   prediction mode is obtained at step S1520.
+25
+
+                                                35
+   [216]    If the present invention is limitedly applied to a case where intra-frame
+   encoding or decoding is performed on a chroma signal using the DM without using the
+   LM for the purpose of profiling depending on an application field, whether or not the
+   DM is applied without determining whether or not the LM is applied may be
+ 5 determined at step S1530 in the example of FIG. 15.
+   [217]    After obtaining the information about an intra-prediction mode, if the index is
+   greater than 3 and smaller than 6 (i.e., a transform size is 8x8 or 4x4) at step S1525,
+   whether or not an intra-prediction mode for the luma signal of the current block is 6 or
+   more and 14 or less is determined at step S1555.        If, as a result of the determination,
+10 it is determined that the intra-prediction mode for the luma signal of the current block
+   is 6 or more and 14 or less, vertical scanning is performed on the luma signal of the
+   current block at step S 1565.
+   [218]    If, as a result of the determination, it is determined that the intra-prediction
+   mode for the luma signal of the current block is not 6 or more and 14 or less, whether
+15 or not the intra-prediction mode for the luma signal of the current block is 22 or more
+   and 30 or less is determined at step S1560.       If, as a result of the determination, it is
+   determined that the intra-prediction mode for the luma signal of the current block is 22
+   or more and 30 or less, horizontal scanning is performed on the current block at step
+   S1570.     If, as a result of the determination, it is determined that the intra-prediction
+20 mode for the luma signal of the current block is not 22 or more and 30 or less, up-right
+   diagonal scanning is performed on the current block at step S 1575.
+   [219]    Meanwhile, if, as a result of the determination at step S1515, it is determined
+   that the target sample is a chroma signal not a luma signal, whether or not a mode for
+   the current block is the DM or LM is determined at step S1530.           If, as a result of the
+25 determination, it is determined that the mode for the chroma signal of the current
+
+                                                   36
+   block is not the DM or LM, information about an intra-prediction mode for the chroma
+   signal is obtained at step S1545.       If, as a result of the determination, it is determined
+   that the mode for the chroma signal of the current block is the DM or LM, information
+   about an intra-prediction mode for the luma signal is obtained at step S1535.            In order
+ 5 to determine a scanning direction for the chroma signal, the intra-prediction mode for
+   the chroma signal is set as an intra-prediction mode for the luma signal at step S 1540.
+   [220] Next, whether or not the index is greater than 4 and smaller than 7 (i.e.,
+   whether a transform size is 4x4 or 2x2) is determined at step S1550.           If, as a result of
+   the determination, it is determined that the index is not greater than 4 and smaller than
+10 7, up-right diagonal scanning is performed on the chroma signal of the current block at
+   step S1575.
+   [221]   If, as a result of the determination, it is determined that the index is greater than
+   4 and smaller than 7, whether or not the intra-prediction mode for the chroma signal of
+   the current block is 6 or more and 14 or less is determined at step S1555.                If, as a
+15 result of the determination, it is determined that the intra-prediction mode for the
+   chroma signal of the current block is 6 or more and 14 or less, vertical scanning is
+   performed on the chroma signal of the current block at step S 1565.
+   [222]   If, as a result of the determination, it is determined that the intra-prediction
+   mode for the chroma signal of the current block is not 6 or more and 14 or less,
+20 whether or not the intra-prediction mode for the chroma signal of the current block is
+   22 or more and 30 or less is determined at step S1560.                 If, as a result of the
+   determination, it is determined that the intra-prediction mode for the luma signal of the
+   current block is 22 or more and 30 or less, horizontal scanning is performed on the
+   current block at step S1570.       If, as a result of the determination, it is determined that
+25 the intra-prediction mode for the luma signal of the current block is not 22 or more and
+
+                                                            37
+   30 or less, up-right diagonal scanning is performed on the current block at step S1575.
+   [2231      Table 5 is obtained by incorporating the examples of FIGS. 14 and 15 into a
+   syntax structure for a Transform Unit (hereinafter referred to as a 'TU').
+   [2241      Table 5 shows an example of the TU syntax according to the present
+ 5 embodiment 1.
+   [2251      <Table 5>
+   [2261
+    transform_unit( xO, yO, xC. yvC, log2TrafoWidth, log2TrafoHeight, trafoDeptli, blkIdx) { Descriptor
+          log2TrafoSizc = ( (log2TrafoWidth + log2TrafoHcight ) >> 1)
+          log2TrafoSizeC = ( (log2TrafoSize = = Log2MinTrafoSizeC )?
+                               log2TrafoSize : log2TrafoSize - 1 )
+          if( PredMode = = MODE_INTRA) {
+              scanldx = ScanType[ log2TrafoSize -2 ][IntraPredMode]
+              scanldxC = (IntraPrcdModcC = = IntraFromLuma) ? scanldx
+                          ScanType[ log2TrafoSize - 2  1[ IntraPredModeC 1
+            else {
+              scanildx    0
+              scanldxC  =   0
+   [2271      In Table 5, transformunit indicates order of bit streams for one TU block.
+10 log2TrafoSize indicates a result of right shift operation for the sum of log2TrafoWidth
+   and log2TrafoHeight and indicates the size of a TU block for a luma signal.
+   [2281      log2TrafoSizeC indicates the size of a TU block for a chroma signal.
+   PredMode indicates an encoding mode for a current block. PredMode is 'Intra' in the
+   case of intra-frame encoding and is 'Inter' in the case of inter-frame encoding.
+15 [2291      scanIdx indicates information about a scanning direction for the luma signal of
+   a current TU block and includes an up-right direction DIAG (Up-right                                 =   0), a
+   horizontal direction HOR (Horizontal                =  1), and a vertical direction VER (Vertical = 2).
+   [2301      scanIdxC indicates information about a scanning direction for the chroma
+   signal of a current TU block and includes an up-right direction DIAG (Up-right                         =  0), a
+
+                                                 38
+   horizontal direction HOR (Horizontal      = 1), and a vertical direction VER (Vertical  = 2).
+   12311     ScanType is determined based on the table of a method of determining a
+   scanning direction according to a frame prediction direction of Table 2.
+   12321 IntraPredMode indicates information about an intra-prediction direction for a
+ 5 luma signal.         IntraPredModeC indicates information about an intra-prediction
+   direction for a chroma signal.         As indicated in the syntax table, if a value of
+   IntraPredModeC is IntraFromLuma, a scanning direction used in a luma signal is
+   applied to a chroma signal without change.
+   12331     In relation to Table 5, a transform coefficient level can be parsed in a
+10 transCoeffLevel array.       Here, if PredMode is Intra, a different scanning direction is
+   applied depending on an intra-prediction direction mode.        This scanning direction can
+   be obtained from the ScanType array in Table 6 below.            In order to obtain scanIdx,
+   that is, a scanning direction indicator for a luma signal, a value of IntraPredMode
+   indicative of an intra-prediction mode for the luma signal is used as a value of
+15 IntraPredModeValue in Table 6.          In order to obtain scanIdxC, that is, a scanning
+   direction indicator for a chroma signal, a value IntraPredModeC indicative of an intra
+   prediction mode for the chroma signal is used as a value of IntraPredModeValue in
+   Table 6.
+   12341     Table 6 shows an example of a method of determining a scan type.
+20 12351     <Table 6>
+   12361
+     IntraPredModeValue                           log2TfoSiz - 2
+                                0              1                 2       |      0
+              0                 0              0                 0              0
+              1                 0              0                 0              0
+             2-5                0              0                 0              0
+            6-14                2              2                 0              0
+            15-21               0              0                 0              0
+            22-30               1               1                0
+            31-34               0              0                 0       |      0
+
+                                                      39
+   [237] In Table 6, a scan type ScanType can be determined by log2TrafoSize and
+   IntraPredModeValue as follows: ScanType[log2TrafoSize-2][IntraPredModeValue]
+   [238] As described above, a transform coefficient level is parsed in a transCoeffLevel
+   array.   Here, if PredMode is 'Intra', a different scanning direction is used depending
+ 5 on an intra-prediction direction mode.
+   [239] Here, ScanType[log2TrafoSize-2][IntraPredModeValue]                       can be set according
+   to a syntax structure of Table 7 based on the size 'log2TrafoSize' and an intra
+   prediction direction mode 'IntraPredModeValue' of a luma signal transform block.
+   [240] <Table 7>
+10 [241]
+     -      If( log2TrafoSize == 2          log2TrafoSize == 3 ) the following applies.
+              -       If ( IntraPredModeValue >= 22        &&      IntraPredModeValue <= 30    ),
+               ScanType[ log2TrafoSize - 2 ][ IntraPredModeValue ] is set to 1.
+              -       Otherwise, if ( IntraPredModeValue >= 6 && IntraPredModeValue <=
+               10 ), ScanType[ log2TrafoSize - 2 ][ IntraPredModeValue ] is set to 2.
+              -       Otherwise, ScanType[ log2TrafoSize - 2 ][ IntraPredModeValue ] is set to
+              0.
+     -      Otherwise, ScanType[ log2TrafoSize - 2 ][ IntraPredModeValue ] is set to 0.
+   [242] In order to obtain scanldx, that is, a scanning direction indicator for a luma
+   signal, a value of IntraPredMode indicative of an intra-prediction mode for the luma
+   signal is used as a value of IntraPredModeValue in Table 2.                        In order to obtain
+15 scanldxC, that is, a scanning direction indicator for a chroma signal, a value of
+   IntraPredModeC indicative of an intra-prediction mode for the chroma signal is used
+   as a value of IntraPredModeValue in Table 2.
+   [243] The present embodiment can also be applied to the following cases in addition
+   to a case where a current chroma block has been encoded in IntraFromLuma (LM).
+20 [244] 1. In predicting a chroma block, the present embodiment can be applied to all
+   methods of multiplying a reconstructed luma signal block by weight and adding an
+
+                                                40
+   offset to a result of the multiplication.
+   [245]   2.    In predicting a chroma block, the present embodiment can be applied to all
+   methods of predicting a chroma block using a template shift for reconstructed luma
+   signal and chroma signal blocks.          Here, the template shift is used to derive a
+ 5 correlation between a luma signal and a chroma signal.
+   [246]   In addition, the present embodiment can be applied in various ways.
+   [247]   For example, the present embodiment can be differently applied to an
+   application scope depending on the size of all blocks, a CU depth, or a TU depth.         A
+   parameter (i.e., information about the size or depth) used to determine an application
+10 scope as described above may be set so that a predetermined value is used in an
+   encoder and a decoder, or a predetermined value may be used depending on a profile
+   or level.    For example, when an encoder writes a parameter value in a bit stream, a
+   decoder may obtain a value from the bit stream and use the value.
+   [248]   If the application scope is different depending on a CU depth, one of the
+15 following 3 methods can be used as illustrated in Table 8: A method A) of applying
+   the application scope to only a depth equal to or greater than a specific depth, a
+   method B) of applying the application scope to only a depth equal to or smaller than a
+   specific depth, and a method C) of applying the application scope to only a specific
+   depth.
+20 [249]   Table 8 shows an example of methods of determining the application scope in
+   which each of the three methods according to the present embodiment is applied when
+   a specific CU (or TU) depth is 2.      In Table 8, '0' indicates that the application scope
+   is applied to a corresponding depth, and 'X' indicates that the application scope is not
+   applied to a corresponding depth.
+25
+
+                                             41
+   [250]   <Table 8>
+   [251]
+             CU (OR TU) DEPTH               METHOD A        METHOD B         METHOD C
+         INDICATING APPLICATION
+                    SCOPE
+                        0                        X               0                 X
+                        1                        X               0                 X
+                        2                        0               0                 0
+                        3                        0               X                 X
+                        4                        0               X                 X
+   [252]   If the methods of the present invention are not applied to all depths, it may be
+   indicated using a specific indicator (or flag) or may be represented by signaling a
+ 5 value that is 1 greater than a maximum value of a CU depth using as a CU depth value
+   indicative of the application scope.
+   [253]   Furthermore, it is to be noted that a method of determining an application
+   scope in which the methods of the present invention are applied can be applied to the
+   aforementioned embodiment 1 and embodiments to be described later individually or
+10 in combination.
+   [254]   [Embodiment 3] A method and apparatus for selectively deriving a frequency
+   transform method for the residual picture of a chroma signal based on an intra
+   prediction direction mode for the chroma signal
+   [255]   In the present embodiment, encoding efficiency can be improved by applying a
+15 selective frequency transform method according to an intra-prediction direction mode
+   to which the residual picture of a luma signal has been applied to the residual picture
+   of a chroma signal.
+
+                                                   42
+   [256]   Furthermore, in the present embodiment,               frequency  transform can be
+   selectively performed based on a property that a residual signal for a chroma signal
+   obtained by the IntraFromLuma method has a similar characteristic to the residual
+   signal of a luma signal.
+ 5 [257]   FIG. 16 is a flowchart illustrating an example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode for a chroma signal according to the
+   present embodiment.
+   [258]   Referring to FIG. 16, first, if a current block has been subjected to intra-frame
+10 encoding 'Intra' and the current block has a 4x4 size (trafoSize (or iWidth)         == 4) at
+   step S1605, integer DST or integer DCT is applied to a frequency transform method
+   for the current block.       If the current block does not have a 4x4 size (trafoSize (or
+   iWidth)  ==   4) at step S1605, DCT can be applied to a frequency transform method for
+   the current block at step S 1660.
+15 [259]   Next, if the current block is a luma block at step S1610, an intra-prediction
+   direction mode IntraPredMode for a luma signal is obtained at step S1620.           Here, the
+   intra-prediction direction mode for the luma signal of the current block can be used to
+   derive a frequency transform method for the residual picture of the luma signal.
+   [260]   If the current block is a chroma block at step S1610, whether or not the chroma
+20 block is a DM block is determined at step S1615.
+   [261]   If, as a result of the determination, it is determined that the current block is a
+   DM block, DCT can be applied to a frequency transform method for the current block
+   at step S1660.      If, as a result of the determination at step S1615, it is determined that
+   the current block is not a DM block, the intra-prediction direction mode for the
+25 chroma signal can be used to derive a frequency transform method for the residual
+
+                                                43
+   picture of the chroma signal at step S1625.
+   [262]   Here, if the chroma block has been encoded in DM, DST, DCT, or other
+   frequency transform methods can be applied to an intra-prediction direction mode
+   corresponding to the EM (e.g., a planar mode PLANAR, a mean mode DC, a
+ 5 horizontal mode HOR, a vertical mode VER, or a mode located at an eighth place in a
+   vertical direction (e.g., Ver+8 or No. 34 mode)), from the DMs.
+   [263]   Next, if the intra-prediction direction mode for the current block (i.e., the luma
+   and chroma signal blocks) is 2 or more and 10 or less at step S1630, integer DST can
+   be applied to a frequency transform method for the current block (i.e., the luma and
+10 chroma signal blocks) in a horizontal direction and integer DCT can be applied to a
+   frequency transform method for the current block (i.e., the luma and the chroma signal
+   blocks) in a vertical direction at step S 1645.
+   [264]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+   luma and chroma signal blocks) is 0 (PLANAR) or is 11 or more and 25 or less at step
+15 S1635, integer DST can be applied to a frequency transform method for the current
+   block (i.e., the luma and chroma signal blocks) in both horizontal and vertical
+   directions at step S1650.
+   [265]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+   luma and chroma signal blocks) is 26 or more and 34 or less at step S1640, integer
+20 DCT can be applied to a frequency transform method for the current block (i.e., the
+   luma and chroma signal blocks) in a horizontal direction and integer DST can be
+   applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in a vertical direction at step S1655.
+   [266]   If the intra-prediction direction mode for the current block (i.e., the luma and
+25 chroma signal blocks) is not 26 or more and 34 or less at step S 1640, integer DCT can
+
+                                                 44
+   be applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in both horizontal and vertical directions at step S1660.
+   [267]   The method of FIG. 16 can be incorporated into a transform process for scaled
+   transform coefficients as follows.
+ 5 [268]   Transform process for scaled transform coefficients into which the example of
+   FIG. 16 has been incorporated
+   [269]   In this case, the input is as follows.
+   [270]   - The width of a current transform block: nW
+   [271]   - The height of the current transform block: nH
+10 [272]   - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+   [273] An index for the luma signal and the chroma signal of a current block: cldx
+   [274]   -If cldx is 0, it means a luma signal.     If cldx is 1 or cldx is 2, it means a
+   chroma signal.     Furthermore, if cldx is 1, it means Cb in a chroma signal.   If cldx is
+15 2, it means Cr in a chroma signal.
+   [275]   In this case, the output is as follows.
+   [276]   - An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+   [277]   If an encoding mode 'PredMode' for the current block is an intra-prediction
+20 mode 'Intra', a value of Log2(nW*nH) is 4, and a signal is a luma signal, parameters
+   horizTrType and vertTrType according to Table 9 are used depending on intra
+   prediction direction modes for the luma signal.
+   [278]   In the case of a chroma signal, if an intra-prediction encoding mode for the
+   chroma signal is smaller than 4, the parameters horizTrType and vertTrType according
+25 to Table 9 are used depending on intra-prediction direction modes for the chroma
+
+                                              45
+   signal.   If not, the parameters horizTrType and vertTrType are set to 0.
+   [2791 If an intra-prediction direction mode for the chroma signal is '35', the
+   parameters horizTrType and vertTrType are set to 0.
+   [2801 <Table 9>
+ 5 [2811
+    IntraPredMode 0 1 2 3 4 5 6 7            8   9 10 11 12 13 14 15 16 17
+      vertTrType       1 0 0 0 0 0 0 0       0   0 0   1   1  1   1    1  1   1
+      horizTrType      1 0  1 1 1 1 1 1      1   1  1  1   1  1   1    1  1   1
+    IntraPredMode 18 19       20  21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType        I  1I I    I   I  I  I I I I I        I        I I     I I
+      horizTrType       1 1    1   1 1    1  1 1 0     0   0 0    0   0   0   0 0
+   [2821 An inverse transform process is performed on the scaled transform coefficients
+   using the parameters horizTrType and vertTrType value.      First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+10 parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+   inverse transform.
+   [2831 Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 5 using the array.
+15 [2841 <Equation 5>
+   [2851 gij= Clip3(-32768,32767,(eij+64)>>7)
+   [2861 Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+   the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+20 [2871 Next, an array 'nWxnH array r' for the residual signals is set based on cIdx as
+   in Equation 6.
+
+                                                46
+   [288]   <Equation 6>
+   [2891   rij = (fij+(1<<(shift-1)))>>shift
+   [290]   Here, when cldx is 0, shift   = 20 - BitDepthy.   When cldx is not 0, shift  = 20
+   BitDepthc.      BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+ 5 current picture.
+   [291]   FIG. 17 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode for the chroma signal according to the
+   present embodiment.
+10 [292]   Referring to FIG. 17, first, whether or not a current block has been subjected to
+   intra-frame encoding 'Intra' is determined at step S1710.           If, as a result of the
+   determination, it is determined that the current block has been subjected to intra-frame
+   encoding, integer DST or integer DCT is applied to a frequency transform method for
+   the current block.
+15 [293]   If, as a result of the determination, it is determined that the current block has
+   not been subjected to intra-frame encoding 'Intra', an intra-prediction direction mode
+   'IntraPredMode(C)' for the luma or chroma signal of the current block is obtained at
+   step S1715.       Here, when deriving a frequency transform method for the luma signal,
+   IntraPredMode(C) is changed into IntraPredMode (i.e., the intra-prediction direction
+20 mode for the luma signal).        When deriving a frequency transform method for the
+   chroma signal, IntraPredMode(C) is changed into IntraPredModeC (i.e., the intra
+   prediction direction mode for the chroma signal).      Here, the intra-prediction direction
+   mode for the luma signal of the current block can be used to derive a frequency
+   transform method for the residual picture of the luma signal, and the intra-prediction
+25 direction mode for the chroma signal of the current block can be used to derive a
+
+                                                47
+   frequency transform method for the residual picture of the chroma signal.
+   [294]   Here, an intra-prediction direction mode for selecting a frequency transform
+   method can be obtained in various ways as in one of the following 1 to 3 methods.
+   [295]   1.    An intra-prediction direction mode for the luma signal of a current block
+ 5 can be used to derive a frequency transform method by applying the intra-prediction
+   direction mode to both the residual pictures of the luma signal and a chroma signal.
+   [296]   2.    An intra-prediction direction mode for the chroma signal of a current block
+   can be used to derive a frequency transform method by applying the intra-prediction
+   direction mode to both the residual pictures of a luma signal and the chroma signal.
+10 [297]   3.    Only integer DCT or integer DST can be used in the luma signal of a
+   current block.     Furthermore, an intra-prediction direction mode for the chroma signal
+   of the current block can be used to derive a frequency transform method for the
+   residual picture of the chroma signal.
+   [298]   In addition, a frequency transform method can be derived in various ways.
+15 [299]   Next, whether or not the current block has a 4x4 size (iWidth             ==   4) is
+   determined at step S1720.       If, as a result of the determination, it is determined that
+   the current block does not have a 4x4 size (iWidth       == 4), integer transform or integer
+   DCT is applied to a frequency transform method for the current block at step S 1755.
+   [300]   If, as a result of the determination, it is determined that the current block has a
+20 4x4 size (iWidth     ==  4), an intra-prediction direction mode for the current block is
+   checked.
+   [301]   If the intra-prediction direction mode of the current block is 2 or more and 10
+   or less at step S1725, integer DST can be applied to a frequency transform method for
+   the current block in a horizontal direction and integer DCT can be applied to a
+25 frequency transform method for the current block in a vertical direction at step S 1740.
+
+                                                48
+   [302]   In contrast, if the intra-prediction direction mode of the current block is 0 or is
+    11 or more and 25 or less at step S 1730, integer DST can be applied to a frequency
+   transform method for the current block in both horizontal and vertical directions at
+   step S1745.
+ 5 [303]   In contrast, if the intra-prediction direction mode of the current block is 26 or
+   more and 34 or less at step S1735, integer DCT can be applied to a frequency
+   transform method for the current block in a horizontal direction and integer DST can
+   be applied to a frequency transform method for the current block in a vertical direction
+   at step S1750.
+10 [304]   If the intra-prediction direction mode of the current block is not 26 or more and
+   34 or less at step S1735, integer DCT can be applied to a frequency transform method
+   for the current block in both horizontal and vertical directions at step S 1755.
+   [305]   Here, a frequency transform method according to an intra-prediction direction
+   mode can be used in various ways.           For example, if an intra-prediction direction
+15 mode for a current block is 2 or more and 10 or less, a frequency transform method
+   may be applied as in the above-described example.        As another method, integer DCT
+   can be applied to a frequency transform method for the current block in a horizontal
+   direction and integer DST can be applied to a frequency transform method for the
+   current block in a vertical direction.      As yet another method, integer DCT can be
+20 applied to a frequency transform method for the current block in both horizontal and
+   vertical directions, or integer DST can be applied to a frequency transform method for
+   the current block in both horizontal and vertical directions.        Furthermore, integer
+   DST may be applied all horizontal and vertical directions other than a DC mode (i.e.,
+   mode not a mean value prediction and direction mode).
+25
+
+                                                 49
+   [306]   A method of applying various frequency transform methods in various ways as
+   described above can be applied to other intra-prediction direction mode scopes in
+   addition to a case where an intra-prediction direction mode for a current block is 2 or
+   more and 10 or less.         The following contents can be applied to the following
+ 5 embodiments in the same manner.
+   [307]   The method of FIG. 17 can be incorporated into a transform process for scaled
+   transform coefficients as follows.
+   [308]   Transform process for scaled transform coefficients into which the example of
+   FIG. 17 has been incorporated
+10 [309]   In this case, the input is as follows.
+   [310]   - The width of a current transform block: nW
+   [311]   - The height of the current transform block: nH
+   [312]   - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+15 [313]   An index for the luma signal and the chroma signal of a current block: cldx
+   [314]   -If cldx is 0, it means a luma signal.     If cldx is 1 or cldx is 2, it means a
+   chroma signal.     Furthermore, if cldx is 1, it means Cb in a chroma signal.   If cldx is
+   2, it means Cr in a chroma signal.
+   [315]   In this case, the output is as follows.
+20 [316]   An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+   [317]   If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra' and a value of Log2(nW*nH) is 4, (1) parameters horizTrType and
+   vertTrType according to Table 10 are used depending on intra-prediction direction
+25 modes for a luma signal and (2) the parameters horizTrType and vertTrType according
+
+                                              50
+   to Table 10 are used depending on intra-prediction direction modes for a chroma
+   signal. If not, the parameters horizTrType and vertTrType are set to 0.
+   [318] <Table 10>
+   [319]
+    IntraPredMode 0 1 2 3 4 5 6 7            8   9 10 It 12 13 14151617
+      vertTrType      1 0 0 0 0 0 0 0        0   0 0   1  1  1   1   1 1     1
+      horizTrType     1 0   1 1 1 1 1 1      1   1  1  1  1  1   1   1 1     1
+    IntraPredMode 18 19        20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType       1  1     1  1  1    1 1   1 1   1 1   1 1     1 1     1 1
+                                      I I II     1 0  0  0   0  0    0   0   0  0
+ 5    horizTrType      I     I     I
+   [320] An inverse transform process is performed on the scaled transform coefficients
+   using the parameters horizTrType and vertTrType value.    First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+   parameter horizTrType are received, 1-D inverse transform is performed in a
+10 horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+   inverse transform.
+   [321] Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 7 using the array.
+   [322] <Equation 7>
+15 [323] gij= Clip3(-32768,32767,(ej+64)>>7)
+   [324] Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+   the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+   [325] Next, an array 'nWxnH array r' for the residual signals is set based on cIdx as
+20 in Equation 8.
+   [326] <Equation 8>
+   [327] rij = (fij+(1<<(shift-1)))>>shift
+
+                                               51
+   [328]   Here, when cldx is 0, shift  = 20 - BitDepthy.    When cldx is not 0, shift = 20
+   BitDepthc.    BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+   current picture.
+   [329]   [Embodiment 4] A method and apparatus for selectively deriving a frequency
+ 5 transform method for the residual picture of a chroma signal based on an intra
+   prediction direction mode for a luma signal in relation to an IntraFromLuma (LM)
+   encoding mode for the chroma signal
+   [330]   FIG. 18 is a flowchart illustrating an example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+10 based on an intra-prediction direction mode for a luma signal in relation to the LM of
+   the chroma signal according to the present embodiment.
+   [331]   Referring to FIG. 18, first, if a current block has been subjected to intra-frame
+   encoding 'Intra' and the current block has a 4x4 size (TrafoSize (or iWidth) == 4) at
+   step S 1810, integer DST or integer DCT is applied to a frequency transform method
+15 for the current block at step S1855.      If the current block does not have a 4x4 size
+   (trafoSize (or iWidth)   ==  4) at step S1810, DCT can be applied to a frequency
+   transform method for the current block.
+   [332]   Next, if the current block is a luma block or a chroma block and an intra
+   prediction direction mode for the chroma block is the LM at step S1815, an intra
+20 prediction direction mode 'IntraPredMode' for the luma signal is obtained at step
+   S1820.
+   [333]   Here, the intra-prediction direction mode for the luma signal of the current
+   block can be used to derive a frequency transform method for the residual pictures of
+   the luma signal and the chroma signal.
+25
+
+                                                52
+   [334]   If the current block is a chroma block (i.e., a chroma block not the LM) at step
+   S1815, DCT can be applied to a frequency transform method for the current block at
+   step S1855.
+   [335] Next, if the intra-prediction direction mode for the current block (i.e., the luma
+ 5 and chroma signal blocks) is 2 or more and 10 or less at step S1825, integer DST can
+   be applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in a horizontal direction and integer DCT can be applied to a
+   frequency transform method for the current block (i.e., the luma and chroma signal
+   blocks) in a vertical direction at step S1840.
+10 [336]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+   luma and chroma signal blocks) is 0 (PLANAR) or is 11 or more and 25 or less at step
+   S1830), integer DST can be applied to a frequency transform method for the current
+   block (i.e., the luma and chroma signal blocks) in both horizontal and vertical
+   directions at step S 1845.
+15 [337]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+   luma and chroma signal blocks) is 26 or more and 34 or less at step S1835, integer
+   DCT can be applied to a frequency transform method for the current block (i.e., the
+   luma and chroma signal blocks) in a horizontal direction and integer DST can be
+   applied to a frequency transform method for the current block (i.e., the luma and
+20 chroma signal blocks) in a vertical direction at step S1850.        If the intra-prediction
+   direction mode for the current block (i.e., the luma and chroma signal blocks) is not 26
+   or more and 34 or less at step S1835, integer DCT can be applied to a frequency
+   transform method for the current block (i.e., the luma and chroma signal blocks) in
+   both horizontal and vertical directions at step S1855.
+25
+
+                                                 53
+   [338]   Meanwhile, a transform process for scaled transform coefficients according to
+   the example of FIG. 18 is as follows.
+   [339] A transform process for scaled transform coefficients according to the example
+   of FIG. 18
+ 5 [340]   In this case, the input is as follows.
+   [341]   - The width of a current transform block: nW
+   [342]   - The height of the current transform block: nH
+   [343]   - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+10 [344] An index for the luma signal and the chroma signal of a current block: cldx
+   [345]   -If cldx is 0, it means a luma signal.     If cldx is 1 or cldx is 2, it means a
+   chroma signal.     Furthermore, if cldx is 1, it means Cb in a chroma signal.   If cldx is
+   2, it means Cr in a chroma signal.
+   [346]   In this case, the output is as follows.
+15 [347] An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+   [348]   If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra'     and a value of Log2(nW*nH) is 4, parameters horizTrType and
+   vertTrType according to Table 11 are used depending on intra-prediction direction
+20 modes for a luma signal and the parameters horizTrType and vertTrType according to
+   Table 11 are used depending on intra-prediction direction modes for the chroma signal
+   if an encoding mode for the chroma signal is IntraFromLuma (LM).              If not, the
+   parameters horizTrType and vertTrType are set to 0.
+
+                                                54
+   [3491 <Table 11>
+   [350]
+    IntraPredMode 0 1 2 3 4 5 6 7              8   9 10 11 12 13 14 15 16 17
+      vertTrType      1 0 0 0 0 0 0 0          0   0 0   1  1  1   1    1  1   1
+      horizTrType     1 0   1 1 1 1 1 1        1   1  1  1  1  1   1    1  1   1
+    IntraPredMode 18 19       20   21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType       1  1    1    1  1    1  1   1  1  1  1  1   1    1  1   1  1
+      horizTrType      1  1    1    1  1    1  1 1 0     0 0  0    0   0   0   0  0
+   [3511 An inverse transform process is performed on the scaled transform coefficients
+ 5 using the parameters horizTrType and vertTrType value.       First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+   parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+   inverse transform.
+10 [3521 Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 9 using the array.
+   [3531 <Equation 9>
+   [3541 gij = Clip3(-32768,32767,(eij+64)>>7)
+   [3551 Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+15 the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+   [3561 Next, an array 'nWxnH array r' for the residual signals is set based on cldx as
+   in Equation 10.
+   [3571 <Equation 10>
+20 [3581 rij  = (fij+(1<<(shift-1)))>>shift
+   [3591 Here, when cldx is 0, shift     = 20 - BitDepthy. When cldx is not 0, shift = 20
+   BitDepthc.     BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+
+                                                 55
+   current picture.
+   [360]    FIG. 19 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode for a luma signal in relation to an
+ 5 IntraFromLuma (LM) encoding mode for the chroma signal according to the present
+   embodiment.
+   [361]    Referring to FIG. 19, whether or not a current block has been encoded
+   according to Condition 1 (i.e., whether or not the current block has been subjected to
+   intra-frarme encoding 'Intra' and the current block is the block of a luma signal) or
+10 Condition 2 (i.e., whether or not the current block has the LM and the current block is
+   the block of a chroma signal) is determined at step S1910.
+   [362]    If, as a result of the determination, Condition 1 or Condition 2 is not satisfied,
+   integer transform or integer DCT can be applied to frequency transform methods for
+   the luma signal and the chroma signal of the current block at step S1955.
+15 [363]    If, as a result of the determination, Condition 1 or Condition 2 is satisfied, an
+   intra-prediction direction mode 'IntraPredMode'         for the luma signal of the current
+   block is obtained at step S1915.
+   [364]    Here, an intra-prediction direction mode for the luma signal of the current
+   block can be used to derive a frequency transform method for the residual picture of
+20 the luma signal.      Furthermore, if the chroma signal of the current block has been
+   encoded in the LM, an intra-prediction direction mode for the luma signal of the
+   current block can be used to derive a frequency transform method for the residual
+   picture of the chroma signal.
+   [365]    Next, whether or not the current block has a 4x4 size (iWidth             ==  4) is
+25 determined at step S1920.        If, as a result of the determination, it is determined that
+
+                                                  56
+   the current block does not have a 4x4 size (iWidth      ==   4), integer transform or integer
+   DCT can be applied to frequency transform methods for the luma signal and the
+   chroma signal of the current block at step S1955.       If, as a result of the determination,
+   it is determined that the current block has a 4x4 size (iWidth     ==  4), the intra-prediction
+ 5 direction mode for the current block is checked.
+   [366]    If the intra-prediction direction mode of the current block is 2 or more and 10
+   or less at step S1925, integer DST can be applied to a frequency transform method for
+   the luma signal of the current block in a horizontal direction and integer DCT can be
+   applied to a frequency transform method for the luma signal of the current block in a
+10 vertical direction at step S1940.      If the chroma signal of the current block has been
+   encoded in the LM, the frequency transform method for the luma signal of the current
+   block can be used to perform frequency transform on the residual picture of the
+   chroma signal.
+   [367]    If the chroma signal of the current block has not been encoded in the LM,
+15 integer DCT can be performed on the chroma signal of the current block in both
+   horizontal and vertical directions at step S1955.
+   [368]    In contrast, if the intra-prediction direction mode of the current block is 0 or is
+    11 or more and 25 or less at step S1930, integer DST can be applied to a frequency
+   transform method for the luma signal of the current block in both horizontal and
+20 vertical directions at step S1945.      If the chroma signal of the current block has been
+   encoded in the LM, the frequency transform method for the luma signal of the current
+   block can be used to perform frequency transform on the residual picture of the
+   chroma signal.      If the chroma signal of the current block has not been encoded in the
+   LM, integer DCT can be performed on the chroma signal of the current block in both
+25 horizontal and vertical directions at step S1955.
+
+                                                 57
+   [369]   In contrast, if the intra-prediction direction mode of the current block is 26 or
+   more and 34 or less at step S1935, integer DCT can be applied to a frequency
+   transform method for the luma signal of the current block in a horizontal direction and
+   integer DST can be applied to a frequency transform method for the luma signal of the
+ 5 current block in a vertical direction at step 1950.    If the chroma signal of the current
+   block has been encoded in the LM, a frequency transform method for the luma signal
+   of the current block can be used to perform frequency transform on the residual picture
+   of the chroma signal.     If the chroma signal of the current block has not been encoded
+   in the LM, integer DCT can be performed on the chroma signal of the current block in
+10 both horizontal and vertical directions at step S1955.
+   [370]   If the intra-prediction direction mode of the current block is not 26 or more and
+   34 or less at step S1935, integer DCT can be applied to a frequency transform method
+   for the residual pictures of the luma signal and the chroma signal of the current block
+   in both horizontal and vertical directions at step S1955.
+15 [371] A transform process for scaled transform coefficients into which the example
+   of FIG. 19 has been incorporated is as follows.
+   [372] A transform process for scaled transform coefficients into which the example
+   of FIG. 19 has been incorporated
+   [373]   In this case, the input is as follows.
+20 [374]   - The width of a current transform block: nW
+   [375]   - The height of the current transform block: nH
+   [376]   - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+   [377] An index for the luma signal and the chroma signal of a current block: cldx
+25
+
+                                               58
+   [378] -If cIdx is 0, it means a luma signal. If cIdx is 1 or cIdx is 2, it means a
+   chroma signal. Furthermore, if cIdx is 1, it means Cb in a chroma signal. If cIdx is
+   2, it means Cr in a chroma signal.
+   [379] In this case, the output is as follows.
+ 5 [380] An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+   [381] If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra' and a value of Log2(nW*nH) is 4, parameters horizTrType and
+   vertTrType according to Table 12 are used depending on intra-prediction direction
+10 modes for a luma signal and the parameters horizTrType and vertTrType according to
+   Table 12 are used depending on intra-prediction direction modes for the chroma signal
+   if an encoding mode for the chroma signal is Intra FromLuma (LM).            If not, the
+   parameters horizTrType and vertTrType are set to 0.
+   [382] <Table 12>
+15 [383]
+    IntraPredMode 0 1 2 3 4         5 6 7     8   9 10 11 12 13 14 15 16 17
+      vertTrType     1 0 0 0 0 0 0 0          0   0 0   1  1  1   1   1   1   1
+      horizTrType    1 0   1 1 1 1 1 1        1   1 1   1  1  1   1   1   1   1
+    IntraPredMode 18 19      20  21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType      I  I    I   I   I   I   I   I I   I  I  I   I   I   I   I   I
+      horizTrType     1  1    1   1   1   1   1   1 0   0  0 0   0    0  0   0   0
+   [384] An inverse transform process is performed on the scaled transform coefficients
+   using the parameters horizTrType and vertTrType value.     First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+20 parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+   inverse transform.
+
+                                                 59
+   [385]   Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 11 using the array.
+   [386]   <Equation 11>
+   [387]   gij =  Clip3(-32768,32767,(ej+64)>>7)
+ 5 [388]   Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+   the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+   [389]   Next, an array 'nWxnH array r' for the residual signals is set based on cldx as
+   in Equation 12.
+10 [390]   <Equation 12>
+   [3911   rij = (fij+(l <<(shift-1)))>>shift
+   [392]   Here, when cldx is 0, shift   =  20 - BitDepthy.  When cldx is not 0, shift = 20
+   BitDepthc.      BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+   current picture.
+15 [393]   The present embodiment can also be applied to various cases, such as 1 and 2
+   below, in addition to a case where a current chroma block has been encoded in
+   IntraFromLuma (LM).
+   [394]    1.   In predicting a chroma block, the present embodiment can be applied to all
+   methods of multiplying a reconstructed luma signal block by weight and adding an
+20 offset to a result of the multiplication.
+   [395]   2.    In predicting a chroma block, the present embodiment can be applied to all
+   methods of predicting a chroma block using a template shift for reconstructed luma
+   signal and chroma signal blocks.           Here, the template shift is used to derive a
+   correlation between a luma signal and a chroma signal.
+25 [396]   In addition, the present embodiment can be applied in various ways.
+
+                                                60
+   [397]   [Embodiment 5] A method and apparatus for selectively deriving a frequency
+   transform method for the residual picture of a chroma signal depending on an intra
+   prediction direction mode
+   [398]   FIG. 20 is a flowchart illustrating an example of a method of selectively
+ 5 deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode according to the present embodiment.
+   [399]   Referring to FIG. 20, first, a current block has been subjected to intra-frame
+   encoding 'Intra', and whether or not the current block has a 4x4 size (trafoSize (or
+   iWidth)   ==  4) is determined at step S2010.      First, if the current block has been
+10 subjected to intra-frame encoding 'Intra' and the current block has a 4x4 size
+   (trafoSize (or iWidth)    ==   4), integer DST or integer DCT can be applied to a
+   frequency transform method for the current block.      If the current block does not have
+   a 4x4 size (trafoSize (or iWidth)   ==  4), DCT can be applied to a frequency transform
+   method for the current block at step S2065.
+15 [400]   Next, if the current block is a luma block or a chroma block and an intra
+   prediction direction mode for the chroma block is the LM at step S2015, an intra
+   prediction direction mode 'IntraPredMode' for the luma signal is obtained at step
+   S2020.     Here, the intra-prediction direction mode for the luma signal of the current
+   block can be used to derive a frequency transform method for the residual pictures of
+20 the luma signal and the chroma signal.
+   [401]   If an intra-prediction direction mode for the chroma block is not the LM at step
+   S2015, whether or not the chroma block is the DM is determined at step S2025.
+   [402]   If the current block is the chroma block and is a DM block, DCT can be
+   applied to a frequency transform method for the current block at step S2065.        If the
+25 current block is the chroma block, but is not a DM block, the intra-prediction direction
+
+                                                61
+   mode for the chroma signal can be used to derive a frequency transform method for
+   the residual picture of the chroma signal at step S2030.
+   [403]   Here, if the chroma block has been encoded in DM, DST, DCT, or other
+   frequency transform methods can be applied to an intra-prediction direction mode
+ 5 corresponding to the EM (e.g., a planar mode PLANAR, a mean mode DC, a
+   horizontal mode HOR, a vertical mode VER, or a mode located at an eighth place in a
+   vertical direction (e.g., Ver+8 or No. 34 mode)), from the DMs.
+   [404] Next, if the intra-prediction direction mode for the current block (i.e., the luma
+   and chroma signal blocks) is 2 or more and 10 or less at step S2035, integer DST can
+10 be applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in a horizontal direction and integer DCT can be applied to a
+   frequency transform method for the current block (i.e., the luma and the chroma signal
+   blocks) in a vertical direction at step S2050.
+   [405]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+15 luma and chroma signal blocks) is 0 (PLANAR) or is 11 or more and 25 or less at step
+   S2040, integer DST can be applied to a frequency transform method for the current
+   block (i.e., the luma and chroma signal blocks) in both horizontal and vertical
+   directions at step S2055.
+   [406]   In contrast, if the intra-prediction direction mode for the current block (i.e., the
+20 luma and chroma signal blocks) is 26 or more and 34 or less at step S2045, integer
+   DCT can be applied to a frequency transform method for the current block (i.e., the
+   luma and chroma signal blocks) in a horizontal direction and integer DST can be
+   applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in a vertical direction at step S2060.
+25
+
+                                              62
+   [407]   If the intra-prediction direction mode for the current block (i.e., the luma and
+   chroma signal blocks) is not 26 or more and 34 or less at step S2045, integer DCT can
+   be applied to a frequency transform method for the current block (i.e., the luma and
+   chroma signal blocks) in both horizontal and vertical directions at step S2064.
+ 5 [408]   The method of selectively applying a frequency transform method can be
+   applied in various ways as in any one of 1 to 3 below.
+   [409]   1. If a chroma block has been encoded in DM, DST, DCT, or other frequency
+   transform methods can be applied to only an intra-prediction direction mode
+   corresponding to the EM (planar mode PLANAR, a mean mode DC, a horizontal
+10 mode HOR, a vertical mode VER, or a mode located at an eighth place in a vertical
+   direction (Ver+8 or No. 34 mode)), from among the DMs.
+   [410]   2.   If a chroma block has been encoded in the LM, DST, DCT, or other
+   frequency transform methods can be applied to only an intra-prediction direction mode
+   corresponding to the EM (planar mode PLANAR, a mean mode DC, a horizontal
+15 mode HOR, a vertical mode VER, or a mode located at an eighth place in a vertical
+   direction (Ver+8 or No. 34 mode)), from among intra-prediction direction modes
+   derived from a luma signal.
+   [411]   3.   Only when an intra-prediction direction mode is PLANAR or DC, DST,
+   DCT, or other frequency transform methods can be selectively applied.            In other
+20 modes, DST, DCT, or other frequency transform methods can be fixedly applied.          In
+   another embodiment, the reverse is possible.
+   [412]   In addition, a frequency transform method can be derived in various ways.
+   [413] A method of performing the transform process for the scaled transform
+   coefficients by incorporating the method of FIG. 20 is as follows.
+25
+
+                                                 63
+   [414]   A transform process for scaled transform coefficients into which the example
+   of FIG. 20 has been incorporated
+   [415]   In this case, the input is as follows.
+   [416]   - The width of a current transform block: nW
+ 5 [417]   - The height of the current transform block: nH
+   [418]   - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+   [419]   An index for the luma signal and the chroma signal of a current block: cldx
+   [420]   -If cldx is 0, it means a luma signal.        If cldx is 1 or cldx is 2, it means a
+10 chroma signal.     Furthermore, if cldx is 1, it means Cb in a chroma signal.      If cldx is
+   2, it means Cr in a chroma signal.
+   [421]   In this case, the output is as follows.
+   [422]   An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+15 [423]   If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra'     and a value of Log2(nW*nH) is 4, parameters horizTrType and
+   vertTrType according to Table 13 are used depending on intra-prediction direction
+   modes for a luma signal.        In the case of a chroma signal, if the intra-prediction
+   encoding mode of the chroma signal is smaller than 4, the parameters horizTrType and
+20 vertTrType according to Table 13 are used depending on intra-prediction direction
+   modes for the chroma signal.       In contrast, if an encoding mode for the chroma signal
+   is IntraFromLuma (LM), the parameters horizTrType and vertTrType according to
+   Table 13 are used depending on intra-prediction direction modes for a luma signal.         If
+   the encoding mode for the chroma signal is not IntraFromLuma (LM), the parameters
+25 horizTrType and vertTrType are set to 0.
+
+                                              64
+   [424] <Table 13>
+   [425]
+    IntraPredMode 0 1 2 3 4 5 6 7            8   9 10 11  12 13 14 15 16 17
+      vertTrType      1 0 0 0 0 0 0 0        0   0  0   1  1  1    1   1   1   1
+     horizTrType      1 0    1 1 1 1 1 1     1   1  1   1  1  1    1   1   1   1
+    IntraPredMode 18      19  20  21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType       I   I   I   I  I I     I I I     I  I I     I I     I I    I
+     horizTrType       1  1    1   1  1 1    1   1 0    0 0   0   0    0   0   0  0
+   [426] An inverse transform process is performed on the scaled transform coefficients
+ 5 using the parameters horizTrType and vertTrType value.      First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+   parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+   inverse transform.
+10 [427] Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 13 using the array.
+   [428] <Equation 13>
+   [429] gij = Clip3(-32768,32767,(ej+64)>>7)
+   [430] Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+15 the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+   [431] Next, an array 'nWxnH array r' for the residual signals is set based on cldx as
+   in Equation 14.
+   [432] <Equation 14>
+20 [433] rij = (fij+(1<<(shift-1)))>>shift
+   [434] Here, when cldx is 0, shift   = 20 - BitDepthy.  When cldx is not 0, shift = 20
+   BitDepthc.     BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+
+                                                65
+   current picture.
+   [435]   FIG. 21 is a flowchart illustrating another example of a method of selectively
+   deriving a frequency transform method for the residual picture of a chroma signal
+   based on an intra-prediction direction mode according to the present embodiment.
+ 5 [436]   Referring to FIG. 21, first, if a current block has not been subjected to intra
+   frame encoding 'Intra' at step S2105, integer transform or integer DCT can be applied
+   to frequency transform methods for the luma signal and the chroma signal of the
+   current block at step S2160.
+   [437]   If the current block has been subjected to intra-frame encoding 'Intra', whether
+10 or not the current block is a luma signal block and the encoding mode of the current
+   block is the LM is determined at step S21 10.
+   [438]   If, as a result of the determination, it is determined that the current block is not
+   a luma signal and the encoding mode of the current block is not the LM, an intra
+   prediction direction mode for the chroma signal is obtained at step S2120.          If, as a
+15 result of the determination, it is determined that the current block is a luma signal and
+   the encoding mode of the current block is the LM, an intra-prediction direction mode
+   for a luma signal is obtained at step S2115.
+   [439]   Here, the intra-prediction direction mode for the luma signal of the current
+   block can be used to derive a frequency transform method for the residual picture of
+20 the luma signal.     Here, the intra-prediction direction mode for the chroma signal of
+   the current block can be used to derive a frequency transform method for the residual
+   picture of the chroma signal.
+   [440]   Furthermore, if the chroma signal of the current block has been encoded in the
+   LM, the intra-prediction direction mode for the luma signal of the current block can be
+25 used to derive a frequency transform method for the residual picture of the chroma
+
+                                                 66
+   signal.
+   [441]    Next, whether or not the current block has a 4x4 size (iWidth                 ==  4) is
+   determined at step S2125.        If, as a result of the determination, it is determined that
+   the current block does not have a 4x4 size (iWidth       ==   4), integer transform or integer
+ 5 DCT can be applied to frequency transform methods for the luma signal and the
+   chroma signal of the current block at step S2160.        If, as a result of the determination,
+   it is determined that the current block has a 4x4 size (iWidth      ==  4), the intra-prediction
+   direction mode of the current block is checked.
+   [442]    Here, when deriving a frequency transform method for the luma signal,
+10 IntraPredMode(C) is changed into IntraPredMode (i.e., an intra-prediction direction
+   mode for the luma signal).         When deriving a frequency transform method for the
+   chroma signal, IntraPredMode(C) is changed into IntraPredModeC (i.e., an intra
+   prediction direction mode for the chroma signal).
+   [443]    If the intra-prediction direction mode of the current block is 2 or more and 10
+15 or less, at step S2130), integer DST can be applied to a frequency transform method
+   for the current block in a horizontal direction and integer DCT can be applied to a
+   frequency transform method for the current block in a vertical direction at step S2145.
+   [444]    In contrast, if the intra-prediction direction mode of the current block is 0 or is
+    11 or more and 25 or less at step S2135, integer DST can be applied to a frequency
+20 transform method for the current block in both horizontal and vertical directions at
+   step S2150.
+   [445]    In contrast, if the intra-prediction direction mode of the current block is 26 or
+   more and 34 or less at step S2140, integer DCT can be applied to a frequency
+   transform method for the current block in a horizontal direction and integer DST can
+25 be applied to a frequency transform method for the current block in a vertical direction
+
+                                                  67
+   at step S2155.
+   [446]    If the intra-prediction direction mode of the current block is not 26 or more and
+   34 or less at step S2140, integer DCT can be applied to a frequency transform method
+   for the residual pictures of the luma signal and the chroma signal of the current block
+ 5 in both horizontal and vertical directions at step S2160.
+   [447]   A method of incorporating the method according to the example of FIG. 21
+   into a transform process for scaled transform coefficients is as follows.
+   [448]   A transform process for scaled transform coefficients into which the example
+   of FIG. 21 has been incorporated
+10 [449]    In this case, the input is as follows.
+   [450]    - The width of a current transform block: nW
+   [451]    - The height of the current transform block: nH
+   [452]    - An array of scaled transform coefficients having an element dij: (nWxnH)
+   array d
+15 [453]   An index for the luma signal and the chroma signal of a current block: cldx
+   [454]    -If cldx is 0, it means a luma signal.     If cldx is 1 or cldx is 2, it means a
+   chroma signal.      Furthermore, if cldx is 1, it means Cb in a chroma signal.    If cldx is
+   2, it means Cr in a chroma signal.
+   [455]    In this case, the output is as follows.
+20 [456]   An array for a residual signal obtained by inversely transforming the scaled
+   transform coefficients: (nWxnH) array r
+   [457]    If an encoding mode 'PredMode' for the current block is an intra-prediction
+   mode 'Intra'      and a value of Log2(nW*nH) is 4, parameters horizTrType and
+   vertTrType according to Table 14 are used depending on intra-prediction direction
+25 modes for a luma signal.            In the case of the chroma signal, the parameters
+
+                                              68
+   horizTrType and vertTrType according to Table 14 are used depending on an intra
+   prediction direction mode for a chroma signal. If an encoding mode for the chroma
+   signal is IntraFromLuma (LM), the parameters horizTrType and vertTrType
+   according to Table 14 are used depending on an intra-prediction direction mode for the
+ 5 luma signal. If an encoding mode for the chroma signal is not IntraFromLuma
+   (LM), the parameters horizTrType and vertTrType are set to 0.
+   [458] <Table 14>
+   [459]
+    IntraPredMode 0 1 2 3 4 5 6 7            8   9 10 11 12 13 14 15 16 17
+      vertTrType      1 0 0 0 0 0 0 0        0   0 0   1  1   1   1   1   1   1
+      horizTrType     1 0   1 1 1 1 1 1      1   1  1  1  1   1   1   1   1   1
+    IntraPredMode 18 19       20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+      vertTrType       1  I    1  I 1    I    I 1   1 1   I   I 1 1       I   I I
+      horizTrType      1  1    1  1 1    1   1 1 0 0      0   0 0 0       0 0    0
+10 [460] An inverse transform process is performed on the scaled transform coefficients
+   using the parameters horizTrType and vertTrType value.     First, the sizes nW and nH
+   and scaled transform coefficients array 'nWxnH array d' of the current block and the
+   parameter horizTrType are received, 1-D inverse transform is performed in a
+   horizontal direction, and an array 'nWxnH array e' is output as a result of the 1-D
+15 inverse transform.
+   [461] Next, an array 'nWxnH array e' is received, and an array 'nWxnH array g' is
+   derived as in Equation 15 using the array.
+   [462] <Equation 15>
+   [463] gij = Clip3(-32768,32767,(ej+64)>>7)
+20 [464] Next, the sizes nW and nH and array 'nWxnH array g' of the current block and
+   the parameter vertTrType are received, and 1-D inverse transform is performed in a
+   vertical direction.
+
+                                                69
+   [465]   Next, an array 'nWxnH array r' for the residual signals is set based on cldx as
+   in Equation 16.
+   [466]   <Equation 16>
+   [4671   rij = (fij+(1<<(shift-1)))>>shift
+ 5 [468]   Here, when cldx is 0, shift   = 20 - BitDepthy. When cldx is not 0, shift = 20
+   BitDepthc.      BitDepth indicates the number of bits (e.g., 8 bits) of a sample for a
+   current picture.
+   [469]   The above-described methods can be differently applied to an application
+   scope depending on the size of all blocks, a CU depth, or a TU depth.
+10 [470]   A parameter (i.e., information about the size or depth) used to determine the
+   application scope as described above may be set so that a predetermined value is used
+   in an encoder and a decoder, or a predetermined value may be used depending on a
+   profile or level.     For example, when an encoder writes a parameter value in a bit
+   stream, a decoder may obtain a value from the bit stream and use the value.
+15 [471]   If the application scope is different depending on a CU depth, one of the
+   following 3 methods can be used as illustrated in Table 15: A method A) of applying
+   the application scope to only a depth equal to or greater than a specific depth, a
+   method B) of applying the application scope to only a depth equal to or smaller than a
+   specific depth, and a method C) of applying the application scope to only a specific
+20 depth.
+   [472]   Table 15 shows an example of methods of determining the application scope in
+   which the methods of the present invention is applied when a specific CU (or TU)
+   depth is 2.      In Table 15, '0' indicates that the application scope is applied to a
+   corresponding depth, and 'X' indicates that the application scope is not applied to a
+25 corresponding depth.
+
+                                               70
+   [473]    <Table 15>
+   [474]
+     CU (OR TU) DEPTH INDICATING             METHOD A        METHOD B         METHOD C
+           APPLICATION SCOPE
+                       0                          X               0                 X
+                       1                          X               0                 X
+                       2                          0               0                 0
+                       3                          0               X                 X
+                       4                          0               X                 X
+   [475]    If the methods of the present invention are not applied to all depths, it may be
+   indicated using a specific indicator (or flag) or may be represented by signaling a
+ 5 value that is 1 greater than a maximum value of a CU depth using as a CU depth value
+   indicative of the application scope.
+   [476]    Furthermore, the above-described methods can also be applied to a case where
+   a luma signal has a different resolution from a chroma signal.
+   [477]    For example, assuming that the size of a chroma signal is 1/4 of the size of a
+10 luma signal (e.g., a luma signal has a 416x240 size and a chroma signal has a 208x120
+   size), a luma signal 8x8 block is equal to a chroma signal 4x4 block.
+   [478]    FIG. 22 shows an example of a difference in the resolution between a luma
+   block and a chroma block.      The example of FIG. 22 illustrates that the luma signal is
+   an 8x8 block 2210 and the chroma signal is a 4x4 block 2220.
+15 [479]    In the example of FIG. 22, the luma signal 2210 can include four 4x4 blocks,
+   and each of the 4x4 blocks can have an intra-prediction direction mode.       In contrast,
+   the chroma signal 2220 may not be partitioned into 2x2 blocks.
+
+                                              71
+   [480]   In this case, the chroma signal can have one intra-prediction direction mode for
+   the 4x4 block.     Here, if the chroma signal has been encoded in IntraFromLuma
+   (LM) (or if the chroma signal has been encoded in DM (i.e., when an intra-prediction
+   direction mode for the luma signal is used as an intra-prediction direction mode for the
+ 5 chroma signal without change)), one of the four 4x4 blocks can be used as the intra
+   prediction direction mode for the luma signal used to derive a frequency transform
+   method for the residual picture of the chroma signal.
+   [481]   In order to selectively apply a frequency transform method to the residual
+   picture of the chroma signal, one of the following 1 to 4 can be applied to a method of
+10 deriving an intra-prediction direction in various ways.
+   [482]    1. The intra-prediction direction mode in the up-left block of the luma signal
+   block can be used.
+   [483]   2. The intra-prediction direction mode in the up-right, down-left, or down-right
+   block of the luma signal block can be used.
+15 [484]   3. The mean value or middle value of the four luma signal blocks can be used.
+   [485]   4.   The mean value or middle value using intra-prediction direction modes for
+   the four luma signal blocks of a current block and chroma signal blocks neighboring
+   the current block can be used.
+   [486]   In addition, an intra-prediction direction mode for the chroma signal can be
+20 derived using various methods.
+   [487]   FIG. 23 is another example illustrating a difference in the resolution between a
+   luma block and a chroma block.
+   [488]   As in the example of FIG. 23, a luma signal 2310 can include one 16x16 block
+   and can have one intra-prediction mode.       In contrast, a chroma signal 2320 can be
+25 partitioned into four 4x4 blocks.     Here, each of the 4x4 blocks can have an intra-
+
+                                                72
+   prediction direction mode.
+   [489]     Here, if the chroma signal has been encoded in IntraFromLuma (LM) (or if
+   the chroma signal has been encoded in DM (i.e., when an intra-prediction direction
+   mode for the luma signal is used as an intra-prediction direction mode for the chroma
+ 5 signal without change)), an intra-prediction direction mode for the one luma signal can
+   be used to derive a frequency transform method for the residual pictures of each
+   chroma signal.        In another embodiment, in order to derive the frequency transform
+   method for the residual pictures of the chroma signal block, intra-prediction direction
+   modes may be derived from blocks (i.e., luma blocks or chroma blocks) neighboring a
+10 current block may be derived and used.
+   [490]     Furthermore, the above-described method can be differently applied to a
+   chroma block depending on the size of a luma block.               Furthermore, the above
+   described method can be differently applied to a luma signal picture and a chroma
+   signal picture.      Furthermore, a frequency transform method can be separately applied
+15 to a horizontal direction and a vertical direction.
+   [491]     Table 16 schematically illustrates a combination of the methods.
+   [492]     <Table 16>
+   [4931
+     SIZE OF       SIZE OF CHROMA        LUMA     CHROMA    HORIZONT     VERTICAL   METHODS
+       LUMA              BLOCK          APPLIED   APPLIED      AL         APPLIED
+      BLOCK                                                  APPLIED
+    4(4x4, 4x2,          2(2x2)          OorX      OorX       O or X       OorX     A 1, 2,
+        2x4)        4(4x4, 4x2, 2x4)     OorX      OorX       O or X       OorX      B 1, 2,
+                  8(8x8, 8x4, 4x8, 2x8,                                             C 1, 2,
+                                         OorX      OorX       O or X       OorX
+                          etc.)
+
+                                               73
+                   16(16x16, 16x8, 4x16,                                          D 1, 2,
+                                         OorX     OorX       O or X     OorX
+                         2x16, etc.)
+                         32(32x32)       OorX     OorX       O or X     OorX       E 1, 2,.
+   8(8x8, 8x4,            2 (2x2)        OorX     OorX       O or X     OorX       F 1, 2,
+    2x8, etc.)        4(4x4, 4x2, 2x4)   OorX     OorX       O or X     OorX      G 1, 2,.
+                   8(8x8, 8x4, 4x8, 2x8,                                          H 1, 2,
+                                         OorX     OorX       O or X     OorX
+                            etc.)
+                   16(16x16, 16x8, 4x16,                                           11,2,..
+                                         OorX     OorX       O or X     OorX
+                         2x16, etc.)
+                         32(32x32)       OorX     OorX       O or X     OorX       J 1, 2,
+   16(16x16,              2 (2x2)        OorX     OorX       O or X     OorX       K 1, 2,
+  8x16, 4x16,         4(4x4, 4x2, 2x4)   OorX     OorX       O or X     OorX       L 1, 2,
+      etc.)        8(8x8, 8x4, 4x8, 2x8,                                          M 1, 2,
+                                         OorX     OorX       O or X     OorX
+                            etc.)
+                   16(16x16, 16x8, 4x16,                                          N 1, 2,
+                                         OorX     OorX       O or X     OorX
+                         2x16, etc.)
+                         32(32x32)       OorX     OorX       O or X     OorX      01, 2, .
+  [494]       In the modified methods of Table 16, the method 'G 1' is described below.     If
+  the size of a luma block is 8 (8x8, 8x4, 2x8, etc.) and the size of a chroma block is 4
+  (4x4, 4x2, 2x4), Embodiment 1 (G 1 - Embodiment 1), Embodiment 2-1, Embodiment
+  2-2 (G 1 - Embodiment 2-1 or Embodiment 2-2), and Embodiment 3 (G 1
+5 Embodiment 3) of this specification can be applied to a luma signal, a chroma signal, a
+  horizontal signal, and a vertical signal.
+  [495]       In the modified methods of Table 16, the method 'L 2' is described below.     If
+  the size of a luma block is 16 (16x16, 8x16, 4x16, etc.) and the size of a chroma block
+
+                                                74
+   is 4 (4x4, 4x2, 2x4), Embodiment 1 (L 2 - Embodiment 1), Embodiment 2-1 or
+   Embodiment 2-2 (L 2 - Embodiment 2-1 or Embodiment 2-2), and Embodiment 3 (L 2
+   - Embodiment 3) can be applied to a luma signal, a chroma signal, and a horizontal
+   signal and may not be applied to a vertical signal.
+ 5 [496]   Here, the above-described methods can be applied to various cases, such as 1
+   and 2 below, in addition to a case where a current chroma block has been encoded in
+   'IntraFromLuma' (LM).
+   [497]   1.   In predicting a chroma block, the above-described methods can be applied
+   to all methods of multiplying a reconstructed luma signal block by weight and adding
+10 an offset to a result of the multiplication.
+   [498]   2.   In predicting a chroma block, the above-described methods can be applied
+   to all methods of predicting a chroma block using a template shift for reconstructed
+   luma signal and chroma signal blocks.         Here, the template shift is used to derive a
+   correlation between a luma signal and a chroma signal.
+15 [499]   In addition, the above-described methods can be applied in various ways.
+   [500]   [Embodiment 6] A method and apparatus for integrally determining a
+   frequency transform method and a scanning method for a chroma signal
+   [501]   As described above, a scanning method for the residual signal (or residual
+   picture) of a chroma signal can be different depending on an intra-prediction direction
+20 mode for the chroma signal.
+   [502]   Furthermore, a frequency transform method for the residual signal (or residual
+   picture) of a chroma signal can be different depending on an intra-prediction direction
+   mode for the chroma signal.
+   [503]   A scanning method for the residual signal (or residual picture) of a chroma
+25 signal can have different encoding efficiency depending on a frequency transform
+
+                                              75
+   method for the residual signal of the chroma signal.     In contrast, a scanning method
+   and a frequency transform method for the residual signal (or residual picture) of a
+   chroma signal can be said to have a specific correlation because the two methods can
+   be different depending on an intra-prediction direction mode for the chroma signal.
+ 5 [504]   That is, a scanning method and a frequency transform method for the residual
+   signal of a chroma signal can have a correlation, and the two methods can be
+   integrated into an optimal combination.      Accordingly, the scanning methods for a
+   chroma signal in Embodiment 1 and Embodiment 2-1/Embodiment 2-2 and a
+   frequency transform method for Embodiment 3, Embodiment 4, and Embodiment 5
+10 can be integrally determined as in Table 17.
+   [505]   Table 17 shows an example of methods of integrally determining a scanning
+   method and a frequency transform method for the residual signal of a chroma signal
+   according to the present embodiment.
+   [506]   <Table 17>
+15 [5071
+              SCANNING METHOD FOR CHROMA                 FREQUENCY TRANSFORM
+                            SIGNAL                     METHOD FOR CHROMA SIGNAL
+                 EM           DM           LM            EM           DM           LM
+       A                 0                  X             0            X           0
+       B                                                  X            0
+       C                                                  0            0
+       D                                    0             0            X
+       E                                                  X            0
+       F                                                  0            0
+       0                                    X             0            X
+
+                                             76
+        P                                                X            0
+       Q                                                 0            0
+        R                                   0            0            X
+       S                                                 X            0
+       T                                                 0            0
+   [508]   Table 17 shows combinations of methods of integrating determining a scanning
+   method and a frequency transform method for the residual signal of a chroma signal.
+   Here, EM, DM, and LM show methods of encoding intra-prediction direction modes
+ 5 for the chroma signal.
+   [509]   A mode for a chroma signal that is derived by applying an intra-prediction
+   direction mode for a luma signal to an intra-prediction direction mode for the chroma
+   signal without change is a Derived Mode (DM).         A mode for a chroma signal in
+   which an intra-prediction direction mode is actually encoded is an Explicit Mode (EM).
+10 The intra-prediction direction modes of a chroma signal that is encoded in the EM
+   include a planar mode PLANAR, a mean mode DC, a horizontal mode HOR, a
+   vertical mode VER, and a mode located at an eighth place in a vertical direction (i.e.,
+   Ver+8 or No. 34 mode).
+   [510]   Finally, a mode in which a chroma signal is predicted from a reconstructed
+15 luma signal is IntraFromLuma (LM).
+   [511]   'A', that is, an example of the combinations of Table 17, is described below.
+   In order to determine a frequency transform method for a chroma signal, only the EM
+   and the LM, from among the intra-prediction direction modes for the chroma signal,
+   are used, but the DM is not used.   A frequency transform method is determined using
+20 the EM and the LM (e.g., Embodiments 3, 4, 5).          Next, in order to determine a
+
+                                               77
+   scanning method for transformed coefficients, a scanning method (e.g., Embodiments
+    1 and 2) is determined using the EM and the DM, from among the intra-prediction
+   direction modes for the chroma signal.
+   [512]    In this case, a case where a frequency transform method is derived using the
+ 5 DM, from among the intra-prediction direction modes for the chroma signal, may be
+   excluded by taking encoding efficiency into consideration.       For example, in case
+   where encoding is performed in the DM, if an intra-prediction direction mode for a
+   chroma signal is different from an intra-prediction direction mode for a luma signal
+   and the intra-prediction direction mode for the chroma signal is not present in the EM
+10 (e.g., a planar mode PLANAR, a mean mode DC, a horizontal mode HOR, a vertical
+   mode VER, and a mode located at an eighth place in a vertical direction (Ver+8 or No.
+   34 mode)), the accuracy of the intra-prediction direction mode for the chroma signal
+   encoded in the DM may be deteriorated because the chroma signal is inevitably
+   encoded in the DM.         For this reason, the DM may not be used to determine a
+15 frequency transform method.
+   [513]    'D', that is, another example of the combinations of Table 17, is described
+   below.     In order to determine a frequency transform method for a chroma signal, only
+   the EM and the LM, from among the intra-prediction direction modes for the chroma
+   signal, are used, but the DM is not used.           A frequency transform method is
+20 determined using the EM and the LM (e.g., Embodiments 3, 4, and 5).      Next, in order
+   to determine a scanning method for transformed coefficients, a scanning method is
+   determined using all the EM, DM, and LM, from among the intra-prediction direction
+   modes for the chroma signal, (e.g., Embodiments 1 and 2).
+   [514]    In this case, a case where a scanning method is derived using the LM, from
+25 among the intra-prediction direction modes for the chroma signal, may be included by
+
+                                              78
+   taking encoding efficiency into consideration.        As described in connection with
+   Embodiments 1 and 2, a chroma signal encoded in the LM can have a correlation with
+   a luma signal.     Accordingly, an intra-prediction direction mode for a chroma signal
+   encoded in the LM can be almost the same as an intra-prediction direction mode of a
+ 5 luma signal.    As a result, the intra-prediction direction mode for the chroma signal
+   encoded in the LM can be used to determine a scanning method because the intra
+   prediction direction mode for the chroma signal has a similar characteristic to the
+   intra-prediction direction mode for the luma signal.
+   [515]   'T', that is, yet another example of the combinations of Table 17, is described
+10 below.    In order to determine a frequency transform method for a chroma signal, all
+   the EM, DM, and LM, from among the intra-prediction direction modes for the
+   chroma signals, are used.     A frequency transform method is determined using the EM,
+   DM, and LM (e.g., Embodiments 3, 4, and 5).       Next, in order to determine a scanning
+   method for transformed coefficients, a scanning method (e.g., Embodiments 1 and 2)
+15 is determined using all the EM, DM, and LM, from among the intra-prediction
+   direction modes for the chroma signal.
+   [516]   As yet further another example of the combinations of Table 17, if the 'T'
+   method is modified, the EM, DM, and LM, from among the intra-prediction direction
+   mode for a chroma signal, can be used to determine a frequency transform method for
+20 the chroma signal.      Here, a frequency transform method can be determined (e.g.,
+   Embodiments 3, 4, and 5) only when an intra-prediction direction mode for a real and
+   reconstructed chroma signal, from among the EM, DM, and LM, is the EM (e.g., a
+   planar mode PLANAR, a mean mode DC, a horizontal mode HOR, a vertical mode
+   VER, or a mode located at an eighth place in a vertical direction (Ver+8 or No. 34
+25 mode)).    Furthermore, all the EM, DM, and LM can be used to determine a scanning
+
+                                                79
+   method for transformed coefficients.      Here, a scanning method (e.g., Embodiments 1
+   and 2) can be used only when an intra-prediction direction mode for a real and
+   reconstructed chroma signal, from among the EM, DM, and LM, is the EM (e.g., a
+   planar mode PLANAR, a mean mode DC, a horizontal mode HOR, a vertical mode
+ 5 VER, or a mode located at an eighth place in a vertical direction (Ver+8 or No. 34
+   mode)).
+   [517]   [Embodiment 7] A method and apparatus for integrating tables for determining
+   a frequency transform method and a scanning method for a chroma signal
+   [518]   It can be said that a scanning method and a frequency transform method for the
+10 residual signal (or residual picture) of a chroma signal have a close correlation because
+   the two methods can be different depending on an intra-prediction direction mode for
+   the chroma signal.
+   [519]   Therefore, in the present embodiment, tables used to determine the two
+   methods can be integrated and used depending on an intra-prediction direction mode.
+15 [520]   Table 18 shows an example of frequency transform methods and scanning
+   methods derived based on intra-prediction direction modes according to the present
+   embodiment.
+
+                                          80
+   [521]  <Table 18>
+   [522]
+           A              2~5  6~9   10 11~   15~  18   19~21   22~   26   27~  31~
+                                         14    17                25         30   34
+        Vertical              DCT                  DST                      DST
+      Frequency
+  Transform Method
+      Horizontal              DST                                           DCT
+      Frequency
+  Transform Method
+  SCANNING METHOD        DIAG       VER            DIAG              HOR        DIAG
+   [523]  Furthermore, Table 19 shows another example of frequency transform methods
+   and scanning methods that are derived based on intra-prediction direction modes
+5  according to the present embodiment.
+
+                                           81
+   [524]   <Table 19>
+   [525]
+            B            2~5   6~9   10  11~   15~    18   19~21   22~   26  27~   31~
+                                          14    17                  25        30    34
+        Vertical        DST         DCT               DST               DST        DST
+       Frequency
+  Transform Method
+       Horizontal                   DST                                 DCT
+       Frequency
+  Transform Method
+  SCANNING METHOD       DIAG        VER               DIAG              HOR       DIAG
+   [526]   Table 20 shows yet another example of frequency transform methods and
+   scanning method that are derived based on intra-prediction direction modes according
+5  to the present embodiment.
+
+                                          82
+   [527]  <Table 20>
+   [528]
+           C              2~5   6~9  10 11~   15~  18   19~21   22~   26  27~  31~
+                                         14    17                25        30   34
+        Vertical         DCT        DCT             DCT              DST       DCT
+      Frequency
+  Transform Method
+      Horizontal                    DST                              DCT
+      Frequency
+  Transform Method
+  SCANNING METHOD        DIAG       VER            DIAG              HOR       DIAG
+   [529]  Table 21 shows yet further another example of frequency transform methods
+   and scanning methods that are derived based on intra-prediction direction modes
+5  according to the present embodiment.
+
+                                             83
+   [530]   <Table 21>
+   [5311
+                    H--     H-   H   H+(4)   H++(3)     D   V--(3)   V--   V   V+(4)  V++(4)
+         D           (4)    (4)                                      (4)
+                    2~5    6~9   10   11~      15~     18   19~21   22~   26    27~    31~
+                                       14       17                   25          30     34
+     Vertical            DCT                         DCT                          DST
+   Frequency
+   Transform
+     Method
+    Horizontal           DST                                                      DCT
+   Frequency
+   Transform
+     Method
+    SCANNING       DIAG          VER                 DIAG                 HOR          DIAG
+     METHOD
+   [532]   Tables 18 to 21 shows examples in which the tables of the frequency transform
+   methods and the scanning methods derived based on the intra-prediction direction
+ 5 modes are integrated.
+   [533]   For example, referring to Table 19, if an intra-prediction direction mode is 2~5,
+   DST is used as vertical and horizontal frequency transform methods and up-right
+   diagonal scanning DIAG is used as a scanning method.               If an intra-prediction
+   direction mode is 6~14, DCT is used as a vertical frequency transform method, DST is
+10 used as a horizontal frequency transform method, and VER (i.e., vertical) is used as a
+   scanning method.
+
+                                                84
+   [534]   If an intra-prediction direction mode is 15~21, DST is used as vertical and
+   horizontal frequency transform methods and DIAG (i.e., up-right diagonal scanning) is
+   used as a scanning method.       If an intra-prediction direction mode is 22~30, DST is
+   used as a vertical frequency transform method, DCT is used as a horizontal frequency
+ 5 transform method, and HOR (i.e., horizontal) is used as a scanning method.
+   [535]   If an intra-prediction direction mode is 31-34, DST is used as vertical and
+   horizontal frequency transform methods and DIAG (i.e., up-right diagonal) is used as
+   a scanning method.
+   [536]   If a frequency transform method and a scanning method are taken into
+10 consideration based on an intra-prediction direction mode as in Table 19, there is an
+   advantage in that unity can be implemented depending on VER and HOR unlike in
+   Table 18.
+   [537]   Here, the above-described methods can also be applied to a case 1 or 2 below
+   in addition to a case where a current chroma block has been encoded in the LM
+15 (IntraFromLuma).
+   [538]   1.   In predicting a chroma block, the above-described methods can be applied
+   to all methods of multiplying a reconstructed luma signal block by weight and adding
+   an offset to a result of the multiplication.
+   [539]   2.   In predicting a chroma block, the above-described methods can be applied
+20 to all methods of predicting a chroma block using a template shift for reconstructed
+   luma signal and chroma signal blocks.         Here, the template shift is used to derive a
+   correlation between a luma signal and a chroma signal.
+   [540]   In addition, the above-described methods can be applied in various ways.
+   [541]   FIG. 24 shows another example of an encoding apparatus according to the
+25 present invention.
+
+                                             85
+   [542]   Referring to FIG. 24, the encoding apparatus 2400 includes a prediction mode
+   specification module 2410 and a scanning module 2420.
+   [543]   The prediction mode specification module 2410 specifies a prediction mode
+   applied to a current block.   For example, the prediction mode specification module
+ 5 2410 can specify an intra-prediction mode that has been applied to the luma sample
+   and/or the chroma sample of a current block.
+   [544]   Here, the prediction mode specification module 2410 may be placed in front of
+   the intra-prediction module of FIG. 1 and configured to specify an intra-prediction
+   mode to be applied to a current block or may be placed in the rear of the intra
+10 prediction module and configured to output information indicative of an intra
+   prediction mode applied to a current block.
+   [545]   The intra-prediction mode is the same as that described with reference to FIG.
+   6.
+   [546]   The scanning module 2420 can scan the chroma signal and/or the luma signal
+15 of a current block.  Here, the scanning module 2420 can determine a scanning type to
+   be applied to the current block in response to an intra-prediction mode for the current
+   block.
+   [547]   A detailed method of determining a scanning type (or method) to be applied to
+   a current block has been described in detail in connection with the embodiments of
+20 this specification.
+   [548]   FIG. 25 shows another example of a decoding apparatus according to the
+   present invention.
+   [549]   Referring to FIG. 25, the decoding apparatus 2500 includes a prediction mode
+   specification module 2510 and a scanning module 2520.
+25
+
+                                               86
+   [550]    The prediction mode specification module 2510 specifies a prediction mode
+   applied to a current block.     For example, the prediction mode specification module
+   2510 can specify an intra-prediction mode applied to the luma sample and/or the
+   chroma sample of a current block.
+ 5 [551]    The intra-prediction mode is the same as that described with reference to FIG.
+   6.
+   [552]    The scanning module 2520 can scan the chroma signal and/or the luma signal
+   of a current block.    Here, the scanning module 2520 can determine a scanning type to
+   be applied to the current block in response to an intra-prediction mode for the current
+10 block.
+   [553]    A detailed method of determining a scanning type (or method) to be applied to
+   a current block has been described in detail in connection with the embodiments of
+   this specification.
+   [554]    In the above exemplary system, although the methods have been described
+15 based on the flowcharts in the form of a series of steps or blocks, the present invention
+   is not limited to the sequence of the steps, and some of the steps can be performed in a
+   different order from that of other steps or can be performed simultaneous to other steps.
+   Furthermore, the aforementioned embodiments include various examples.                 For
+   example, a combination of some embodiments should also be understood as an
+20 embodiment of the present invention.
+   [555]    Throughout the description and claims of this specification, the word
+   "comprise" and variations of the word, such as "comprising" and "comprises", is not
+   intended to exclude other additives, components, integers or steps.
+   [556]    The discussion of documents, acts, materials, devices, articles and the like is
+25 included in this specification solely for the purpose of providing a context for the
+
+                                           87
+present invention.   It is not suggested or represented that any or all of these matters
+formed part of the prior art base or were common general knowledge in the field
+relevant to the present invention as it existed before the priority date of each claim of
+this application.
+
+                                                88
+     The claims defining the invention are as follows:
+           1.         A video decoding method, comprising:
+           obtaining a prediction mode related to a current block from a video signal;
+ 5         obtaining prediction samples of the current block by performing intra prediction
+   on the current block based on the intra prediction mode;
+           scanning transform coefficients of the current block based on a scanning type of
+   the current block, the scanning type of the current block being determined based on a
+   direction of an intra-prediction mode of the current block;
+10         obtaining    dequantized  transform     coefficients  of the  current  block  by
+   dequantizing the transform coefficients;
+           obtaining residual samples of the current block by performing an inverse
+   transform on the dequantized transform coefficients, the inverse-transform being
+   performed in a horizontal direction and a vertical direction,
+15         wherein the inverse-transform is performed by using one of discrete cosine
+   transform (DCT) and discrete sine transform (DST), and
+           wherein when a size of the current block is 4x4, the DST is applied both in the
+   horizontal direction and the vertical direction regardless of the direction of the intra
+   prediction mode;
+20         reconstructing the current block using the residual samples and the prediction
+   samples; and
+           applying a deblocking filter on the reconstructed current block.
+
+                                               89
+           2.         The video decoding method of claim 1, wherein when the intra
+   prediction mode of the current block is in a range of 6 to 14, the scanning type is
+   determined to be a vertical scanning type.
+ 5         3.         The video decoding method of claim 1, wherein when the intra
+   prediction mode of the current block is in a range of 22 to 30, the scanning type is
+   determined to be a horizontal scanning type.
+           4.         The video decoding method of claim 1, wherein when the intra
+10 prediction mode of the current block is in a range other than 6 to 14 and 22 to 30, the
+   scanning type is determined to be the diagonal scanning type.
+           5.         A video encoding method, comprising:
+           scanning transform coefficients of a current block based on a scanning type of
+15 the current block, the scanning type of the current block being determined based on a
+   direction of an intra-prediction mode of the current block;
+           obtaining dequantized transform        coefficients   of the current block by
+   dequantizing the transform coefficients;
+           obtaining residual samples of the current block by performing an inverse
+20 transform on the dequantized transform coefficients, the inverse-transform being
+   performed in a horizontal direction and a vertical direction,
+           wherein the inverse-transform is performed by using one of discrete cosine
+   transform (DCT) and discrete sine transform (DST), and
+
+                                                90
+           wherein when a size of the current block is 4x4, the DST is applied both in the
+   horizontal direction and the vertical direction regardless of the direction of the intra
+   prediction mode;
+           reconstructing the current block using the residual samples and prediction
+ 5 samples of the current block; and
+           applying a deblocking filter on the reconstructed current block.
+           6.         A non-transitory   computer-readable     medium storing a bitstream
+   formed by a video encoding method, the method comprising:
+10         scanning transform coefficients of a current block based on a scanning type of
+   the current block, the scanning type of the current block being determined based on a
+   direction of an intra-prediction mode of the current block;
+           obtaining    dequantized  transform    coefficients   of the  current block  by
+   dequantizing the transform coefficients;
+15         obtaining residual samples of the current block by performing an inverse
+   transform on the dequantized transform coefficients, the inverse-transform being
+   performed in a horizontal direction and a vertical direction,
+           wherein the inverse-transform is performed by using one of discrete cosine
+   transform (DCT) and discrete sine transform (DST), and
+20         wherein when a size of the current block is 4x4, the DST is applied both in the
+   horizontal direction and the vertical direction regardless of the direction of the intra
+   prediction mode;
+           reconstructing the current block using the residual samples and prediction
+   samples of the current block; and
+25         applying a deblocking filter on the reconstructed current block.
+
+         <removed-apn>   <removed-date>
+FIG. 1
+                                    1/25
+
+         <removed-apn>   <removed-date>
+FIG. 2
+                                    2/25
+
+         <removed-apn>   <removed-date>
+FIG. 3
+                                    3/25
+
+                              4/25
+<removed-date>
+                      FIG. 4
+<removed-apn>
+               PU      PU             PU       PU
+              2Nx2N   2NxN           Nx2N      NxN
+               PU      PU               PU      PU
+              2NxnU   2NxnD            nLx2N   nRx2N
+
+<removed-apn>   <removed-date>
+                   FIG. 5
+                            5/25
+       510
+
+                                      6/25
+<removed-date>
+                             FIG. 6
+<removed-apn>
+              18   19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+              17
+              16
+              15
+              14
+              13
+              12
+              11
+              10
+               9
+               8                           0 : Intra_Planar
+               7                           1 : Intra_DC
+               6                          35 : Intra_FromLuma
+               5
+               4
+               3
+               2
+
+                                        7/25
+<removed-date>
+                               FIG. 7
+<removed-apn>
+                               Rec' L
+                                               Luma   2N
+              Rec c
+                      Chroma   N
+                        N                       2N
+                       (a)                      (b)
+
+                                                          8/25
+<removed-date>
+                                              FIG. 8
+<removed-apn>
+                                                                 SigGrpFlag
+                                                                 1110
+                                                                 1100
+                                                                 1100
+                                                                 0000
+                                          (a)
+              1   0   0   0   0   0   0   0   1   0   0   0
+              0   0   1   0   0   0   0   0   0   0   0   0
+              0   0   0   0   0   0   0   0   0   0   0   0
+              1   0   0   0   0   1   0   0   0   0   0   0
+              0   0   0   0   1   0   0   0
+              0   0   0   0   0   0   0   0
+              0   0   0   0   0   0   0   0
+              0   0   0   0   0   0   0   0
+              1   1   0   0   0   0   0   0
+              0   0   0   0   0   0   0
+              0   0   0   0   0   1
+              0   0   0   0   0
+              0   0   0   0
+              0   0   0   0
+              0   0   0   0
+              0   0   0   0
+                                          (b)
+
+                                              <removed-apn>     <removed-date>
+                           FIG. 9
+                    NO
+INTRA-PREDICTION?
+        YES
+IntraPredModeC!=    NO
+Intra_FormLuma?
+        YES
+                                                                           9/25
+ IntraPredMode           IntraPredMode
+     (C)>=6&&       NO     (C)>=22&&     NO
+ IntraPredMode           IntraPredMode
+     (C)<=14                 (C)<=30
+        YES                    YES
+ ScanType=VER            ScanType=HOR            ScanType=DIAG
+
+<removed-apn>   <removed-date>
+                   FIG. 10
+                             10/25
+
+          <removed-apn>   <removed-date>
+FIG. 11
+                                     11/25
+
+                                              <removed-apn>   <removed-date>
+                        FIG. 12
+                S1210
+                  NO
+   Intra?
+                S1220                         S1230
+IntraPredMode                 IntraPredMode
+                  NO                            NO
+   >=6&&                         >=22&&
+IntraPredMode                 IntraPredMode
+    <=14                          <=30                                   12/25
+  YES                             YES
+ScanType=VER                 ScanType=HOR
+
+<removed-apn>   <removed-date>
+                   FIG. 13
+                             13/25
+
+<removed-apn>   <removed-date>
+                   FIG. 14
+                             14/25
+
+<removed-apn>   <removed-date>
+                   FIG. 15
+                             15/25
+
+          <removed-apn>   <removed-date>
+FIG. 16
+                                     16/25
+
+          <removed-apn>   <removed-date>
+FIG. 17
+                                     17/25
+
+          <removed-apn>   <removed-date>
+FIG. 18
+                                     18/25
+
+          <removed-apn>   <removed-date>
+FIG. 19
+                                     19/25
+
+          <removed-apn>   <removed-date>
+FIG. 20
+                                     20/25
+
+          <removed-apn>   <removed-date>
+FIG. 21
+                                     21/25
+
+                             22/25
+<removed-date>
+                      FIG. 22
+<removed-apn>
+                      2210
+                  8
+                                             2220
+                                         4
+              8
+                                     4
+
+                               23/25
+<removed-date>
+                        FIG. 23
+<removed-apn>
+                        2310
+                   16
+                                               2320
+                                           8
+              16
+                                       8
+
+                                     24/25
+<removed-date>
+                          FIG. 24
+<removed-apn>
+                               2400
+                      ENCODNIG APPARATUS
+                 PREDICITON MODE             SCANNING
+              SPECIFICAITON MODULE            MODULE
+                       2410                    2420
+
+                                     25/25
+<removed-date>
+                          FIG. 25
+<removed-apn>
+                               2500
+                     ENCODNIG APPARATUS
+                 PREDICITON MODE             SCANNING
+              SPECIFICAITON MODULE            MODULE
+                       2510                    2520
+

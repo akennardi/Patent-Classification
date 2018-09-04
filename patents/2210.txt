@@ -1,0 +1,1579 @@
+                                                              Attorney Docket No.: 06283-0019WO1
+                             ABSTRACT OF THE DISCLOSURE
+          A computer-implemented method for simulating fluid flow using a lattice
+  Boltzmann (LB) approach and for solving scalar transport equations is described herein.
+  In addition to the lattice Boltzmann functions for fluid flow, a second set of distribution
+5 functions is introduced for transport scalars.
+                                                 49
+
+                                                              Attorney Docket No.: 06283-0019WO1
+                 COMPUTER SIMULATION OF PHYSICAL PROCESSES
+                                      CLAIM OF PRIORITY
+ 5          This application claims priority under 35 USC § 119(e) to U.S. Non-Provisional
+   Patent Application Serial No. 13/483,676, filed on May 30, 2012 and entitled
+   "COMPUTER SIMULATION OF PHYSICAL PROCESSES", which claims priority to
+   and the full benefit of U.S. Provisional Patent Application Serial No. 61/568,898, filed on
+   December 9, 2011 and entitled "COMPUTER SIMULATION OF PHYSICAL
+10 PROCESSES," the entire contents of which are hereby incorporated by reference.
+            The disclosure of the complete specification of Australian Patent Application No.
+   2012348365, as originally filed and as amended, is incorporated herein by reference.
+                                       TECHNICAL FIELD
+            This description relates to computer simulation of physical processes, such as
+15 fluid flow and acoustics.
+                                          BACKGROUND
+            High Reynolds number flow has been simulated by generating discretized
+20 solutions of the Navier-Stokes differential equations by performing high-precision
+   floating point arithmetic operations at each of many discrete spatial locations on variables
+   representing the macroscopic physical quantities (e.g., density, temperature, flow
+   velocity). Another approach replaces the differential equations with what is generally
+   known as lattice gas (or cellular) automata, in which the macroscopic-level simulation
+25 provided by solving the Navier-Stokes equations is replaced by a microscopic-level
+   model that performs operations on particles moving between sites on a lattice.
+                                            SUMMARY
+30          In general, this document describes techniques for simulating fluid flow using a
+   lattice Boltzmann (LB) approach and for solving scalar transport equations. In the
+   approaches described herein, in addition to the lattice Boltzmann functions for fluid flow,
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   a second set of distribution functions is introduced for transport scalars. This approach
+   fully recovers the macroscopic scalar transport equation satisfying an exact conservation
+   law. It is numerically stable and scalar diffusivity does not have a CFL-like stability
+   upper limit. With a sufficient lattice isotropy, numerical solutions are independent of grid
+ 5 orientations. A generalized boundary condition for scalars on arbitrary geometry is also
+   realized by a precise control of surface scalar flux.
+            In one general aspect, a computer-implemented method for simulating a fluid flow
+   on a computer, the method comprises simulating activity of a fluid in a volume, the
+   activity of the fluid in the volume being simulated so as to model movement of elements
+10 within the volume; storing, in a computer accessible memory, a set of state vectors for
+   voxels in the volume, each of the state vectors comprising a plurality of entries that
+   correspond to particular momentum states of possible momentum states at a
+   corresponding voxel; simulating a time evolution of a scalar quantity for the volume, with
+   the simulation of the scalar quantity being based at least in part on the fluid flow and
+15 indirectly solving a macroscopic scalar transport equation; and storing, in the computer
+   accessible memory, a set of scalar quantities for voxels in the volume, each of the scalar
+   quantities comprising an entry that corresponds to the simulated scalar quantity at a
+   corresponding voxel.
+            Implementations can include one or more of the following.
+20          Simulating the fluid flow can include simulating the fluid flow based in part on a
+   first set of discrete lattice speeds and simulating the time evolution of the scalar quantity
+   can include simulating the time evolution of the scalar quantity based in part on a second
+   set of discrete lattice speeds, the second set of discrete lattice speeds comprising fewer
+   lattice speeds than the first set of discrete lattice speeds.
+25          Simulating the fluid flow can include simulating the fluid flow based in part on a
+   first set of discrete lattice speeds and simulating the time evolution of the scalar quantity
+   can include simulating the time evolution of the scalar quantity based in part on a second
+   set of discrete lattice speeds, the second set of discrete lattice speeds comprising the same
+   lattice speeds than the first set of discrete lattice speeds.
+30          Simulating the time evolution of the scalar quantity can include simulating the
+   time evolution of the scalar quantity based in part on a collision operator in which only a
+   first order non-equilibrium moment contributes to scalar diffusion.
+                                                     2
+
+                                                               Attorney Docket No.: 06283-0019WO1
+            Simulating the time evolution of the scalar quantity can include simulating the
+   time evolution of the scalar quantity based in part on a collision operator that filters all
+   non-equilibrium moments of second order and higher.
+            Simulating the time evolution of the scalar quantity can include collecting
+ 5 incoming distributions from neighboring cells; weighting the incoming distributions;
+   applying a scalar algorithm to determine outgoing distributions; and propagating the
+   determined outgoing distributions.
+           The method can also include applying a zero net surface flux boundary condition
+   such that the incoming distributions are equal to the determined outgoing distributions.
+10         Determining the outgoing distributions can include determining the outgoing
+   distributions to provide a zero surface scalar flux.
+           The scalar quantity can be a scalar quantity selected from the group consisting of
+   temperature, concentration, and density.
+            Solving the macroscopic scalar transport equation can include satisfying an exact
+15 invariance on uniformity of the scalar.
+                                                                 a9PT + V - (puT) - 17 - pmVT
+           The macroscopic scalar transport equation can be
+           Simulating the time evolution of the scalar quantity can include simulating a
+   particle distribution function.
+           Simulating the time evolution of the scalar quantity can include determining
+20 macroscopic fluid dynamics by solving mesoscopic kinetic equations based at least in part
+   on the Boltzmann equation.
+           Simulating activity of the fluid in the volume can include performing interaction
+   operations on the state vectors, the interaction operations modeling interactions between
+   elements of different momentum states according to a model; and performing first move
+25 operations of the set of state vectors to reflect movement of elements to new voxels in the
+   volume according to the model.
+           Simulating the time evolution of the scalar quantity can include satisfying a local
+   energy conservation condition.
+           Satisfying the local energy conservation condition can include satisfying the local
+30 energy conservation condition in a fluid domain internal to the volume and at a boundary
+   of the volume.
+           In some additional aspects, a computer program product tangibly embodied in a
+   computer readable medium includes instructions that, when executed, simulate a physical
+                                                   3
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   process fluid flow. The computer program product is configured to cause a computer to
+   simulate activity of a fluid in a volume to model movement of elements within the
+   volume; store a set of state vectors for voxels in the volume, each of the state vectors
+   comprising a plurality of entries that correspond to particular momentum states of
+ 5 possible momentum states at a corresponding voxel; simulate a time evolution of a scalar
+   quantity for the volume, with the simulation of the scalar quantity being based at least in
+   part on the fluid flow and indirectly solving a macroscopic scalar transport equation; and
+   store a set of scalar quantities for voxels in the volume, each of the scalar quantities
+   comprising an entry that corresponds to the simulated scalar quantity at a corresponding
+10 voxel.
+            Implementations can include one or more of the following.
+            Causing the computer to simulate the fluid flow can include causing the computer
+   to simulate the fluid flow based in part on a first set of discrete lattice speeds and causing
+   the computer to simulate the time evolution of the scalar quantity can include causing the
+15 computer to simulate the time evolution of the scalar quantity based in part on a second
+   set of discrete lattice speeds, the second set of discrete lattice speeds comprising fewer
+   lattice speeds than the first set of discrete lattice speeds.
+            Causing the computer to simulate the fluid flow can include causing the computer
+   to simulate the fluid flow based in part on a first set of discrete lattice speeds and causing
+20 the computer to simulate the time evolution of the scalar quantity can include causing the
+   computer to simulate the time evolution of the scalar quantity based in part on a second
+   set of discrete lattice speeds, the second set of discrete lattice speeds comprising the same
+   lattice speeds than the first set of discrete lattice speeds.
+            Causing the computer to simulate the time evolution of the scalar quantity can
+25 include causing the computer to simulate the time evolution of the scalar quantity based
+   in part on a collision operator in which only a first order non-equilibrium moment
+   contributes to scalar diffusion.
+            Causing the computer to simulate the time evolution of the scalar quantity can
+   include causing the computer to simulate the time evolution of the scalar quantity based
+30 in part on a collision operator that filters all non-equilibrium moments of second order
+   and higher.
+            Causing the computer to simulate the time evolution of the scalar quantity can
+   include causing the computer to collect incoming distributions from neighboring cells;
+                                                     4
+
+                                                               Attorney Docket No.: 06283-0019WO1
+   weight the incoming distributions; apply a scalar algorithm to determine outgoing
+   distributions; and propagate the determined outgoing distributions.
+            The computer program product can be further configured to cause a computer to
+   apply a zero net surface flux boundary condition such that the incoming distributions are
+ 5 equal to the determined outgoing distributions.
+            Causing the computer to determine the outgoing distributions can include causing
+   the computer to determine the outgoing distributions to provide a zero surface scalar flux.
+            The scalar quantity can be a scalar quantity selected from the group consisting of
+   temperature, concentration, and density.
+10          Causing the computer to solve the macroscopic scalar transport equation can
+   include causing the computer to satisfy an exact invariance on uniformity of the scalar.
+                                                                  OP_ +V_   (puT) - 1 pmVT
+            The macroscopic scalar transport equation can be
+            Causing the computer to simulate the time evolution of the scalar quantity can
+   include causing the computer to simulate a particle distribution function.
+15          Causing the computer to simulate the time evolution of the scalar quantity can
+   include causing the computer to determine macroscopic fluid dynamics by solving
+   mesoscopic kinetic equations based at least in part on the Boltzmann equation.
+            Causing the computer to simulate activity of the fluid in the volume can include
+   causing the computer to perform interaction operations on the state vectors, the
+20 interaction operations modeling interactions between elements of different momentum
+   states according to a model; and perform first move operations of the set of state vectors
+   to reflect movement of elements to new voxels in the volume according to the model.
+            Causing the computer to simulate the time evolution of the scalar quantity can
+   include causing the computer to satisfy a local energy conservation condition.
+25          Causing the computer to satisfy the local energy conservation condition can
+   include causing the computer to satisfy the local energy conservation condition in a fluid
+   domain internal to the volume and at a boundary of the volume.
+            In some aspects, a computer system for simulating a physical process fluid flow,
+   is configured to simulate activity of a fluid in a volume to model movement of elements
+30 within the volume; store a set of state vectors for voxels in the volume, each of the state
+   vectors comprising a plurality of entries that correspond to particular momentum states of
+   possible momentum states at a corresponding voxel; simulate a time evolution of a scalar
+   quantity for the volume, with the simulation of the scalar quantity being based at least in
+                                                   5
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   part on the fluid flow and indirectly solving a macroscopic scalar transport equation; and
+   store a set of scalar quantities for voxels in the volume, each of the scalar quantities
+   comprising an entry that corresponds to the simulated scalar quantity at a corresponding
+   voxel.
+ 5         Implementations can include one or more of the following.
+           The configurations to simulate the fluid flow can include configurations to cause
+   the system to simulate the fluid flow based in part on a first set of discrete lattice speeds;
+   and the configurations to simulate the time evolution of the scalar quantity can include
+   configurations to simulate the time evolution of the scalar quantity based in part on a
+10 second set of discrete lattice speeds, the second set of discrete lattice speeds comprising
+   fewer lattice speeds than the first set of discrete lattice speeds.
+           The configurations to simulate the fluid flow can include configurations to
+   simulate the fluid flow based in part on a first set of discrete lattice speeds; and the
+   configurations simulate the time evolution of the scalar quantity can include
+15 configurations to simulate the time evolution of the scalar quantity based in part on a
+   second set of discrete lattice speeds, the second set of discrete lattice speeds comprising
+   the same lattice speeds than the first set of discrete lattice speeds.
+           The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to simulate the time evolution of the scalar quantity based in part
+20 on a collision operator in which only a first order non-equilibrium moment contributes to
+   scalar diffusion.
+           The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to simulate the time evolution of the scalar quantity based in part
+   on a collision operator that filters all non-equilibrium moments of second order and
+25 higher.
+           The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to collect incoming distributions from neighboring cells; weight
+   the incoming distributions; apply a scalar algorithm to determine outgoing distributions;
+   and propagate the determined outgoing distributions.
+30         The system can be further configured to apply a zero net surface flux boundary
+   condition such that the incoming distributions are equal to the determined outgoing
+   distributions.
+
+                                                               Attorney Docket No.: 06283-0019WO1
+           The configurations to determine the outgoing distributions can include
+   configurations to determine the outgoing distributions to provide a zero surface scalar
+   flux.
+           The scalar quantity can be a scalar quantity selected from the group consisting of
+ 5 temperature, concentration, and density.
+           The configurations to solve the macroscopic scalar transport equation can include
+   configurations to satisfy an exact invariance on uniformity of the scalar.
+                                                                 _9_+       (puT)- - pmVT
+           The macroscopic scalar transport equation can be
+10         The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to simulate a particle distribution function.
+           The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to determine macroscopic fluid dynamics by solving mesoscopic
+   kinetic equations based at least in part on the Boltzmann equation.
+15         The configurations to simulate activity of the fluid in the volume can include
+   configurations to perform interaction operations on the state vectors, the interaction
+   operations modeling interactions between elements of different momentum states
+   according to a model; and perform first move operations of the set of state vectors to
+   reflect movement of elements to new voxels in the volume according to the model.
+20         The configurations to simulate the time evolution of the scalar quantity can
+   include configurations to satisfy a local energy conservation condition.
+   The configurations to satisfy the local energy conservation condition can include
+   configurations to satisfy the local energy conservation condition in a fluid domain internal
+   to the volume and at a boundary of the volume.
+25         Implementations of the techniques discussed above may include a method or
+   process, a system or apparatus, or computer software on a computer-accessible medium.
+           The systems and techniques may be implemented using a lattice gas simulation
+   that employs a Lattice Boltzmann formulation. The traditional lattice gas simulation
+   assumes a limited number of particles at each lattice site, with the particles being
+30 represented by a short vector of bits. Each bit represents a particle moving in a particular
+   direction. For example, one bit in the vector might represent the presence (when set to 1)
+   or absence (when set to 0) of a particle moving along a particular direction. Such a vector
+   might have six bits, with, for example, the values 110000 indicating two particles moving
+                                                  7
+
+                                                                   Attorney Docket No.: 06283-0019WO1
+   in opposite directions along the X axis, and no particles moving along the Y and Z axes.
+   A set of collision rules governs the behavior of collisions between particles at each site
+   (e.g., a 110000 vector might become a 001100 vector, indicating that a collision between
+   the two particles moving along the X axis produced two particles moving away along the
+ 5 Y axis). The rules are implemented by supplying the state vector to a lookup table, which
+   performs a permutation on the bits (e.g., transforming the 110000 to 001100). Particles
+   are then moved to adjoining sites (e.g., the two particles moving along the Y axis would
+   be moved to neighboring sites to the left and right along the Y axis).
+            In an enhanced system, the state vector at each lattice site includes many more bits
+10 (e.g., 54 bits for subsonic flow) to provide variation in particle energy and movement
+   direction, and collision rules involving subsets of the full state vector are employed. In a
+   further enhanced system, more than a single particle is permitted to exist in each
+   momentum state at each lattice site, or voxel (these two terms are used interchangeably
+   throughout this document). For example, in an eight-bit implementation, 0-255 particles
+15 could be moving in a particular direction at a particular voxel. The state vector, instead of
+   being a set of bits, is a set of integers (e.g., a set of eight-bit bytes providing integers in
+   the range of 0 to 255), each of which represents the number of particles in a given state.
+             In a further enhancement, Lattice Boltzmann Methods (LBM) use a mesoscopic
+   representation of a fluid to simulate 3D unsteady compressible turbulent flow processes in
+20 complex geometries at a deeper level than possible with conventional computational fluid
+   dynamics ("CFD") approaches. A brief overview of LBM method is provided below.
+   Boltzmann-Level Mesoscopic Representation
+            It is well known in statistical physics that fluid systems can be represented by
+25 kinetic equations on the so-called "mesoscopic" level. On this level, the detailed motion
+   of individual particles need not be determined. Instead, properties of a fluid are
+   represented by the particle distribution functions defined using a single particle phase
+   space, f = f(x, v, t), where x is the spatial coordinate while v is the particle velocity
+   coordinate. The typical hydrodynamic quantities, such as mass, density, fluid velocity and
+30 temperature, are simple moments of the particle distribution function. The dynamics of
+   the particle distribution functions obeys a Boltzmann equation:
+             5,f + vVxf + F(x,t)Vf = C{f},                                                     Eq.(1)
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   where F(x, t) represents an external or self-consistently generated body-force at (x, t).
+   The collision term C represents interactions of particles of various velocities and
+   locations. It is important to stress that, without specifying a particular form for the
+   collision term C, the above Boltzmann equation is applicable to all fluid systems, and not
+ 5 just to the well-known situation of rarefied gases (as originally constructed by
+   Boltzmann).
+            Generally speaking, C includes a complicated multi-dimensional integral of two
+   point correlation functions. For the purpose of forming a closed system with distribution
+   functionsf alone as well as for efficient computational purposes, one of the most
+10 convenient and physically consistent forms is the well-known BGK operator. The BGK
+   operator is constructed according to the physical argument that, no matter what the details
+   of the collisions, the distribution function approaches a well-defined local equilibrium
+   given by {f"(x,v,     t)} via collisions:
+            C  = -   (f  - fq),                                                              Eq.(2)
+15 where the parameter t represents a characteristic relaxation time to equilibrium via
+   collisions. Dealing with particles (e.g., atoms or molecules) the relaxation time is
+   typically taken as a constant. In a "hybrid" (hydro-kinetic) representation, this relaxation
+   time is a function of hydrodynamic variables like rate of strain, turbulent kinetic energy
+   and others. Thus, a turbulent flow may be represented as a gas of turbulence particles
+20 ("eddies") with the locally determined characteristic properties.
+            Numerical solution of the Boltzmann-BGK equation has several computational
+   advantages over the solution of the Navier-Stokes equations. First, it may be immediately
+   recognized that there are no complicated nonlinear terms or higher order spatial
+   derivatives in the equation, and thus there is little issue concerning advection instability.
+25 At this level of description, the equation is local since there is no need to deal with
+   pressure, which offers considerable advantages for algorithm parallelization. Another
+   desirable feature of the linear advection operator, together with the fact that there is no
+   diffusive operator with second order spatial derivatives, is its ease in realizing physical
+   boundary conditions such as no-slip surface or slip-surface in a way that mimics how
+30 particles truly interact with solid surfaces in reality, rather than mathematical conditions
+   for fluid partial differential equations ("PDEs"). One of the direct benefits is that there is
+   no problem handling the movement of the interface on a solid surface, which helps to
+                                                   Q
+
+                                                                     Attorney Docket No.: 06283-0019WO1
+   enable lattice-Boltzmann based simulation software to successfully simulate complex
+   turbulent aerodynamics. In addition, certain physical properties from the boundary, such
+   as finite roughness surfaces, can also be incorporated in the force. Furthermore, the BGK
+   collision operator is purely local, while the calculation of the self-consistent body-force
+ 5 can be accomplished via near-neighbor information only. Consequently, computation of
+   the Boltzmann-BGK equation can be effectively adapted for parallel processing.
+   Lattice Boltzmann Formulation
+             Solving the continuum Boltzmann equation represents a significant challenge in
+10 that it entails numerical evaluation of an integral-differential equation in position and
+   velocity phase space. A great simplification took place when it was observed that not only
+   the positions but the velocity phase space could be discretized, which resulted in an
+   efficient numerical algorithm for solution of the Boltzmann equation. The hydrodynamic
+   quantities can be written in terms of simple sums that at most depend on nearest neighbor
+15 information. Even though historically the formulation of the lattice Boltzmann equation
+   was based on lattice gas models prescribing an evolution of particles on a discrete set of
+   velocities v(E {c,,i = 1,...,b}), this equation can be systematically derived from the first
+   principles as a discretization of the continuum Boltzmann equation. As a result, LBE does
+   not suffer from the well- known problems associated with the lattice gas approach.
+20 Therefore, instead of dealing with the continuum distribution function in phase space,
+   J(x,v,t), it is only necessary to track a finite set of discrete distributions,   f, (x, t) with the
+   subscript labeling the discrete velocity indices. The key advantage of dealing with this
+   kinetic equation instead of a macroscopic description is that the increased phase space of
+   the system is offset by the locality of the problem.
+25           Due to symmetry considerations, the set of velocity values are selected in such a
+   way that they form certain lattice structures when spanned in the configuration space. The
+   dynamics of such discrete systems obeys the LBE having the
+   formf, (x + c,, t + 1)-   f, (x, t) = C, (x, t), where the collision operator usually takes the
+   BGK form as described above. By proper choices of the equilibrium distribution forms, it
+30 can be theoretically shown that the lattice Boltzmann equation gives rise to correct
+   hydrodynamics and thermo-hydrodynamics. That is, the hydrodynamic moments derived
+   from   f, (x, t) obey the Navier-Stokes     equations in the macroscopic limit. These moments
+   are defined as:
+                                                      10n
+
+                                                                Attorney Docket No.: 06283-0019WO1
+       p(x,t)= Zf(x,t);        pu(x,t)= jcjf(x,t);      DT(x,t)=        (cj-u)2 f(x,t),       Eq.(3)
+    where p , u, and T are, respectively, the fluid density, velocity and temperature, and D is
+   the dimension of the discretized velocity space (not at all equal to the physical space
+   dimension).
+ 5         Other features and advantages will be apparent from the following description,
+   including the drawings, and the claims.
+   BRIEF DESCRIPTION OF THE DRAWINGS
+10         FIGS. 1 and 2 illustrate velocity components of two LBM models.
+           FIG. 3 is a flow chart of a procedure followed by a physical process simulation
+   system.
+           FIG. 4 is a perspective view of a microblock.
+           FIGS. 5A and 5B are illustrations of lattice structures used by the system of FIG.
+15 3.
+           FIGS. 6 and 7 illustrate variable resolution techniques.
+           FIG. 8 illustrates regions affected by a facet of a surface.
+           FIG. 9 illustrates movement of particles from a voxel to a surface.
+           FIG. 10 illustrates movement of particles from a surface to a surface.
+20         FIG. 11 is a flow chart of a procedure for performing surface dynamics.
+           FIG. 12 illustrates an interface between voxels of different sizes.
+           FIG. 13 is a flow chart of a procedure for simulating interactions with facets under
+   variable resolution conditions.
+           FIG. 14 is a flow chart of a procedure for simulating scalar transport.
+25         FIG. 15 illustrates a simulated temperature profile.
+           FIG. 16 illustrates a simulated temperature distribution across a tilted channel.
+           FIG. 17 illustrates simulated temperature propagation fronts.
+           FIG. 18 illustrates a Nusselt number vs Ra number.
+30                                        DESCRIPTION
+           A. Approach to Solving for Scalar Quantities
+                                                  11
+
+                                                               Attorney Docket No.: 06283-0019WO1
+            When completing complex fluid flow simulations it can be beneficial to
+   concurrently solve scalar quantities such as temperature distribution, concentration
+   distribution, and/or density in conjunction with solving for the fluid flow.
+            In the systems and methods described herein, modeling of the scalar quantities (as
+ 5 opposed to vector quantities) is coupled with the modeling of the fluid flow based on a
+   LBM-based physical process simulation system. Exemplary scalar quantities that can be
+   simulated include temperature, concentration, and density.
+            For example, the system can be used to determine a convective temperature
+   distribution within a system. For example, if a system (formed of a volume represented
+10 by multiple voxels) includes a source of heat and there is air flow within the system, some
+   areas of the system will be warmer than others based on the air flow and proximity to the
+   heat source. In order to model such a situation, the temperature distribution within the
+   system can be represented as a scalar quantity with each voxel having an associated
+   temperature.
+15          In another example, the system can be used to determine a chemical distribution
+   within a system. For example, if the system (formed of the volume represented by
+   multiple voxels) includes a source of a contaminant such as a dirty bomb or chemical or
+   other particulate suspended in either air or liquid and there is air or liquid flow within the
+   system, some areas of the system will have a higher concentration than others based on
+20 the flow and proximity to the source. In order to model such a situation, the chemical
+   distribution within the system can be represented as a scalar quantity with each voxel
+   having an associated concentration.
+            In some applications, multiple different scalar quantities can be simulated
+   concurrently. For example, the system can simulate both a temperature distribution and a
+25 concentration distribution in a system.
+            The scalar quantities may be modeled in different ways. For example, a lattice
+   Boltzmann (LB) approach for solving scalar transport equations can be used to indirectly
+   solve for scalar transport. For example, the methods described herein can provide an
+   indirect solution of the following second order macroscopic scalar transport equation
+              - V, (puT) = V - pKVT
+             -P
+30                                      . In such arrangement simulation, in addition to the
+   lattice Boltzmann functions for fluid flow, a second set of distribution functions is
+   introduced for transport scalars. This approach assigns a vector to each voxel in a volume
+                                                  12
+
+                                                                Attorney Docket No.: 06283-0019WO1
+    to represent the fluid flow and a scalar quantity to each voxel in the volume to represent
+    the desired scalar variable (e.g., temperature, density, concentration, etc.). This approach
+    fully recovers the macroscopic scalar transport equation satisfying an exact conservation
+    law. This approach is believed to increase the accuracy of the determined scalar quantities
+ 5  in comparison to other, non-LBM methods. Additionally, this approach is believed to
+    provide enhanced capability to account for complicated boundary shapes.
+             This approach for modeling scalar quantities may be used in conjunction with a
+    time-explicit CFD/CAA solution method based on the Lattice Boltzmann Method (LBM),
+    such as the PowerFLOW system available from Exa Corporation of Burlington,
+10  Massachusetts. Unlike methods based on discretizing the macroscopic continuum
+    equations, LBM starts from a "mesoscopic" Boltzmann kinetic equation to predict
+    macroscopic fluid dynamics. The resulting compressible and unsteady solution method
+    may be used for predicting a variety of complex flow physics, such as aeroacoustics and
+    pure acoustics problems. A general discussion of a LBM-based simulation system is
+15  provided below and followed by a discussion of a scalar solving approach that may be
+    used in conjunction with fluid flow simulations to support such a modeling approach.
+             B. Model Simulation Space
+             In a LBM-based physical process simulation system, fluid flow may be
+20  represented by the distribution function values f, evaluated at a set of discrete
+    velocities c1 . The dynamics of the distribution function is governed by Equation 4 where
+   fi(0) is known as the equilibrium distribution function, defined as:
+                  f()           u   I u-puI   I ue(u-3u2)
+                                                                        Eq.(4)
+                    CA
+    where ua =
+                      T
+25
+                                                   13
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   This equation is the well-known lattice Boltzmann equation that describe the time
+   evolution of the distribution function,   f,.  The left-hand side represents the change of the
+   distribution due to the so-called "streaming process." The streaming process is when a
+   pocket of fluid starts out at a grid location, and then moves along one of the velocity
+ 5 vectors to the next grid location. At that point, the "collision factor," i.e., the effect of
+   nearby pockets of fluid on the starting pocket of fluid, is calculated. The fluid can only
+   move to another grid location, so the proper choice of the velocity vectors is necessary so
+   that all the components of all velocities are multiples of a common speed.
+            The right-hand side of the first equation is the aforementioned "collision operator"
+10 which represents the change of the distribution function due to the collisions among the
+   pockets of fluids. The particular form of the collision operator used here is due to
+   Bhatnagar, Gross and Krook (BGK). It forces the distribution function to go to the
+   prescribed values given by the second equation, which is the "equilibrium" form.
+            From this simulation, conventional fluid variables, such as mass p and fluid
+15 velocity u, are obtained as simple summations in Equation (3). Here, the collective values
+   of c1 and w, define a LBM model. The LBM model can be implemented efficiently on
+   scalable computer platforms and run with great robustness for time unsteady flows and
+   complex boundary conditions.
+            A standard technique of obtaining the macroscopic equation of motion for a fluid
+20 system from the Boltzmann equation is the Chapman-Enskog method in which successive
+   approximations of the full Boltzmann equation are taken.
+            In a fluid system, a small disturbance of the density travels at the speed of sound.
+   In a gas system, the speed of the sound is generally determined by the temperature. The
+   importance of the effect of compressibility in a flow is measured by the ratio of the
+25 characteristic velocity and the sound speed, which is known as the Mach number.
+            Referring to FIG. 1, a first model (2D-1) 100 is a two-dimensional model that
+   includes 21 velocities. Of these 21 velocities, one (105) represents particles that are not
+   moving; three sets of four velocities represent particles that are moving at either a
+   normalized speed (r) (110-113), twice the normalized speed (2r) (120-123), or three times
+30 the normalized speed (3r) (130-133) in either the positive or negative direction along
+   either the x or y axis of the lattice; and two sets of four velocities represent particles that
+   are moving at the normalized speed (r) (140-143) or twice the normalized speed (2r)
+   (150-153) relative to both of the x and y lattice axes.
+                                                   il4
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+            As also illustrated in FIG. 2, a second model (3D-1) 200 is a three-dimensional
+   model that includes 39 velocities, where each velocity is represented by one of the
+   arrowheads of FIG. 2. Of these 39 velocities, one represents particles that are not
+   moving; three sets of six velocities represent particles that are moving at either a
+ 5 normalized speed (r), twice the normalized speed (2r), or three times the normalized
+   speed (3r) in either the positive or negative direction along the x, y or z axis of the lattice;
+   eight represent particles that are moving at the normalized speed (r) relative to all three of
+   the x, y, z lattice axes; and twelve represent particles that are moving at twice the
+   normalized speed (2r) relative to two of the x, y, z lattice axes.
+10          More complex models, such as a 3D-2 model includes 101 velocities and a 2D-2
+   model includes 37 velocities also may be used.
+            For the three-dimensional model 3D-2, of the 101 velocities, one represents
+   particles that are not moving (Group 1); three sets of six velocities represent particles that
+   are moving at either a normalized speed (r), twice the normalized speed (2r), or three
+15 times the normalized speed (3r) in either the positive or negative direction along the x, y
+   or z axis of the lattice (Groups 2, 4, and 7); three sets of eight represent particles that are
+   moving at the normalized speed (r), twice the normalized speed (2r), or three times the
+   normalized speed (3r) relative to all three of the x, y, z lattice axes (Groups 3, 8, and 10);
+   twelve represent particles that are moving at twice the normalized speed (2r) relative to
+20 two of the x, y, z lattice axes (Group 6); twenty four represent particles that are moving at
+   the normalized speed (r) and twice the normalized speed (2r) relative to two of the x, y, z
+   lattice axes, and not moving relative to the remaining axis (Group 5); and twenty four
+   represent particles that are moving at the normalized speed (r) relative to two of the x, y, z
+   lattice axes and three times the normalized speed (3r) relative to the remaining axis
+25 (Group 9).
+            For the two-dimensional model 2D-2, of the 37 velocities, one represents particles
+   that are not moving (Group 1); three sets of four velocities represent particles that are
+   moving at either a normalized speed (r), twice the normalized speed (2r), or three times
+   the normalized speed (3r) in either the positive or negative direction along either the x or
+30 y axis of the lattice (Groups 2, 4, and 7); two sets of four velocities represent particles that
+   are moving at the normalized speed (r) or twice the normalized speed (2r)relative to both
+   of the x and y lattice axes; eight velocities represent particles that are moving at the
+   normalized speed (r)relative to one of the x and y lattice axes and twice the normalized
+   speed (2r) relative to the other axis; and eight velocities represent particles that are
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   moving at the normalized speed (r) relative to one of the x and y lattice axes and three
+   times the normalized speed (3r) relative to the other axis.
+            The LBM models described above provide a specific class of efficient and robust
+   discrete velocity kinetic models for numerical simulations of flows in both two-and three
+ 5 dimensions. A model of this kind includes a particular set of discrete velocities and
+   weights associated with those velocities. The velocities coincide with grid points of
+   Cartesian coordinates in velocity space which facilitates accurate and efficient
+   implementation of discrete velocity models, particularly the kind known as the lattice
+   Boltzmann models. Using such models, flows can be simulated with high fidelity.
+10          Referring to FIG. 3, a physical process simulation system operates according to a
+   procedure 300 to simulate a physical process such as fluid flow. Prior to the simulation, a
+   simulation space is modeled as a collection of voxels (step 302). Typically, the simulation
+   space is generated using a computer-aided-design (CAD) program. For example, a CAD
+   program could be used to draw an micro-device positioned in a wind tunnel. Thereafter,
+15 data produced by the CAD program is processed to add a lattice structure having
+   appropriate resolution and to account for objects and surfaces within the simulation space.
+            The resolution of the lattice may be selected based on the Reynolds number of the
+   system being simulated. The Reynolds number is related to the viscosity (v) of the flow,
+   the characteristic length (L) of an object in the flow, and the characteristic velocity (u) of
+20 the flow:
+                                       Re= uL/v.                                             Eq.(5)
+            The characteristic length of an object represents large scale features of the object.
+   For example, if flow around a micro-device were being simulated, the height of the
+   micro-device might be considered to be the characteristic length. When flow around small
+25 regions of an object (e.g., the side mirror of an automobile) is of interest, the resolution of
+   the simulation may be increased, or areas of increased resolution may be employed
+   around the regions of interest. The dimensions of the voxels decrease as the resolution of
+   the lattice increases.
+            The state space is represented asfi (x, t), wheref represents the number of
+30 elements, or particles, per unit volume in state i (i.e., the density of particles in state i) at a
+   lattice site denoted by the three-dimensional vector x at a time t. For a known time
+   increment, the number of particles is referred to simply asf; (x). The combination of all
+   states of a lattice site is denoted asf(x).
+
+                                                                   Attorney Docket No.: 06283-0019WO1
+            The number of states is determined by the number of possible velocity vectors
+   within each energy level. The velocity vectors consist of integer linear speeds in a space
+   having three dimensions: x, y, and z. The number of states is increased for multiple
+   species simulations.
+ 5          Each state i represents a different velocity vector at a specific energy level (i.e.,
+   energy level zero, one or two). The velocity ci of each state is indicated with its "speed" in
+   each of the three dimensions as follows:
+                              ci=c
+                                 *x,    cry, ciz-).                                            Eq.(6)
+            The energy level zero state represents stopped particles that are not moving in any
+10 dimension, i.e.   Cstopped =(O, 0, 0). Energy level one states represents particles having a 1
+   speed in one of the three dimensions and a zero speed in the other two dimensions.
+   Energy level two states represent particles having either a 1 speed in all three
+   dimensions, or a ±2 speed in one of the three dimensions and a zero speed in the other
+   two dimensions.
+15          Generating all of the possible permutations of the three energy levels gives a total
+   of 39 possible states (one energy zero state, 6 energy one states, 8 energy three states, 6
+   energy four states, 12 energy eight states and 6 energy nine states.).
+            Each voxel (i.e., each lattice site) is represented by a state vector f(x). The state
+   vector completely defines the status of the voxel and includes 39 entries. The 39 entries
+20 correspond to the one energy zero state, 6 energy one states, 8 energy three states, 6
+   energy four states, 12 energy eight states and 6 energy nine states. By using this velocity
+   set, the system can produce Maxwell-Boltzmann statistics for an achieved equilibrium
+   state vector.
+            For processing efficiency, the voxels are grouped in 2x2x2 volumes called
+25 microblocks. The microblocks are organized to permit parallel processing of the voxels
+   and to minimize the overhead associated with the data structure. A short-hand notation for
+   the voxels in the microblock is defined as Ni (n), where n represents the relative position
+   of the lattice site within the microblock and n E {0,1,2,. . . , 7}. A microblock is illustrated
+   in FIG. 4.
+30          Referring to FIGS. 5A and 5B, a surface S (FIG. 3A) is represented in the
+   simulation space (FIG. 5B) as a collection of facets F:
+                                      S={IF,}                                                  Eq.(7)
+   where a is an index that enumerates a particular facet. A facet is not restricted to the
+   voxel boundaries, but is typically sized on the order of or slightly smaller than the size of
+                                                     17
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   the voxels adjacent to the facet so that the facet affects a relatively small number of
+   voxels. Properties are assigned to the facets for the purpose of implementing surface
+   dynamics. In particular, each facet F, has a unit normal (ne), a surface area (A), a center
+   location (x), and a facet distribution function (f;(a)) that describes the surface dynamic
+ 5 properties of the facet.
+            Referring to FIG. 6, different levels of resolution may be used in different regions
+   of the simulation space to improve processing efficiency. Typically, the region 650
+   around an object 655 is of the most interest and is therefore simulated with the highest
+   resolution. Because the effect of viscosity decreases with distance from the object,
+10 decreasing levels of resolution (i.e., expanded voxel volumes) are employed to simulate
+   regions 660, 665 that are spaced at increasing distances from the object 655. Similarly, as
+   illustrated in FIG. 7, a lower level of resolution may be used to simulate a region 770
+   around less significant features of an object 775 while the highest level of resolution is
+   used to simulate regions 780 around the most significant features (e.g., the leading and
+15 trailing surfaces) of the object 775. Outlying regions 785 are simulated using the lowest
+   level of resolution and the largest voxels.
+            C. Identify Voxels Affected By Facets
+            Referring again to FIG. 3, once the simulation space has been modeled (step 302),
+20 voxels affected by one or more facets are identified (step 304). Voxels may be affected by
+   facets in a number of ways. First, a voxel that is intersected by one or more facets is
+   affected in that the voxel has a reduced volume relative to non-intersected voxels. This
+   occurs because a facet, and material underlying the surface represented by the facet,
+   occupies a portion of the voxel. A fractional factor Pf(x) indicates the portion of the voxel
+25 that is unaffected by the facet (i.e., the portion that can be occupied by a fluid or other
+   materials for which flow is being simulated). For non-intersected voxels, Pf (x) equals
+   one.
+            Voxels that interact with one or more facets by transferring particles to the facet or
+   receiving particles from the facet are also identified as voxels affected by the facets. All
+30 voxels that are intersected by a facet will include at least one state that receives particles
+   from the facet and at least one state that transfers particles to the facet. In most cases,
+   additional voxels also will include such states.
+            Referring to FIG. 8, for each state i having a non-zero velocity vector ci, a facet F,
+   receives particles from, or transfers particles to, a region defined by a parallelepiped Gi,
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   having a height defined by the magnitude of the vector dot product of the velocity vector
+   ci and the unit normal n, of the facet (I cin 1|) and a base defined by the surface area A, of
+   the facet so that the volume Vi, of the parallelepiped Gi, equals:
+                                     Vi, = cinj A ,                                          Eq.(8)
+ 5          The facet F, receives particles from the volume Vi, when the velocity vector of the
+   state is directed toward the facet (I ci n 1<0), and transfers particles to the region when the
+   velocity vector of the state is directed away from the facet (I ci n I>0). As will be
+   discussed below, this expression must be modified when another facet occupies a portion
+   of the parallelepiped Gjc, a condition that could occur in the vicinity of non-convex
+10 features such as interior corners.
+            The parallelepiped Gi, of a facet F, may overlap portions or all of multiple voxels.
+   The number of voxels or portions thereof is dependent on the size of the facet relative to
+   the size of the voxels, the energy of the state, and the orientation of the facet relative to
+   the lattice structure. The number of affected voxels increases with the size of the facet.
+15 Accordingly, the size of the facet, as noted above, is typically selected to be on the order
+   of or smaller than the size of the voxels located near the facet.
+            The portion of a voxel N(x) overlapped by a parallelepiped Gi, is defined as V,(x).
+   Using this term, the flux Fi,(x) of state i particles that move between a voxel N(x) and a
+   facet F, equals the density of state i particles in the voxel (Ni(x)) multiplied by the volume
+20 of the region of overlap with the voxel (V,(x)):
+                               F i, (x)=Ni(x)Vi, (x).                                        Eq.(9)
+            When the parallelepiped Gi, is intersected by one or more facets, the following
+   condition is true:
+                            Vi,=      V(x) +     V,(8)                                       Eq.(10)
+25          where the first summation accounts for all voxels overlapped by Gi, and the
+   second term accounts for all facets that intersect Gi,. When the parallelepiped Gi, is not
+   intersected by another facet, this expression reduces to:
+                                     Vi= ZVi (x).                                            Eq.(1 1)
+                                                    10
+
+                                                                Attorney Docket No.: 06283-0019WO1
+            D. Perform Simulation
+              Once the voxels that are affected by one or more facets are identified (step 304),
+   a timer is initialized to begin the simulation (step 306). During each time increment of the
+   simulation, movement of particles from voxel to voxel is simulated by an advection stage
+ 5 (steps 308-316) that accounts for interactions of the particles with surface facets. Next, a
+   collision stage (step 318) simulates the interaction of particles within each voxel.
+   Thereafter, the timer is incremented (step 320). If the incremented timer does not indicate
+   that the simulation is complete (step 322), the advection and collision stages (steps 308
+   320) are repeated. If the incremented timer indicates that the simulation is complete (step
+10 322), results of the simulation are stored and/or displayed (step 324).
+              1. Boundary Conditions For Surface
+              To correctly simulate interactions with a surface, each facet must meet four
+   boundary conditions. First, the combined mass of particles received by a facet must equal
+15 the combined mass of particles transferred by the facet (i.e., the net mass flux to the facet
+   must equal zero). Second, the combined energy of particles received by a facet must equal
+   the combined energy of particles transferred by the facet (i.e., the net energy flux to the
+   facet must equal zero). These two conditions may be satisfied by requiring the net mass
+   flux at each energy level (i.e., energy levels one and two) to equal zero.
+20            The other two boundary conditions are related to the net momentum of particles
+   interacting with a facet. For a surface with no skin friction, referred to herein as a slip
+   surface, the net tangential momentum flux must equal zero and the net normal momentum
+   flux must equal the local pressure at the facet. Thus, the components of the combined
+   received and transferred momentums that are perpendicular to the normal n, of the facet
+25 (i.e., the tangential components) must be equal, while the difference between the
+   components of the combined received and transferred momentums that are parallel to the
+   normal n, of the facet (i.e., the normal components) must equal the local pressure at the
+   facet. For non-slip surfaces, friction of the surface reduces the combined tangential
+   momentum of particles transferred by the facet relative to the combined tangential
+30 momentum of particles received by the facet by a factor that is related to the amount of
+   friction.
+                                                  2n
+
+                                                                Attorney Docket No.: 06283-0019WO1
+            2. Gather From Voxels to Facets
+            As a first step in simulating interaction between particles and a surface, particles
+   are gathered from the voxels and provided to the facets (step 308). As noted above, the
+   flux of state i particles between a voxel N(x) and a facet Fa is:
+ 5                                     F ia (x)=Ni (x)Via (x).                              Eq.(12)
+            From this, for each state i directed toward a facet Fa (cina <0), the number of
+   particles provided to the facet Fa by the voxels is:
+                       Fi (x)=Yx Ni (x)Via (x)                                              Eq.(13)
+           FiaV-F    x Ia
+10
+            Only voxels for which Vi (x) has a non-zero value must be summed. As noted
+   above, the size of the facets is selected so that Via (x) has a non-zero value for only a
+   small number of voxels. Because Via (x) and Pf (x) may have non-integer values, Fa (x) is
+   stored and processed as a real number.
+15
+            3. Move From Facet to Facet
+            Next, particles are moved between facets (step 310). If the parallelepiped Gia for
+   an incoming state (cina <0) of a facet Fa is intersected by another facet Fp, then a portion
+   of the state i particles received by the facet Fa will come from the facet Fp8. In particular,
+20 facet Fa will receive a portion of the state i particles produced by facet FP during the
+   previous time increment. This relationship is illustrated in FIG. 10, where a portion 1000
+   of the parallelepiped Gia that is intersected by facet Fp equals a portion 1005 of the
+   parallelepiped Gig that is intersected by facet Fa. As noted above, the intersected portion
+   is denoted as Vi (p). Using this term, the flux of state i particles between a facet F6 and a
+25 facet Fa may be described as:
+                             T ja (,,t-1)=F    (pl)Via (p)/Via,                             Eq.(14)
+   where Fi (p,t-1) is a measure of the state i particles produced by the facet F8 during the
+30 previous time increment. From this, for each state i directed toward a facet Fa (ci na <0),
+   the number of particles provided to the facet Fa by the other facets is:
+         FiaF-F        Fia (           i (, t-1) Via (P) / Via                              Eq.(15)
+                                                       21
+
+                                                                       Attorney Docket No.: 06283-0019WO1
+             and the total flux of state i particles into the facet is:
+           FiIN(U) = FiV-F + TiaF-F = Y                    ri (P, t-1) Va (p,)/ Via
+                                        X N (x) Via (x) +E3Eq.(16)
+ 5
+             The state vector N(a) for the facet, also referred to as a facet distribution
+   function, has M entries corresponding to the M entries of the voxel states vectors. M is
+   the number of discrete lattice speeds. . The input states of the facet distribution function
+   N(a) are set equal to the flux of particles into those states divided by the volume Vi" :
+10           Ni (a)=FiN (a)/Via,                                                                   Eq.(17)
+   for ci na <0.
+             The facet distribution function is a simulation tool for generating the output flux
+   from a facet, and is not necessarily representative of actual particles. To generate an
+   accurate output flux, values are assigned to the other states of the distribution function.
+15 Outward states are populated using the technique described above for populating the
+   inward states:
+             Ni (a)=TiOTHER (a)/V                                                                  Eq.(18)
+   for ci na > 0, wherein FiOTHER (a) is determined using the technique described above for
+   generating FiIN (a), but applying the technique to states (ci na > 0) other than incoming
+20 states (ci na <0)). In an alternative approach, FiOTHER (a) may be generated using values of
+   FiOUT (a) from the previous time step so that:
+             FiOTHER (a, t)=FiOUT (a, t-1).                                                        Eq.(19)
+             For parallel states (cina =0), both Vi and Via(x) are zero. In the expression for Ni
+   (a), Via (x) appears in the numerator (from the expression for FiOTHER (a) and Via appears
+25 in the denominator (from the expression for Ni (a)). Accordingly, Ni (a) for parallel states
+   is determined as the limit of Ni(a) as Vi and Via(x) approach zero.
+             The values of states having zero velocity (i.e., rest states and states (0, 0, 0, 2)
+   and (0, 0, 0, -2)) are initialized at the beginning of the simulation based on initial
+   conditions for temperature and pressure. These values are then adjusted over time.
+30
+             4. Perform Facet Surface Dynamics
+             Next, surface dynamics are performed for each facet to satisfy the four boundary
+   conditions discussed above (step 312). A procedure for performing surface dynamics for
+   a facet is illustrated in FIG. 11. Initially, the combined momentum normal to the facet Fa
+                                                      22
+
+                                                                    Attorney Docket No.: 06283-0019WO1
+   is determined (step 1105) by determining the combined momentum P(a) of the particles
+   at the facet as:
+                P(a) =      I * N(I
+                                                                                                Eq.(20)
+ 5
+   for all i. From this, the normal momentum P, (a) is determined as:
+                     Pn (a) = na* P(a).                                                         Eq.(21)
+              This normal momentum is then eliminated using a pushing/pulling technique
+   (step 1110) to produce Nn.(a). According to this technique, particles are moved between
+10 states in a way that affects only normal momentum. The pushing/pulling technique is
+   described in U.S. Pat. No. 5,594,671, which is incorporated by reference.
+              Thereafter, the particles of Nn.(a) are collided to produce a Boltzmann
+   distribution Nn.8 (a) (step 1115). As described below with respect to performing fluid
+   dynamics, a Boltzmann distribution may be achieved by applying a set of collision rules
+15 to No.(a).
+              An outgoing flux distribution for the facet Fa is then determined (step 1120)
+   based on the incoming flux distribution and the Boltzmann distribution. First, the
+   difference between the incoming flux distribution F, (a) and the Boltzmann distribution is
+   determined as:
+20            AF, (a)=FiN(a)-N,,pi (a) Va.                                                      Eq.(22)
+              Using this difference, the outgoing flux distribution is:
+              FlouT (a)=Nnjpt (a)Via -.A.F,- (a),                                               Eq.(23)
+   for naci >0 and where i* is the state having a direction opposite to state i. For example, if
+   state i is (1, 1, 0, 0), then state i* is (-1, -1, 0, 0). To account for skin friction and other
+25 factors, the outgoing flux distribution may be further refined to:
+        lI'OUT(a) =Nn-B(a)Vla - AFI"(a) +
+                 Ct(nac-G) [Nri-Bi(a) - Nn-B(a)JVia +
+                  (nCi)(tla-CI) ANjIVIa +                                                       Eq.(24)
+30                               (fa'GLI)(t 2 ciLI)ANj, 2 VIa
+   for naci >0, where Cf is a function of skin friction, tia is a first tangential vector that is
+   perpendicular to na, t2a, is a second tangential vector that is perpendicular to both na and
+   tia, and ANI and AN,        2 are distribution functions corresponding to the energy () of the
+                                                            23
+
+                                                                        Attorney Docket No.: 06283-0019WO1
+   state i and the indicated tangential vector. The distribution functions are determined
+   according to:
+                         ANj,1, 2 =- 1    (nQZ c ci Nn-Bi (a) -t 1 ,2a)                             Eq.(25)
+ 5 where j equals 1 for energy level 1 states and 2 for energy level 2 states.
+             The functions of each term of the equation for Fiour (a) are as follows. The first
+   and second terms enforce the normal momentum flux boundary condition to the extent
+   that collisions have been effective in producing a Boltzmann distribution, but include a
+   tangential momentum flux anomaly. The fourth and fifth terms correct for this anomaly,
+10 which may arise due to discreteness effects or non-Boltzmann structure due to insufficient
+   collisions. Finally, the third term adds a specified amount of skin fraction to enforce a
+   desired change in tangential momentum flux on the surface. Generation of the friction
+   coefficient Cf is described below. Note that all terms involving vector manipulations are
+   geometric factors that may be calculated prior to beginning the simulation.
+15           From this, a tangential velocity is determined as:
+             ui (a)=(P(a)-P,(a)na)/p,                                                               Eq.(26)
+   where p is the density of the facet distribution:
+                            p=      N (a)                                                           Eq.(27)
+20           As before, the difference between the incoming flux distribution and the
+   Boltzmann distribution is determined as:
+             AFj (a)=FJN(a)-Nn-pi (a) Via.                                                          Eq.(28)
+            The outgoing flux distribution then becomes:
+25           F our (a)=Nn-pi (a)Via -AFi. (a)+Cf (nac)[Nn-pi (a)-Nn-p (a)] Via,                     Eq.(29)
+   which corresponds to the first two lines of the outgoing flux distribution determined by
+   the previous technique but does not require the correction for anomalous tangential flux.
+             Using either approach, the resulting flux-distributions satisfy all of the
+   momentum flux conditions, namely:
+30                   Y-      ciri-OUT      I        ciFialN = PanaAa - Cf PauaAa
+                 i, ci-n >0            i, ci-na < 0                                                 Eq.(30)
+                                                         24
+
+                                                                           Attorney Docket No.: 06283-0019WO1
+             where pa, is the equilibrium pressure at the facet Fa and is based on the averaged
+   density and temperature values of the voxels that provide particles to the facet, and ua is
+   the average velocity at the facet.
+             To ensure that the mass and energy boundary conditions are met, the difference
+ 5 between the input energy and the output energy is measured for each energy level j as:
+                      Aramj    .   I       0 ajilN                    ' ajiOUT
+                               1, Lcj-na < 0            1, uji-na > 0                                   Eq.(31)
+   where the index j denotes the energy of the state i. This energy difference is then used to
+10 generate a difference term:
+                     6Frji=V AFamj/                   v                                                Eq.(32)
+                                       1, cji-na, < 0
+                                                                                                        q(2
+             for cjina >0. This difference term is used to modify the outgoing flux so that the
+   flux becomes:
+15           FajiOUTf=FajiOUT+ Haji                                                                    Eq.(33)
+   for cjina >0. This operation corrects the mass and energy flux while leaving the tangential
+   momentum flux unaltered. This adjustment is small if the flow is approximately uniform
+   in the neighborhood of the facet and near equilibrium. The resulting normal momentum
+   flux, after the adjustment, is slightly altered to a value that is the equilibrium pressure
+20 based on the neighborhood mean properties plus a correction due to the non-uniformity or
+   non-equilibrium properties of the neighborhood.
+             5. Move From Voxels to Voxels
+             Referring again to FIG. 3, particles are moved between voxels along the three
+25 dimensional rectilinear lattice (step 314). This voxel to voxel movement is the only
+   movement operation performed on voxels that do not interact with the facets (i.e., voxels
+   that are not located near a surface). In typical simulations, voxels that are not located near
+   enough to a surface to interact with the surface constitute a large majority of the voxels.
+             Each of the separate states represents particles moving along the lattice with
+30 integer speeds in each of the three dimensions: x, y, and z. The integer speeds include: 0,
+   ±1, and ±2. The sign of the speed indicates the direction in which a particle is moving
+   along the corresponding axis.
+             For voxels that do not interact with a surface, the move operation is
+   computationally quite simple. The entire population of a state is moved from its current
+                                                         25
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+   voxel to its destination voxel during every time increment. At the same time, the particles
+   of the destination voxel are moved from that voxel to their own destination voxels. For
+   example, an energy level 1 particle that is moving in the +lx and +ly direction (1, 0, 0) is
+   moved from its current voxel to one that is +1 over in the x direction and 0 for other
+ 5 direction. The particle ends up at its destination voxel with the same state it had before
+   the move (1,0,0). Interactions within the voxel will likely change the particle count for
+   that state based on local interactions with other particles and surfaces. If not, the particle
+   will continue to move along the lattice at the same speed and direction.
+              The move operation becomes slightly more complicated for voxels that interact
+10 with one or more surfaces. This can result in one or more fractional particles being
+   transferred to a facet. Transfer of such fractional particles to a facet results in fractional
+   particles remaining in the voxels. These fractional particles are transferred to a voxel
+   occupied by the facet. For example, referring to FIG. 9, when a portion 900 of the state i
+   particles for a voxel 905 is moved to a facet 910 (step 308), the remaining portion 915 is
+15 moved to a voxel 920 in which the facet 910 is located and from which particles of state i
+   are directed to the facet 910. Thus, if the state population equaled 25 and Via(x) equaled
+   0.25 (i.e., a quarter of the voxel intersects the parallelepiped Gia), then 6.25 particles
+   would be moved to the facet Fa and 18.75 particles would be moved to the voxel
+   occupied by the facet Fa. Because multiple facets could intersect a single voxel, the
+20 number of state i particles transferred to a voxel N(f) occupied by one or more facets is:
+            Ni (f) = N (x) (1 -  Via(X))                                                     Eq.(34)
+   where N(x) is the source voxel.
+25            6. Scatter From Facets to Voxels
+             Next, the outgoing particles from each facet are scattered to the voxels (step 316).
+   Essentially, this step is the reverse of the gather step by which particles were moved from
+   the voxels to the facets. The number of state i particles that move from a facet Fa to a
+   voxel N(x) is:
+30                        NF                Vi (X) i                                         Eq.(35)
+                                aFV Pf (X) Val xafuouTf /a
+   where Pf(x) accounts for the volume reduction of partial voxels. From this, for each state
+   i, the total number of particles directed from the facets to a voxel N(,) is:
+                                                                                             Eq.(36)
+             NiF-V =               Vai (x) FOUTf/Vai
+                           f                        26
+
+                                                                Attorney Docket No.: 06283-0019WO1
+             After scattering particles from the facets to the voxels, combining them with
+   particles that have advected in from surrounding voxels, and integerizing the result, it is
+   possible that certain directions in certain voxels may either underflow (become negative)
+ 5 or overflow (exceed 255 in an eight-bit implementation). This would result in either a
+   gain or loss in mass, momentum and energy after these quantities are truncated to fit in
+   the allowed range of values. To protect against such occurrences, the mass, momentum
+   and energy that are out of bounds are accumulated prior to truncation of the offending
+   state. For the energy to which the state belongs, an amount of mass equal to the value
+10 gained (due to underflow) or lost (due to overflow) is added back to randomly (or
+   sequentially) selected states having the same energy and that are not themselves subject to
+   overflow or underflow. The additional momentum resulting from this addition of mass
+   and energy is accumulated and added to the momentum from the truncation. By only
+   adding mass to the same energy states, both mass and energy are corrected when the mass
+15 counter reaches zero. Finally, the momentum is corrected using pushing/pulling
+   techniques until the momentum accumulator is returned to zero.
+             7. Perform Fluid Dynamics
+             Finally, fluid dynamics are performed (step 318). This step may be referred to as
+20 microdynamics or intravoxel operations. Similarly, the advection procedure may be
+   referred to as intervoxel operations. The microdynamics operations described below may
+   also be used to collide particles at a facet to produce a Boltzmann distribution.
+             The fluid dynamics is ensured in the lattice Boltzmann equation models by a
+   particular collision operator known as the BGK collision model. This collision model
+25 mimics the dynamics of the distribution in a real fluid system. The collision process can
+   be well described by the right-hand side of Equation 1 and Equation 2. After the
+   advection step, the conserved quantities of a fluid system, specifically the density,
+   momentum and the energy are obtained from the distribution function using Equation 3.
+   From these quantities, the equilibrium distribution function, noted by     f  q  in equation (2),
+30 is fully specified by Equation (4). The choice of the velocity vector set ci, the weights,
+   both are listed in Table 1, together with Equation 2 ensures that the macroscopic behavior
+   obeys the correct hydrodynamic equation.
+                                                   ?7
+
+                                                                Attorney Docket No.: 06283-0019WO1
+           E. Variable Resolution
+           Referring to FIG. 12, variable resolution (as illustrated in FIGS. 6 and 7 and
+   discussed above) employs voxels of different sizes, hereinafter referred to as coarse
+   voxels 12000 and fine voxels 1205. (The following discussion refers to voxels having two
+ 5 different sizes; it should be appreciated that the techniques described may be applied to
+   three or more different sizes of voxels to provide additional levels of resolution.) The
+   interface between regions of coarse and fine voxels is referred to as a variable resolution
+   (VR) interface 1210.
+           When variable resolution is employed at or near a surface, facets may interact
+10 with voxels on both sides of the VR interface. These facets are classified as VR interface
+   facets 1215 (Falc) or VR fine facets 1220 (FIF).A VR interface facet 1215 is a facet
+   positioned on the coarse side of the VR interface and having a coarse parallelepiped 1225
+   extending into a fine voxel. (A coarse parallelepiped is one for which ci is dimensioned
+   according to the dimensions of a coarse voxel, while a fine parallelepiped is one for
+15 which ci is dimensioned according to the dimensions of a fine voxel.) A VR fine facet
+   1220 is a facet positioned on the fine side of the VR interface and having a fine
+   parallelepiped 1230 extending into a coarse voxel. Processing related to interface facets
+   may also involve interactions with coarse facets 1235 (Fac) and fine facets 1240       (FaF).
+           For both types of VR facets, surface dynamics are performed at the fine scale, and
+20 operate as described above. However, VR facets differ from other facets with respect to
+   the way in which particles advect to and from the VR facets.
+           Interactions with VR facets are handled using a variable resolution procedure
+   1300 illustrated in FIG. 13. Most steps of this procedure are carried out using the
+   comparable steps discussed above for interactions with non-VR facets. The procedure
+25 1300 is performed during a coarse time step (i.e., a time period corresponding to a coarse
+   voxel) that includes two phases that each correspond to a fine time step. The facet surface
+   dynamics are performed during each fine time step. For this reason, a VR interface facet
+   Falc is considered as two identically sized and oriented fine facets that are referred to,
+   respectively, as a black facet FaICb and a red facet Falcr. The black facet FaICb is associated
+30 with the first fine time step within a coarse time step while the red facet Farcr is associated
+   with the second fine time step within a coarse time step.
+           Initially, particles are moved (advected) between facets by a first surface-to
+   surface advection stage (step 1302). Particles are moved from black facets FaIcb to coarse
+   facets Fc with a weighting factor of Vfi that corresponds to the volume of the unblocked
+
+                                                                Attorney Docket No.: 06283-0019WO1
+   portion of the coarse parallelepiped (FIG. 12, 1225) that extends from a facet F, and that
+   lies behind a facet Fpi less the unblocked portion of the fine parallelepiped (FIG. 12, 1245)
+   that extends from the facet F, and that lies behind the facet Fp3. The magnitude of ci for a
+   fine voxel is one half the magnitude of ci for a coarse voxel. As discussed above, the
+ 5 volume of a parallelepiped for a facet F, is defined as:
+                                     Vi  = | cin |A,.                                       Eq.(37)
+           Accordingly, because the surface area A, of a facet does not change between
+   coarse and fine parallelepipeds, and because the unit normal n, always has a magnitude of
+   one, the volume of a fine parallelepiped corresponding to a facet is one half the volume of
+10 the corresponding coarse parallelepiped for the facet.
+           Particles are moved from coarse facets Fc to black facets FalICb with a weighting
+   factor of Vfi that corresponds to the volume of the unblocked portion of the fine
+   parallelepiped that extends from a facet F, and that lies behind a facet Fp3.
+           Particles are moved from red facets Facr to coarse facets Fc with a weighting
+15 factor of Vfi , and from coarse facets Fac to red facets Fa-cr with a weighting factor of Vp .
+           Particles are moved from red facets Fcr to black facets Falc with a weighting
+   factor of Vfi . In this stage, black-to-red advections do not occur. In addition, because the
+   black and red facets represent consecutive time steps, black-to-black advections (or red
+   to-red advections) never occur. For similar reasons, particles in this stage are moved from
+20 red facets Fajcr to fine facets FpIF or FpF with a weighting factor of Vfi , and from fine
+   facets FaIF or FaFto black facets FaICb with the same weighting factor.
+           Finally, particles are moved from fine facets FIFor FaFto other fine facets FpIF or
+   FpF with the same weighting factor, and from coarse facets Fac to other coarse facets Fc
+   with a weighting factor of Vcfi that corresponds to the volume of the unblocked portion
+25 of the coarse parallelepiped that extends from a facet F, and that lies behind a facet Fp.
+           After particles are advected between surfaces, particles are gathered from the
+   voxels in a first gather stage (steps 1304-1310). Particles are gathered for fine facets FaF
+   from fine voxels using fine parallelepipeds (step 1304), and for coarse facets Fac from
+   coarse voxels using coarse parallelepipeds (step 1306). Particles are then gathered for
+30 black facets FIRb and for VR fine facets FaIF from both coarse and fine voxels using fine
+   parallelepipeds (step 1308). Finally, particles are gathered for red facets Fa/Rr from coarse
+   voxels using the differences between coarse parallelepipeds and fine parallelepipeds (step
+   1310).
+
+                                                                Attorney Docket No.: 06283-0019WO1
+            Next, coarse voxels that interact with fine voxels or VR facets are exploded into a
+   collection of fine voxels (step 1312). The states of a coarse voxel that will transmit
+   particles to a fine voxel within a single coarse time step are exploded. For example, the
+   appropriate states of a coarse voxel that is not intersected by a facet are exploded into
+ 5 eight fine voxels oriented like the microblock of FIG. 4. The appropriate states of coarse
+   voxel that is intersected by one or more facets are exploded into a collection of complete
+   and/or partial fine voxels corresponding to the portion of the coarse voxel that is not
+   intersected by any facets. The particle densities N (x) for a coarse voxel and the fine
+   voxels resulting from the explosion thereof are equal, but the fine voxels may have
+10 fractional factors Pf that differ from the fractional factor of the coarse voxel and from the
+   fractional factors of the other fine voxels.
+            Thereafter, surface dynamics are performed for the fine facets FaIF and FaF (step
+   1314), and for the black facets Falcb (step 1316). Dynamics are performed using the
+   procedure illustrated in FIG. 11 and discussed above.
+15          Next, particles are moved between fine voxels (step 1318) including actual fine
+   voxels and fine voxels resulting from the explosion of coarse voxels. Once the particles
+   have been moved, particles are scattered from the fine facets FaIF and FaFto the fine
+   voxels (step 1320).
+            Particles are also scattered from the black facets FaIcb to the fine voxels (including
+20 the fine voxels that result from exploding a coarse voxel) (step 1322). Particles are
+   scattered to a fine voxel if the voxel would have received particles at that time absent the
+   presence of a surface. In particular, particles are scattered to a voxel N(x) when the voxel
+   is an actual fine voxel (as opposed to a fine voxel resulting from the explosion of a coarse
+   voxel), when a voxel N(x+ c) that is one velocity unit beyond the voxel N(x) is an actual
+25 fine voxel, or when the voxel N(x+c) that is one velocity unit beyond the voxel N(x) is a
+   fine voxel resulting from the explosion of a coarse voxel.
+            Finally, the first fine time step is completed by performing fluid dynamics on the
+   fine voxels (step 1324). The voxels for which fluid dynamics are performed do not
+   include the fine voxels that result from exploding a coarse voxel (step 1312).
+30          The procedure 1300 implements similar steps during the second fine time step.
+   Initially, particles are moved between surfaces in a second surface-to-surface advection
+   stage (step 1326). Particles are advected from black facets to red facets, from black facets
+   to fine facets, from fine facets to red facets, and from fine facets to fine facets.
+
+                                                                  Attorney Docket No.: 06283-0019WO1
+              After particles are advected between surfaces, particles are gathered from the
+     voxels in a second gather stage (steps 1328-1330). Particles are gathered for red facets
+     F&,, from fine voxels using fine paraltelepipeds (step 1328). Particles also are gathered
+     for fine facets F.F and Fa&F from fine voXels using fine parallelepipeds (step 1330).
+   5          Thereafter, surface dynamics are performed for the fine facets FajFand FwF (step
+     1332), for the coarse facets Fac (step 1134), and for the red facets Far. (step 1336) as
+     discussed above.
+N             Next, particles are moved between voxels using fine resolution (step 1338) so that
+D    particles are moved to and from fine voxels and fine voxels representative of coarse
+  10 voxels. Particles are then moved between voxels using coarse resolution (step l340) so
+     that particles are moved to and from coarse voxels.
+              Next, in a combined step, particles are scattered from the facets to the voxels
+     while the fine voxels that represent coarse voxels (i.e., the fine voxels resulting from
+     exploding coarse voxels) are coalesced into coarse voxels (step 1342). In this combined
+  15 step, particles are scattered from coarse facets to coarse voxels using coarse
+     parallelepipeds, from line facets to fine voxels using line parallelepipeds, from red facets
+     to fine or coarse voxels using fine parallelepipeds, and from black facets to coarse voxels
+     using the differences between coarse parallelepipeds and find parallelepipeds. Finally,
+     fluid dynamics are performed for the fine voxels and the coarse voxels (step 1344).
+  20
+              F. Scalar Transport Solver
+              As noted above, various types of LBM may be applied for solving fluid flows,
+     which serve as the background carrierfor scalar transport. During the simulation, both
+     fluid flow and scalartransport are simulated. For example, the fluid flow is simulated
+  25 flow using a lattice Boltzmann (LB) approach and the scalar transport is simulated using a
+     set of distribution functions referred to herein as the scalar transport equations.
+              While a detailed description of the LBM method for simulating fluid flow is
+     provided herein, below is an example of one approach for simulating fluid flow that can
+     be used in conjunction with the scalar simulation:
+                      f,(x+ciet+1)=-f,(xl t)-               (fi(x)      -ftx))+gexq)
+  30                                                      T
+                                                                                              Eq. (38)
+                                                    31
+
+                                                                       Attorney Docket No.: 06283-0019WO1
+            Here  f (x, t), (i=1, ..., 19) is the particle distribution function, T is the single
+   relaxation time, and f;e (x, t) is the equilibrium distribution function with a third order
+   expansion in fluid velocity,
+                      f(x,   t) = pao(1+            +           -       +             -          ,U E    3))
+ 5                                             TO        2          2T0O2      V         r          Eq. (39)
+            where To = 1/3. The discrete lattice velocities ci are:
+                                       r0
+                                Ci =      (i: I, G,0), (0,-EI G), (0, 0, iL1)
+                                        I (il,    1, 0), (i1, 0, I), (0,       ±1,il)               Eq. (40)
+   with wo= 1/3 for rest particle, wi= 1/18 for states of Cartesian directions and w = 1/36 for
+   states of bi-diagonal directions. g,(x, t) is the external body force term. The hydrodynamic
+10 quantities 'T and u are moments of the particle distribution function:
+                     p(x, t) =        fs(x, t),        p(x, t)u(x, t) =         cfj(x, t).
+                                                                                                    Eq. (41)
+   As noted above, the fluid solver is used in conjunction with a scalar transport solver that
+15 generated scalar transport information. Thus, in addition to the fluid solver, a separate set
+   of distribution functions, Ti, is introduced for scalar transport. Thus, for each voxel in a
+   system, the system simulates both fluid flow and scalar transport to generate a state vector
+   representing the fluid flow and a scalar quantity representing the scalar variable. These
+   simulated results are stored as entries a computer accessible medium.
+20          The set of scalar transport functions provides an indirect way of solving a second
+   order macroscopic scalar transport equation. Ti provides an equation modeling a dynamic
+   evolution of a scalar quantity:
+                     T(x+ ci I +1)         = T(x, i)       (1 -    I)44(x~t)
+                                                                  TT                                Eq. (42)
+                      oi(x't      =                        e fj (x, t) (Tj (x, t) - T (x, t))
+                                                      Eix r)
+25                                     P(X't0To                                                     Eq. (43)
+                                                       32
+
+                                                                  AttorneyDacketNo.:06283-OIl9WOl
+                               T(xst)   -     fx~t)Tg(x1t
+                                                   pmx"i)                                   Eq. (44)
+            T, is the scalar distribution function and T is the scalar being solved for. TT is
+   the relaxation time correspond to scalar diffusivity. The relaxation time provides a
+   measure of how long it would take for the system to relax to equilibrium. The /'P
+ 5 and u are defined in equations (38), (39) and (41), respectively.
+            The lattice speed set, represented by c, can be a discrete set of lattice speeds for
+   use in the scalar simulation. In general the lattice speed set for scalar distribution does
+   not need to be the same as the lattice speed set for fluid distribution because the scalar
+   solver is an additional system attached to the basic fluid solver. For example, fewer lattice
+10 speeds can be used in the simulation of the scalar evolution than in tie simulation of the
+   fluid flow A different lattice speed set for scalar could be applied as long as the scalar
+   lattice speed set is a subset of the fluid lattice speed set. For example, a 6-speed LB model
+   may be used for scalar simulation when the 19-speed LB model is used for fluid
+   simulation. Since the 19-speed LB model has a higher order lattice symmetry than the 6
+I5 speed LB model, the same 19-speed lattice model for scalar is used in the examples
+   provided below.
+            The standard. well-known BGK (e.g., as noted above), includes non-equilibrium
+   moments ofall orders. It is believed that including all non-equilibrium moments is not
+   necessary isotopic, hydrodynamic, or physically meaningful. Thus, aBGK
+20 regularized/filtered collision operator form is used. A collision operator,      ,, represents a
+   future collision factor. This collision operator extracts the non-equilibrium scalar
+   properties at only the relevant supported orders (e.g., only the first order). The operator
+   also preserves and relaxes the modes ofinterest while the non-equilibrium properties
+   associated with the unsuppoted/undesirable higher order modes are removed. This
+25 projection is sufficient for the recovery of the scalar transport physics (e.g., advection and
+   diffusion). Use of this future collision operator is believed to significantly reduce the
+   noise, provides better advection behavior (e.g., can be more Callidean invariant), and is
+   believed to be more stable than other solutions as compared to other solutions of the well
+   known BGK operator. Such a form (e-g-, as shown in egn. 43) ensures that only the first
+30 order non-equilibrium moment contributes to scalar diffusion in hydrodynamic range. All
+   norequilibrium moments of higher orders are filtered out by this collision process. Use
+                                                    33
+
+                                                                    Attorney Docket No.: 06283-0019WO1
+   of the collision operator, Di, as described above is believed to provide benefits including
+   elimination of numerical noise exhibited in BGK and improved robustness. The scalar T
+   serves as its own equilibrium and no complicated expression of scalar equilibrium
+   distribution function is needed. The overall calculation of collision operator         oig is rather
+ 5 efficient. It is believed that filtering the higher order non-equilibrium moments can
+   additionally provide the advantage of reducing aliasing that can exist in the higher order
+   equilibrium solutions.
+            It can be shown that the collision in (42) obeys the scalar conservation law.
+   Multiplying     f  (x, t) = f (x + c,, t +1) on both sides of equation (42) and noticing:
+                                       (_ci - n    _   pu -  pu
+10                                          PTO            pTO                                  Eq. (45)
+            Results in
+                                          Zf.T=           f T = pT
+                                                                                                Eq. (46)
+15          where 7I (x, t) denotes the right hand side of equation (42). Hence the scalar
+   collision operator conserves local pT which implies realization of local energy
+   conservation if the scalar is considered as temperature. Since 7; propagates along with            fi
+   the energy distribution E, = f777 is fully maintained during advection. The global
+   conservation of pT is therefore achieved. Furthermore, and most notably, this scheme
+20 maintains the exact invariance on uniformity of scalar T. This is straightforward to see,
+   that if 7 (x, t) - T(x, t) = T = const everywhere, then >(x,t)=O and 77 (x, t +1) = T
+   everywhere at all later times, regardless of the background flow field. This fundamental
+   property is not demonstrated in any previous lattice Boltzmann scalar models.
+25          Using Chapmann-Enskog expansion, it can be shown that equation (42) recovers
+   the following second order macroscopic scalar transport equation:
+                                 OPT+ V,-(puT) = V - pKVT
+                                  at
+                                                                                                Eq. (47)
+                                                       34
+
+                                                               Attorney Docket No.: 06283-0019WO1
+           With   K  = (t -1 / 2)T . The uniformity invariance condition ensures that p - is
+   outside of VT.
+            Boundary Condition
+ 5         One substantial advantage of LBM is the capability of dealing with complex
+   geometry. In a generalized volumetric LB surface algorithm to achieve
+   frictionless/frictional boundary conditions (BC) on arbitrary geometry, mass is conserved
+   and both tangential and normal momentum fluxes on the boundary are precisely realized.
+   The local detailed balance is fully satisfied. An adiabatic (zero scalar flux) BC on
+10 arbitrary geometry for scalar can be derived as a direct extension of this approach. Once
+   the adiabatic BC is realized, a prescribed finite flux BC can be accomplished.
+           Unlike other point-wise LB, boundary conditions are conducted on a discretized
+   set of surface elements. These piece-wise flat surface elements together represent a
+   curved geometry. During particle advection, as shown in FIG. 14, each surface element
+15 collects incoming particles from its neighboring fluid cells (step 1410). The incoming
+   distributions   ff",7m"'are weighted by volume overlapping of parallelepipeds from the
+   underling surface element with cells in particle moving directions (step 1412). After
+   receiving the incoming quantities, the following surface scalar algorithm is applied (step
+   1414). To determine the outgoing distributions from the surface,
+                                        T ** = TP" - (W"Tr"- ||"_1T|f1
+20                                                                                         Eq. (48)
+           Where
+                                      = V~<Ofr-TrF
+                                               n<                                          Eq. (49)
+           Here n is the surface normal pointing towards fluid domain and c gi <0, c, g- -c,.
+25    (=|ng~ A) is the volume of parallelepiped in particle direction ci associated with the
+   surface normal n and area A of a given surface element, and obviously 1 = I g . Finally,
+   the outgoing distributions are propagated back from the surface element to fluid cells
+   according to the same surface advection process (step 1416). It is not difficult to show
+   that the above surface scalar collision achieves exact zero surface scalar flux. Taking
+30 summation over outgoing directions, the outgoing scalar flux is:
+                                                   35
+
+                                                                      Attorney Docket No.: 06283-0019WO1
+                         C   -n~o     cj!-3<O
+                                                                                                  Eq. (50)
+             Note P =13,and the definition of T in eqn (49), the second summation term on
+   the right hand side is zero. In addition, because of the mass flux conservation
+    EZ~1 .lo   ffi                            P.=<
+                                              1 , the total outgoing scalar flux is the same as the total
+ 5 incoming scalar flux:
+                                    x:  fL7 t Pi.        =
+                                                           centen<o
+                                                                    r3 p
+                                                                                                  Eq. (51)
+             Therefore zero net surface flux (adiabatic) BC is fully satisfied on arbitrary
+   geometry.
+10
+             If an external scalar source Q(t) is specified on the surface, a source term can be
+   directly added to equation (48)
+                                              PCP   1 .n>O       i                                Eq. (52)
+15           If the boundary condition has a prescribed scalar quantity T, (for example surface
+   temperature), surface heat flux can be calculated accordingly:
+                                Q(t) =     PCr('T'     -  TEq.                                        (53)
+             Numerical Verification
+20           FIGS. 15-18 show four sets of simulation results that demonstrate the capability of
+   the LB scalar solver regarding its numerical accuracy, stability, Galilean invariance, grid
+   orientation independence and etc. Results using two different 2nd order FD schemes, van
+   Leer type of flux limiter scheme and direct mixing scheme (mixture of central and first
+   order upwind schemes) are also presented as comparisons.
+25
+             A. Shearwave Decay
+             The first test case is a temperature shearwave decay carried by a constant uniform
+   fluid flow. The initial temperature distribution is a uniform one plus a spatial sinusoidal
+                                                          36
+
+                                                                Attorney Docket No.: 06283-0019WO1
+   variation with lattice wavelength L = 16 and magnitude
+   6 = 6.67%: T(x) = TA(1+6 sin(21Ix / L)). TA is a constant. The velocity of background
+   mean flow is 0.2 and the thermal diffusivity K is 0.002. With such a low resolution and
+    K the numerical stability and accuracy can be well validated. For temperature decay
+ 5 without background flow, both the LB scalar solver and the finite difference methods
+   show excellent agreements with theory. With nonzero background mean flow, the LB
+   scalar solver is still able to accurately compare with theory. However, the FD results
+   show noticeable numerical errors. The temperature profiles at lattice time step 81 are
+   plotted in FIG. 15. Numerical diffusion is seen clearly for the flux-limiter FD scheme,
+10 while neither the correct temperature profile nor its location can be maintained by the
+   mixing FD scheme.
+            B. Inclined Channel with Volume Heat Source
+            The second test case is a simulation of temperature distribution in a channel flow
+15 with different lattice orientations. The channel walls are free-slip, and the fluid flow stays
+   uniform with Uo = 0.2 as a result. The channel width is 50 (lattice spacing) and the flow
+   Re is 2000. The thermal diffusivity      K is 0.005. The temperature on the wall is fixed at
+   Tw = 1/3. A constant volume heat source q = 5 x 10-6 is applied in the bulk fluid domain.
+   The flow has periodic boundary condition in the streamwise direction, which is easy to
+20 realize in lattice aligned situation. When the channel (light color) is tilted as shown in
+   FIG. 16, the in and out channel boundaries are matched perfectly in coordinate directions
+   so that the periodic boundary condition is once again realized in the streamwise direction.
+   In order to demonstrate lattice independence, we choose the tilted angle to be 26.56
+   degree. Like the first test case, the temperature distributions using LB scalar solver and
+25 the two FD schemes match analytic solution very well when the channel is lattice aligned.
+   However, the results from the FD schemes depart significantly from theory when the
+   channel is tilted. The simulation results of temperature distribution across the tilted
+   channel are shown in FIG. 16. The LB results are clearly shown to be independent of
+   lattice orientations. The errors from the FD methods are also originated from their
+30 fundamental difficulty in dealing with gradient calculation on a tilted boundary
+   orientation, so that additional numerical artifacts are introduced. Since the LB scalar
+   particle advection is exact with the BC presented here, it is thus able to achieve a lattice
+   orientation independent scalar evolution.
+                                                  37
+
+                                                                Attorney Docket No.: 06283-0019WO1
+            C. Temperature Propagation in an Inclined Channel
+            Due to lack of neighbor information in a non-lattice aligned near wall region on
+   Cartesian grids, it is extremely difficult to get accurate estimation of local gradients,
+ 5 which is essential for FD based methods. Furthermore, because of strong dependency on
+   upwind information, the calculation of scalar advection can be further compromised for
+   FD methods. In contrast, the boundary treatment of LB scalar solver achieves exact local
+   scalar flux conservation as discussed above. The scalar advection in such a near wall
+   region can be computed accurately. High temperature convection in a channel tilted by 30
+10 degree is conducted as a demonstration. The free-slip and adiabatic BCs are enforced at
+   solid walls and fluid velocity is constant U0 = 0.0909 along the channel. The thermal
+   diffusivity K is 0.002. Initially the temperature is 1/3 everywhere except for T = 4/9 at
+   the inlet. Then this temperature front should be convected by the uniform background
+   fluid flow to downstream locations at later times without distortion. The computed
+15 temperature front distributions across channel at lattice time step 2000 are shown in FIG.
+   17. The temperature front of LB scalar solver maintains a nearly straight profile. On the
+   other hand, the temperature fronts from the two FD schemes are shown substantial
+   distortions in near wall regions. It is also worth mentioning that the LB scalar result has
+   shown the thinnest temperature front which implies that LB scalar solver has a smaller
+20 numerical diffusion.
+            D. Rayleigh-Bernard natural convection
+            Rayleigh-Bernard (RB) natural convection is a classical benchmark for accuracy
+   verification of numerical solvers. It has a simple case setup but complex physics
+25 phenomena. When Rayleigh number Ra exceeds certain critical value, the system
+   experiences a transition from no-flow to convection. Current study, as shown in FIG. 18,
+   is carried out under the Boussinesq approximation, in that the buoyancy force acting on
+   the fluid is defined as cpg(T - T,) where a is the thermal expansion rate, g is gravity,
+   and Tm is the average temperature value of the top and bottom boundaries. Since the
+30 most unstable wave number is kc = 3.117 when the Ra exceeds the critical value Rae
+   = 1707.762, the resolution 101 x 50 is used in the study. Pr used here is 0.71. When RB
+   convection is established, the heat transfer between two plates is greatly enhanced. The
+   enhancement of the heat transfer is described by Nu = 1+ < uT > H / KAT.
+                                                  38
+
+                                                         Attorney Docket No.: 06283-0019WO1
+         A number of implementations have been described. Nevertheless, it will be
+  understood that various modifications may be made without departing from the spirit and
+  scope of the claims. Accordingly, other implementations are within the scope of the
+5 following claims.
+
+                                                                Attorney Docket No.: 06283-0019WO1
+   WHAT IS CLAIMED IS:
+            1. A method for simulating a fluid flow on a computer, the method comprising:
+            simulating activity of a fluid in a volume, the activity of the fluid in the volume
+   being simulated so as to model movement of elements within the volume;
+ 5          storing, in a computer accessible memory, a set of state vectors for voxels in the
+   volume, each of the state vectors comprising a plurality of entries that correspond to
+   particular momentum states of possible momentum states at a corresponding voxel;
+            simulating a time evolution of a scalar quantity for the volume, with the
+   simulation of the scalar quantity being based at least in part on the fluid flow and
+10 indirectly solving a macroscopic scalar transport equation; and
+            storing, in the computer accessible memory, a set of scalar quantities for voxels in
+   the volume, each of the scalar quantities comprising an entry that corresponds to the
+   simulated scalar quantity at a corresponding voxel.
+15          2. The method of claim 1, wherein:
+            simulating the fluid flow comprises simulating the fluid flow based in part on a
+   first set of discrete lattice speeds; and
+            simulating the time evolution of the scalar quantity comprises simulating the time
+   evolution of the scalar quantity based in part on a second set of discrete lattice speeds, the
+20 second set of discrete lattice speeds comprising fewer lattice speeds than the first set of
+   discrete lattice speeds.
+            3. The method of claim 1, wherein:
+            simulating the fluid flow comprises simulating the fluid flow based in part on a
+25 first set of discrete lattice speeds; and
+            simulating the time evolution of the scalar quantity comprises simulating the time
+   evolution of the scalar quantity based in part on a second set of discrete lattice speeds, the
+   second set of discrete lattice speeds comprising the same lattice speeds than the first set of
+   discrete lattice speeds.
+30
+            4. The method of claim 1, wherein simulating the time evolution of the scalar
+   quantity comprises simulating the time evolution of the scalar quantity based in part on a
+                                                   4n
+
+                                                              Attorney Docket No.: 06283-0019WO1
+   collision operator in which only a first order non-equilibrium moment contributes to
+   scalar diffusion.
+           5. The method of claim 1, wherein simulating the time evolution of the scalar
+ 5 quantity comprises simulating the time evolution of the scalar quantity based in part on a
+   collision operator that filters all non-equilibrium moments of second order and higher.
+           6. The method of claim 1, wherein simulating the time evolution of the scalar
+   quantity comprises:
+10         collecting incoming distributions from neighboring cells;
+           weighting the incoming distributions;
+           applying a scalar algorithm to determine outgoing distributions; and
+           propagating the determined outgoing distributions.
+15         7. The method of claim 6, further comprising applying a zero net surface flux
+   boundary condition such that the incoming distributions are equal to the determined
+   outgoing distributions.
+           8. The method of claim 6, wherein determining the outgoing distributions
+20 comprises determining the outgoing distributions to provide a zero surface scalar flux.
+           9. The method of claim 1, wherein the scalar quantity comprises a scalar quantity
+   selected from the group consisting of temperature, concentration, and density.
+25         10. The method of claim 1, wherein solving the macroscopic scalar transport
+   equation comprises satisfying an exact invariance on uniformity of the scalar.
+           11. The method of claim 1, wherein the macroscopic scalar transport equation
+                 9PT   V - (puT) - V - pKVT
+   comprises:
+30
+           12. The method of claim 1, wherein simulating the time evolution of the scalar
+   quantity comprises simulating a particle distribution function.
+                                                   41
+
+                                                                Attorney Docket No.: 06283-0019WO1
+           13. The method of claim 1, wherein simulating the time evolution of the scalar
+   quantity comprises determining macroscopic fluid dynamics by solving mesoscopic
+   kinetic equations based at least in part on the Boltzmann equation.
+ 5         14. The method of claim 1, wherein simulating activity of the fluid in the volume
+   comprises:
+           performing interaction operations on the state vectors, the interaction operations
+   modeling interactions between elements of different momentum states according to a
+   model; and
+10         performing first move operations of the set of state vectors to reflect movement of
+   elements to new voxels in the volume according to the model.
+           15. The method of claim 1, wherein simulating the time evolution of the scalar
+   quantity comprises satisfying a local energy conservation condition.
+15
+           16. The method of claim 15, wherein satisfying the local energy conservation
+   condition comprises satisfying the local energy conservation condition in a fluid domain
+   internal to the volume and at a boundary of the volume.
+20         17. A computer program product tangibly embodied in a computer readable
+   medium, the computer program product including instructions that, when executed,
+   simulate a physical process fluid flow, the computer program product configured to cause
+   a computer to:
+           simulate activity of a fluid in a volume to model movement of elements within the
+25 volume;
+           store a set of state vectors for voxels in the volume, each of the state vectors
+   comprising a plurality of entries that correspond to particular momentum states of
+   possible momentum states at a corresponding voxel;
+           simulate a time evolution of a scalar quantity for the volume, with the simulation
+30 of the scalar quantity being based at least in part on the fluid flow and indirectly solving a
+   macroscopic scalar transport equation; and
+           store a set of scalar quantities for voxels in the volume, each of the scalar
+   quantities comprising an entry that corresponds to the simulated scalar quantity at a
+   corresponding voxel.
+
+                                                                Attorney Docket No.: 06283-0019WO1
+            18. The computer program product of claim 17 wherein:
+            causing the computer to simulate the fluid flow comprises causing the computer to
+   simulate the fluid flow based in part on a first set of discrete lattice speeds; and
+ 5          causing the computer to simulate the time evolution of the scalar quantity
+   comprises causing the computer to simulate the time evolution of the scalar quantity
+   based in part on a second set of discrete lattice speeds, the second set of discrete lattice
+   speeds comprising fewer lattice speeds than the first set of discrete lattice speeds.
+10          19. The computer program product of claim 17 wherein:
+            causing the computer to simulate the fluid flow comprises causing the computer to
+   simulate the fluid flow based in part on a first set of discrete lattice speeds; and
+            causing the computer to simulate the time evolution of the scalar quantity
+   comprises causing the computer to simulate the time evolution of the scalar quantity
+15 based in part on a second set of discrete lattice speeds, the second set of discrete lattice
+   speeds comprising the same lattice speeds than the first set of discrete lattice speeds.
+            20. The computer program product of claim 17, wherein causing the computer to
+   simulate the time evolution of the scalar quantity comprises causing the computer to
+20 simulate the time evolution of the scalar quantity based in part on a collision operator in
+   which only a first order non-equilibrium moment contributes to scalar diffusion.
+            21. The computer program product of claim 17, wherein causing the computer to
+   simulate the time evolution of the scalar quantity comprises causing the computer to
+25 simulate the time evolution of the scalar quantity based in part on a collision operator that
+   filters all non-equilibrium moments of second order and higher.
+            22. The computer program product of claim 17, wherein causing the computer to
+   simulate the time evolution of the scalar quantity comprises causing the computer to:
+30          collect incoming distributions from neighboring cells;
+            weight the incoming distributions;
+            apply a scalar algorithm to determine outgoing distributions; and
+            propagate the determined outgoing distributions.
+
+                                                               Attorney Docket No.: 06283-0019WO1
+            23. The computer program product of claim 22, further configured to cause a
+   computer to apply a zero net surface flux boundary condition such that the incoming
+   distributions are equal to the determined outgoing distributions.
+ 5          24. The computer program product of claim 22, wherein causing the computer to
+   determine the outgoing distributions comprises causing the computer to determine the
+   outgoing distributions to provide a zero surface scalar flux.
+            25. The computer program product of claim 17, wherein the scalar quantity
+10 comprises a scalar quantity selected from the group consisting of temperature,
+   concentration, and density.
+            26. The computer program product of claim 17, wherein causing the computer to
+   solve the macroscopic scalar transport equation comprises causing the computer to satisfy
+15 an exact invariance on uniformity of the scalar.
+            27. The computer program product of claim 17, wherein the macroscopic scalar
+                                       PT + V - (puT) - V -prVT
+   transport equation comprises:
+20          28. The computer program product of claim 17, wherein causing the computer to
+   simulate the time evolution of the scalar quantity comprises causing the computer to
+   simulate a particle distribution function.
+            29. The computer program product of claim 17, wherein causing the computer to
+25 simulate the time evolution of the scalar quantity comprises causing the computer to
+   determine macroscopic fluid dynamics by solving mesoscopic kinetic equations based at
+   least in part on the Boltzmann equation.
+            30. The computer program product of claim 17, wherein causing the computer to
+30 simulate activity of the fluid in the volume comprises causing the computer to:
+            perform interaction operations on the state vectors, the interaction operations
+   modeling interactions between elements of different momentum states according to a
+   model; and
+                                                  44
+
+                                                                 Attorney Docket No.: 06283-0019WO1
+            perform first move operations of the set of state vectors to reflect movement of
+   elements to new voxels in the volume according to the model.
+            31. The computer program product of claim 17, wherein causing the computer to
+ 5 simulate the time evolution of the scalar quantity comprises causing the computer to
+   satisfy a local energy conservation condition.
+            32. The computer program product of claim 31, wherein causing the computer to
+   satisfy the local energy conservation condition comprises causing the computer to satisfy
+10 the local energy conservation condition in a fluid domain internal to the volume and at a
+   boundary of the volume.
+            33. A computer system for simulating a physical process fluid flow, the system
+   being configured to:
+15          simulate activity of a fluid in a volume to model movement of elements within the
+   volume;
+            store a set of state vectors for voxels in the volume, each of the state vectors
+   comprising a plurality of entries that correspond to particular momentum states of
+   possible momentum states at a corresponding voxel;
+20          simulate a time evolution of a scalar quantity for the volume, with the simulation
+   of the scalar quantity being based at least in part on the fluid flow and indirectly solving a
+   macroscopic scalar transport equation; and
+            store a set of scalar quantities for voxels in the volume, each of the scalar
+   quantities comprising an entry that corresponds to the simulated scalar quantity at a
+25 corresponding voxel.
+            34. The system of claim 33, wherein:
+            the configurations to simulate the fluid flow comprise configurations to cause the
+   system to simulate the fluid flow based in part on a first set of discrete lattice speeds; and
+30          the configurations to simulate the time evolution of the scalar quantity comprise
+   configurations to simulate the time evolution of the scalar quantity based in part on a
+   second set of discrete lattice speeds, the second set of discrete lattice speeds comprising
+   fewer lattice speeds than the first set of discrete lattice speeds.
+
+                                                                  Attorney Docket No.: 06283-0019WO1
+           35. The system of claim 33, wherein:
+           the configurations to simulate the fluid flow comprise configurations to simulate
+   the fluid flow based in part on a first set of discrete lattice speeds; and
+           the configurations simulate the time evolution of the scalar quantity comprise
+ 5 configurations to simulate the time evolution of the scalar quantity based in part on a
+   second set of discrete lattice speeds, the second set of discrete lattice speeds comprising
+   the same lattice speeds than the first set of discrete lattice speeds.
+           36. The system of claim 33, wherein the configurations to simulate the time
+10 evolution of the scalar quantity comprise configurations to simulate the time evolution of
+   the scalar quantity based in part on a collision operator in which only a first order non
+   equilibrium moment contributes to scalar diffusion.
+           37. The system of claim 33, wherein the configurations to simulate the time
+15 evolution of the scalar quantity comprise configurations to simulate the time evolution of
+   the scalar quantity based in part on a collision operator that filters all non-equilibrium
+   moments of second order and higher.
+           38. The system of claim 33, wherein the configurations to simulate the time
+20 evolution of the scalar quantity comprise configurations to:
+           collect incoming distributions from neighboring cells;
+           weight the incoming distributions;
+           apply a scalar algorithm to determine outgoing distributions; and
+           propagate the determined outgoing distributions.
+25
+           39. The system of claim 38, further configured to apply a zero net surface flux
+   boundary condition such that the incoming distributions are equal to the determined
+   outgoing distributions.
+30         40. The system of claim 38, wherein the configurations to determine the outgoing
+   distributions comprise configurations to determine the outgoing distributions to provide a
+   zero surface scalar flux.
+
+                                                              Attorney Docket No.: 06283-0019WO1
+           41. The system of claim 33, wherein the scalar quantity comprises a scalar
+   quantity selected from the group consisting of temperature, concentration, and density.
+           42. The system of claim 33, wherein the configurations to solve the macroscopic
+ 5 scalar transport equation comprise configurations to satisfy an exact invariance on
+   uniformity of the scalar.
+           43. The system of claim 33, wherein the macroscopic scalar transport equation
+                  PT+ V - (puT) - V -prVT
+   comprises:
+10
+           44. The system of claim 33, wherein the configurations to simulate the time
+   evolution of the scalar quantity comprise configurations to simulate a particle distribution
+   function.
+15         45. The system of claim 33, wherein the configurations to simulate the time
+   evolution of the scalar quantity comprise configurations to determine macroscopic fluid
+   dynamics by solving mesoscopic kinetic equations based at least in part on the Boltzmann
+   equation.
+20         46. The system of claim 33, wherein the configurations to simulate activity of the
+   fluid in the volume comprise configurations to:
+           perform interaction operations on the state vectors, the interaction operations
+   modeling interactions between elements of different momentum states according to a
+   model; and
+25         perform first move operations of the set of state vectors to reflect movement of
+   elements to new voxels in the volume according to the model.
+           47. The system of claim 33, wherein the configurations to simulate the time
+   evolution of the scalar quantity comprise configurations to satisfy a local energy
+30 conservation condition.
+                                               47
+
+                                                            Attorney Docket No.: 06283-0019WO1
+          48. The system of claim 47, wherein the configurations to satisfy the local energy
+  conservation condition comprise configurations to satisfy the local energy conservation
+  condition in a fluid domain internal to the volume and at a boundary of the volume.
+5
+
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>
+<removed-apn> <removed-date>

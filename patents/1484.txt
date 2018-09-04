@@ -1,0 +1,676 @@
+1001997676
+    ABSTRACT
+    An encoder system may include an analyzer that analyzes a current image area in an input
+    video to select a transform. A selectable residue transformer, controlled by the analyzer, may
+    perform the selectable transform on a residue image generated from the current image area
+    and a predicted current image area, to generate a transformed residue image. An encoder
+    may encode the transformed residue image to generate output data. The analyzer controls the
+    encoder to encode information to identify the selectable transform and to indicate that the
+    selectable transform for the current image area is different from a transform of a previous
+    image area of the input video. A decoder system may include components appropriate for
+    decoding the output data from the encoder system.
+
+     1001997676
+                         ADAPTIVE COLOR SPACE TRANSFORM CODING
+     PRIORITY CLAIM
+[01]                 The present    application   claims  priority to U.S.    Patent Application No.
+          13/940,025,  filed on July 11, 2013, which is a Continuation-in-Part          of U.S. Patent
+         Application No. 13/905,889, filed on May 30, 2013, the entirety of which is incorporated by
+         reference herein.
+[01Al                Also incorporated herein by reference, in its entirety, is PCT/US2014/032481
+         (published as WO 2014/193538), filed on 1 April 2014.
+     BACKGROUND
+[02]             Image data, such as those contained in a video, may contain large amount of
+         information relating to color, pixel location, and time. In order to handle such large amount
+         of information, it may be necessary to compress or encode the image data, without losing too
+         much information from the original video, while at the same time, without increasing the
+         complexity of the data compression, which might decrease the speed of image data
+         processing. Encoded image data may need to be decoded later to convert back or restore the
+         original video information.
+[03]             To encode an image, pixel color data may be first transformed to color data in an
+         appropriate color-space coordinate system.      Then, the transformed data is encoded.    For
+         example, the image data may have raw pixel color data in a Red-Green-Blue (RGB) color
+         space coordinate system. To encode the image data, the raw pixel color data in RGB color
+         space may be transformed into color data in a YCbCr color space coordinate system, by
+         separating the luminance component and the color component.           Then, the color data in
+         YCbCr color space coordinate system may be encoded. By doing so, redundant information
+         that might exist between the original three colors may be compressed by removing the
+         redundancy during the color space transform.
+                                                      -1-
+
+     1001997676
+[041             Additional redundancies in the image data may be removed during the encoding of
+         the transformed image data, by performing spatial prediction and temporal prediction,
+         followed by additional encoding of any remaining residual data to any extent that is
+         desirable, as well as by entropy encoding of the data in an individual frame in a point in time
+         and/or of the data in a duration of the video sequence. Spatial prediction may predict image
+         data in a single frame in time to eliminate redundant information between different pixels in
+         the same frame. Temporal prediction may predict image data in a duration of the video
+         sequence to eliminate redundant information between different frames. A residue image may
+         be generated from the difference between the non-encoded image data and the predicted
+         image data.
+[05]             Some color space formats, such as RGB 4:4:4, may be less efficient to code natively
+         since the different color planes may have not been effectively de-correlated. That is,
+         redundant information may exist between different components that may not be removed
+         during encoding, resulting in a reduced coding efficiency versus an alternative color space.
+         On the other hand, it may be undesirable to encode this material in an alternative color space
+         such as YUV 4:4:4 or YCoCg and YCoCg-R 4:4:4 in some applications, because of the color
+         transformation that may have to be performed outside the coding loop, as well as possible
+         losses that may be introduced through the color transformation.
+[06]             Thus, there is a need for an improved way of transforming and encoding image data
+         efficiently.
+     BRIEF DESCRIPTION OF THE DRAWINGS
+[071             FIG. 1 illustrates an encoding system according to an embodiment of the present
+         disclosure.
+[08]             FIG. 2 illustrates a decoding system according to an embodiment of the present
+         disclosure.
+[09]             FIG. 3 illustrates an encoding method according to an embodiment of the present
+         disclosure.
+                                                     -2-
+
+     1001997676
+[10]             FIG. 4 illustrates a decoding method according to an embodiment of the present
+         disclosure.
+     DETAILED DESCRIPTION
+[11]             According to an embodiment as illustrated in FIG. 1, a system 100 may include an
+         analyzer 130, a selectable residue transformer 160, and an encoder 170.
+[12]             The analyzer 130 may analyze a current image area in an input video 110 to select a
+         transform. The selectable residue transformer 160 may be controlled by the analyzer 130, to
+         perform the selectable transform on a residue image generated from the current image area
+         and a predicted current image area, to generate a transformed residue image. The encoder
+          170 may encode the transformed residue image to generate output data 190. The analyzer
+          130 may control the encoder 170 to encode information to identify the selectable transform
+         and to indicate that the selectable transform for the current image area is different from a
+         transform of a previous image area of the input video.
+[13]             Optionally, the system 100 may include frame buffers 120 to store information of
+         input video 110, for example, image data previously processed. Such data in frame buffers
+          120 may be used by inter prediction 150, controlled by the analyzer 130, to perform temporal
+         predictions, i.e. generating predicted image data for the current image area based upon the
+         data of a previous frame. Or such data in frame buffers 120 may be used by intra prediction
+          152, controlled by the analyzer 130, to perform spatial predictions, i.e. generating predicted
+         image data for the current image area based upon the data of another portion of the current
+         frame. Optionally, the analyzer 130 may perform its analysis based upon the data stored in
+         the frame buffers 120. Predicted image area for the current image area generated by the inter
+         prediction 150 and/or the intra prediction 152 may be combined with (or subtracted from) the
+         current image area of the input video 110 by an integrator 140, to generate the residue image.
+[14]             According to an embodiment, the current image area may be one of a frame, a slice,
+         and a coding tree unit. The selectable transform may include a color-space transform. The
+         encoder 170 may include an entropy encoder.         The encoded information identifying the
+         selectable transform may specify coefficients of a selectable inverse transform. The encoded
+                                                     -3 -
+
+     1001997676
+         information identifying the selectable transform may be contained in one of a sequence
+         parameter set, a picture parameter set, and a slice header, preceding encoded residue image
+         data of the current image area. The encoder 170 may include a transformer 172 and/or a
+         quantizer 174, which may be controlled by the analyzer 130 to perform quantization.
+[15]             The analyzer 130 may select and change the selectable transform for the selectable
+         residue transformer 160 and alter parameters accordingly, for example for inter prediction
+          150, intra prediction 152, and encoder 170, to optimize for data encoding, data decoding,
+         encoded data size, error rate, and/or system resources required for encoding or decoding.
+[16]             The next generation High Efficiency Video Coding (HEVC) standard introduced
+         several new video coding tools in an effort to improve video coding efficiency versus
+         previous video coding standards and technologies such as MPEG-2, MPEG-4 part2, MPEG-4
+         AVC/H.264, VCl, and VP8 among others.
+[171             The new standard may support the encoding of YUV 4:2:0 8 or 10 bit material using
+         well defined profiles, for example, the Main, Main 10, and Main Still Picture profiles. There
+         is considerable interest in professional applications, such as cinema applications, capture,
+         video editing, archiving, gaming, and consumer applications, especially for screen content
+         compression and sharing, to develop formats to support higher (more than 10 bits) sample
+         precision (bit-depth) as well as different color sampling formats and color spaces, including
+         YUV or RGB 4:4:4.
+[18]             Encoding principles of higher color sampling formats/spaces may be similar to those
+         of formats with less sampling precision, i.e. 4:2:0 YUV, to appropriately handle the
+         difference in resolution for the chroma components.      One of the color components may be
+         perceived as equivalent to the luma component in the 4:2:0 YUV encoding, whereas the
+         remaining color components may be handled similarly as the chroma components, while
+         accounting for the higher resolution. That is, prediction tools such as intra prediction and
+         motion compensation, need to account for the increment in resolution, and the transform and
+         quantization processes, also need to handle additional residual data for the color components.
+          Similarly, other processes such as entropy coding, deblocking and the sample adaptive offset
+         (SAO) among others, may need to be extended to process the increase in video data.
+                                                     -4-
+
+     1001997676
+         Alternatively, all color components may be encoded separately as separate monochrome
+         images, with each color component taking the role of the luma information during the
+         encoding or decoding processes.
+[19]              To improve coding performance, an additional color space transformation may be
+         performed on the residual data that may result in better de-correlation (less redundancy)
+         between all color components. The selectable color space transformation may be applied on
+         dequantized (inverse quantized) and inverse-transformed residual data using an adaptively
+         derived color-space transform matrix, such as:
+                la
+                d
+                    b
+                     e
+                     g
+                         c
+                         f     Q'
+                                 '
+                                   =Bs
+                                      G
+                           it I' I=IGRR'
+[20]              The color transform matrix may be derived using previously restored image data,
+          such as image data on the left or above of the current transform unit or image data of the
+         transform unit in the previous frames. The derivation may involve normalizing the reference
+          samples in each color plane by subtracting their mean and by computing and normalizing a
+         covariance matrix across all color planes. This may achieve some "localized" coding
+         performance      benefits,   without adding any new     signaling overhead      in the HEVC
+          specification.     However, this may add complexity in both encoder and decoder for the
+         derivation of the transformation parameters.
+[21]              To simplify the adaptive color transform in video encoding and decoding, the color
+         transforms are only applied on residual data. Additional color transforms may be selectable
+         and signaled by the encoder, and the decoder may select and perform the corresponding
+         inverse color transform based upon the signaling decoded from the encoded data, according
+         to the present invention.
+[22]              In particular, one or more color transforms may be implicitly or explicitly signaled at
+         different levels within a codec such as HEVC.        For example, an encoder may implicitly
+          signal known color transforms, such as transforms in the limited or full range YUV Rec.709,
+         Rec.2020, or Rec.601, as well as YCoCg, from the RGB color space. An encoder may
+         explicitly signal color transforms, by signaling or specifying all inverse color transform
+                                                      -5-
+
+     1001997676
+         coefficients with a predefined precision, for example, by listing the transform coefficients or
+         their relationships in portions of the encoded data. Color transforms, including the types, the
+         parameters, and the coefficients, may be signaled or specified within the Sequence Parameter
+          Set (SPS) NALU, the Picture Parameter Sets (PPS), and/or a Slice header. Signaling within a
+         Coding Tree Unit (CTU) may also be possible, although that may cost a bit more in terms of
+         bitrate, which may not be desirable.
+[23]              If such transform information is specified for different levels of the video sequence,
+         i.e. sequence, frame, and pixel block of a CTU, then the transforms may be predicted within
+         the hierarchy of these elements.      That is, a transform in the PPS may be predicted from
+         transforms defined in the SPS, and transforms in the slice header may be predicted from
+         transforms in the PPS and/or the SPS. New syntax elements and units may be defined and
+         used to allow this prediction of transforms between different levels of the video sequence
+         hierarchy, to include the prediction or non-prediction of the transform from specified
+         transforms or higher level transforms, as well as for the prediction or non-prediction of the
+         precision of the transform coefficients and the coefficients themselves.        Derivation of an
+         explicitly defined color transform may be based on data available, such as sample data from
+         the entire sequence, picture, slice, or CTU. An encoder may choose or select to use data that
+         correspond to current pixel samples if available, or use data from past frames or units that
+         have already been encoded.        A principal component analysis method, e.g. a covariance
+         method, iterative method, non-linear iterative partial least squares, etc., may be used to derive
+         the transform coefficients.
+[24]              A system may dictate that only a single transform shall be used for the entire
+         sequence, thus not permitting any change of the color transform within any subcomponents
+         of the sequence, i.e. within a picture, a slice, CTU, or a Transform Unit (TU), through
+         signaling or semantics (i.e. forced by the codec or profile/level). A similar restriction may be
+         performed at a lower level, i.e. within a picture, slice, or CTU.
+[25]              However, it may also be possible for a system to allow switching of color transforms
+         within a sequence, picture, slice, or even CTU.        Switching of color transforms for every
+         picture and slice may be done by signaling new color transform parameters for each new data
+                                                      -6-
+
+     1001997676
+         block that override the higher level or previous block transform parameters.        Additional
+         transform parameters may be signaled at a lower layer, effectively allowing switching of the
+         color transform for an entire CTU, Coding Unit (CU), or even TU. However such signaling
+         may take up a significant number of bits in the resulting encoded data stream, thus increasing
+         the data stream size.
+[26]             Alternatively, the color transform may be derived based on a variety of predefined or
+         signaled conditions in the bitstream. In particular, a particular color transform may be pre
+         assigned to a specific transform block size, coding unit size, or prediction mode (e.g. intra vs
+         inter). For example, assuming that transform units of luma and chroma data are aligned for a
+         particular video sequence, if the size of the luma transform that is to be used is 16x16, then
+         Color transform A is used, if 8x8 luma transform is to be used, color transform B is used, and
+         for 32x32 or 4x4 transforms no color transform is applied. If the transform units of luma and
+         chroma data are not aligned, then alternative but similar ways of pre-defining conditional
+         derivation of color transforms may be used to account for the misalignment of transform
+         units.
+[271             A system may buffer or cache a number of pre-defined color transforms along with
+         associated processing algorithms, in encoding or decoding, such that the system may store a
+         codebook that it can look up the pre-defined color transforms, for example via a lookup table
+         (LUT).    The system may also compute or predict color transforms and store them in the
+         buffer for later lookup.
+[28]             In some codec standards, prediction units (PUs) and TUs may be defined within a CU
+         with no strict dependency between the two. Thus, prediction units (PUs) and TUs may not
+         be directly related in terms of size. In other codec standards, if TUs are defined as strictly
+         within PUs, then PU information, such as prediction list and reference indices, may be used
+         to derive the color transform.
+[29]             For systems where complexity is not a concern, then a combination of the above
+         methods may be used. That is, for every CTU, CU, or transform block, the encoder may
+         signal in the encoded data stream whether to use a previously defined/signaled color
+         transformed, or whether the color transform should be derived separately for the current unit
+                                                     -7-
+
+     1001997676
+         based on neighborhood information. This allows the system to control the complexity of the
+         decoder and to avoid cases where there is insufficient information to derive the color
+         transform from its neighbors. This may be especially true around object or color boundaries
+         or noisy data, where neighborhood data may be uncorrelated. The adaptively computed color
+         transform may be computed and updated at less frequent intervals, e.g. every CTU row or
+         even for every CTU, to reduce decoder complexity. Stability of the color transform may be
+         increased by slowly adapting the color transform using previously generated values. That is,
+         the computation of the current color transform at unit (e.g. Transform Unit) n, may be
+         performed as:
+              Transform(n) = wo*Transform(n-1) + wi* ComputedTransform(n)
+[30]             Where the ComputedTransform(n) is the transform that is estimated purely based on
+         local pixel group information. The two weights, wo and wi, may be predefined or signaled in
+         the system providing further flexibility on how to control the computation of the color
+         transform. That is, increasing the value of wo relative to wi, increases the dependence of
+         resulting color transform Transform(n) on a neighboring color transform Transform(n-1).
+[31]             An encoding system may determine all of the transforms needed to encode a video
+         sequence, by for example, analyzing the image data in the video sequence and perform cost
+         benefit evaluation to optimize the encoding, the decoding, quality of data, and/or size of
+         encoded data. For example, if the encoding system has sufficient computational resources,
+         then it may perform a "brute force" analysis, by performing multiple possible color
+         transforms on all individual frames and transform units, and then select one color transform
+         for each transform unit that results in the least rate distortion, if rate distortion is to be
+         optimized.   However, such a "brute force" analysis would require a lot of computational
+         resources, and would be slow, and thus it may not be useful in an application where encoding
+         needs to be done in near "real time", for example, in "live" video streaming.
+[32]             The usage of different color transforms per block may impact other portions of the
+         encoding and decoding process. In particular, the entropy coding, e.g. based on the context
+         adaptive binary arithmetic coding (CABAC), assumes that coefficients in neighboring blocks
+         are in the same color domain, the statistics for the entropy coding process may be
+                                                     -8-
+
+     1001997676
+         accumulated accordingly, and deblocking may utilize the quantization parameters (QP) used
+         for each color component when filtering block edges.
+[33]             However, this may not be the case in a system that uses block level adaptive color
+         transforms which may impact coding performance. In the case of entropy coding, the impact
+         may be trivial and thus the difference in color space may be ignored. Limiting the process in
+         considering neighboring data that are in the same color space may penalize performance in
+         terms of complexity and implementation, because more contexts may need to be handled and
+         compensated for each new color transform that may have been used. Thus, the system may
+         not need to alter the encoding process for the adaptive color transforms.
+[34]             On the other hand, adaptive color transform changes may be easier to account for
+         during deblocking. In particular, when deriving the appropriate thresholds for each color
+         component for deblocking, the signaled QP values may be used while ignoring the color
+         space used, or the QP values may be approximated in the native color domain given the QP
+         values used for coding the transformed residual. For example, a simple way is to apply the
+         same color transform that is applied on the residual data to also the quantizer values, or
+         define and signal an additional transform that would help translate the used quantizer values
+         for the transformed residuals to native color space quantizer values.      For simplicity, the
+         system may not need to translate or adjust quantization values for the adaptive color
+         transforms.
+[35]             According to an embodiment as illustrated in FIG. 2, a system 200 may include a
+         decoder 230, a selectable residue inverse transformer 220, and an integrator 240.
+[36]             The decoder 230 may receive and decode input data 210. The selectable residue
+         inverse transformer 220 may be controlled by the decoder 230, to perform a selectable
+         inverse transform on the decoded input data, to generate an inverse transformed residue
+         image.   The integrator 240 may combine the inverse transformed residue image with a
+         predicted image for a current image area to generate a restored current image area of an
+         output video 290. The decoder 230 may select the selectable inverse transform based upon
+         encoded information in the input data 210, the encoded information identifies the selectable
+                                                     -9-
+
+     1001997676
+         inverse transform and indicates that the selectable inverse transform for the current image
+         area is different from a transform of a previous image area of the output video 290.
+[371             Optionally, the system 200 may include frame buffers 280 to store information of
+         output video 290, for example, image data previously processed. Such data in frame buffers
+         280 may be used by inter prediction 250, controlled by the decoder 230, to perform temporal
+         predictions, i.e. generating predicted image data for the current image area based upon the
+         data of a previous frame. Intra prediction 260 may be controlled by the decoder 230 to
+         perform spatial predictions, i.e. generating predicted image data for the current image area
+         based upon the data of another portion of the current frame. Predicted image area for the
+         current image area generated by the inter prediction 250 and/or the intra prediction 260 may
+         be combined with (or added with) the inverse transformed residue image, from selectable
+         residue inverse transformer 220, by the integrator 240, to generate the restored current image
+         area of the output video 290. The system 220 may include an adjuster 270, which performs
+         adjustments of restored current image area for the output video 290. The adjuster 270 may
+         include deblocking 272 and sample adaptive offset (SAO) 274. The adjuster 270 may output
+         to the output video 290 and/or the frame buffers 280.
+[38]             According to an embodiment, the current image area may be one of a frame, a slice,
+         and a coding tree unit.       The selectable inverse transform may include a color-space
+         transform. The decoder 230 may include an entropy decoder. The encoded information
+         identifying the selectable inverse transform may specify coefficients of a selectable inverse
+         transform. The encoded information identifying the selectable inverse transform may be
+         contained in one of a sequence parameter set, a picture parameter set, and a slice header,
+         preceding encoded residue image data of the current image area. The decoder 230 may
+         include an inverse transformer 232 and/or an inverse quantizer 234, which may perform
+         quantization. The output video 290 may be connected to a display device (not shown) and
+         displayed.
+[39]             The decoder 230 may select and change the selectable inverse transform for the
+         selectable residue inverse transformer 220 and alter parameters accordingly, for example for
+                                                     - 10 -
+
+     1001997676
+         inter prediction 250, intra prediction 260, and adjuster 270, based upon encoded information
+         in the input data received identifying the selectable inverse transform.
+[40]             FIG. 3 illustrates a method 300 according to an embodiment.
+[41]             The method 300 may include block 310, analyzing, by an analyzer, a current image
+         area in an input video to select a transform.
+[42]             At block 320, performing, by a selectable residue transformer controlled by the
+         analyzer, the selectable transform on a residue image generated from the current image area
+         and a predicted current image area, to generate a transformed residue image.
+[43]             At block 330, encoding, by an encoder, the transformed residue image to generate
+         output data.
+[44]             According to an embodiment, the analyzer may control the encoder to encode
+         information to identify the selectable transform and to indicate that the selectable transform
+         for the current image area is different from a transform of a previous image area of the input
+         video.
+[45]             According to an embodiment, the analyzer may analyze the input video and select an
+         overall sequence color transform for the entire video sequence, and analyze and select
+         residue color transforms for individual frames, slices, pixel blocks, CTUs, etc. The analyzer
+         may continually analyze the input video, and perform selecting of the color transform in-situ
+         for each frame as the input video is received and encoding is processed. Or the analyzer may
+         analyze the entire input video sequence completely before selecting the color transforms and
+         beginning the encoding.
+[46]             FIG. 4 illustrates a method 400 according to an embodiment.
+[471             The method 400 may include block 410, receiving and decoding, by a decoder, input
+         data.
+                                                     - 11 -
+
+     1001997676
+[481              At block 420, performing, by a selectable residue inverse transformer controlled by
+         the decoder, a selectable inverse transform on the decoded input data, to generate an inverse
+         transformed residue image.
+[49]              At block 430, combining, by an integrator, the inverse transformed residue image
+         with a predicted image for a current image area to generate a restored current image area of
+         an output video.
+[50]              According to an embodiment, the decoder may select the selectable inverse transform
+         based upon encoded information in the input data, the encoded information identifies the
+         selectable inverse transform and indicates that the selectable inverse transform for the current
+         image area is different from a transform of a previous image area of the input video.
+[51]              According to an embodiment, the selectable residue transformer 160 in FIG. 1 may
+         perform a color transform where one color component of the result may be based upon only
+         one color component of the input. For example, the selectable residue transformer 160 may
+         perform the following color transforms:
+         a)
+          [G ]      [1 0 0][G]
+          [Rb]   =  [-11 0][B]
+          [Rr]      [-10 1][R]
+         b)
+          [G ]       [1   0 0][G]
+          [Rb]    =  [ -1 1 0][B]
+          [Rrb]       [ 0-1 1][R]
+         c)
+          [G    ]     [1 0 0][G]
+          [R    ]= [0 1 0][B]
+          [Rrb]       [ 0-1 1][R]
+                                                    -12-
+
+     1001997676
+[521             If the input data each has N bits, the color transforms may be combined with simple
+         quantization to N bits including sign. Subtraction in computation above may be done in two
+         ways. First, a right shift operation (i.e. coded Rb may be derived by (B - G + 1) >> 1).
+          Second, a clipping operation      [i.e. min(max range, max(min range, B - G)), where
+         min-range and max_range are the mininum and maximum values allowed in a transform and
+         may be pre-designated in protocol, signaled by the encoding system, or computed
+         dynamically (for example, maxrange      = (1<<(N-i)) - 1, and min-range  = -maxrange -1)].
+[53]             The transforms above may be advantageous,            because they are "causal" and
+         corresponding to the sequence of how color components in image data may be decoded, for
+         example, commonly starting from Green (or Luma with YCbCr or YCgCo/YCgCo-R color
+         spaces), then B (or Cb), followed by R (or Cr). The first color component may be dependent
+         upon only one color component of the input data, and may be independent from the other
+         (not yet coded) color components of the input data. However, after the first color component
+         is encoded, it may be used as a factor to compute the prediction of the other color
+         components.      Corresponding decoding system may implement inverse color transforms
+         corresponding to the above color transforms.         This may allow the implementation of
+         encoding and decoding systems that operate on such color planes serially, to allow color
+         components to be processed as they are sent or received in sequence, using relatively simple
+         computations shown above without adding extra delay of waiting for all color components to
+         be queued and/or processed.        The selectable residue transformer 160 in FIG. 1 may
+         implement separate or split processing paths for each color components, where the input data
+         may be split into individual color components, and the resulting transformed color
+         components may be later merged by the encoder 170.
+[54]             According to an embodiment, the selectable residue transformer 160 in FIG. 1 may be
+         implemented using "closed" loop optimization of the color transforms. That is, the selectable
+         residue transformer 160 may receive feedback data to use in the color transforms.
+[55]             The selectable residue transformer 160 may perform color transforms using the
+         original samples as input data. For example, in a GRbRr transform, the original GBR color
+         space data samples may be used to perform the color transform, with each new set of
+                                                     - 13 -
+
+     1001997676
+         resulting transformed data computed independently using new sets of original GBR color
+         space data samples.
+[56]                 Given the serial nature of the color transforms shown in examples above, the Green
+         component data may be color transformed and encoded first, followed by the other colors.
+         the selectable residue transformer 160 in FIG. 1 may use a reconstructed Green component
+         data as input for the color transform of the other color components, by for example using the
+         following equations:
+         G*   =   IQT(QT(G'),
+              where QT is quantizing functions, and IQT is the corresponding inverse quantizing
+         functions, G' represents the green residue data, and G* represents the reconstructed green
+         residue data,
+         Rb'   =  (B - G*),
+              where B represents the blue component data, and Rb' represents the residue data for Rb
+         component,
+         Rb*    =   IQT(QT(Rb'),
+              where Rb* represents the reconstructed Rb residue data,
+         Rr'= (R - G*),
+              where R represents the red component data, and Rr' represents the residue data for Rr
+         component,
+         Rr*    =  IQT(QT(Rr'),
+              where Rr* represents the reconstructed Rr residue data.
+[571                 With the above color transform, the encoded data components Rb', Rb*, Rr', and Rr*
+         are generated based upon reconstructed green residue data. This may help a corresponding
+         decoding system to achieve a better performance. Since the corresponding decoding system
+                                                        - 14 -
+
+     1001997676
+         may only have reconstructed color component data (such as G*) for the inverse color
+         transform and not the original color data samples, the encoding system using reconstructed
+         color component data would better match the decoding system, reducing any potential color
+         component leakage caused in the quantization process.
+[58]             It is appreciated that the disclosure is not limited to the described embodiments, and
+         that any number of scenarios and embodiments in which conflicting appointments exist may
+         be resolved.
+[59]             Although the disclosure has been described with reference to several exemplary
+         embodiments, it is understood that the words that have been used are words of description
+         and illustration, rather than words of limitation. Changes may be made within the purview of
+         the appended claims, as presently stated and as amended, without departing from the scope
+         and spirit of the disclosure in its aspects. Although the disclosure has been described with
+         reference to particular means, materials and embodiments, the disclosure is not intended to
+         be limited to the particulars disclosed; rather the disclosure extends to all functionally
+         equivalent structures, methods, and uses such as are within the scope of the appended claims.
+[601             While the computer-readable medium may be described as a single medium, the term
+         "computer-readable medium" includes a single medium or multiple media, such as a
+         centralized or distributed database, and/or associated caches and servers that store one or
+         more sets of instructions.     The term "computer-readable medium" shall also include any
+         medium that is capable of storing, encoding or carrying a set of instructions for execution by
+         a processor or that cause a computer system to perform any one or more of the embodiments
+         disclosed herein.
+[611             The computer-readable medium may comprise a non-transitory computer-readable
+         medium or media and/or comprise a transitory computer-readable medium or media. In a
+         particular non-limiting, exemplary embodiment, the computer-readable medium can include
+         a solid-state memory such as a memory card or other package that houses one or more non
+         volatile read-only memories.      Further, the computer-readable medium can be a random
+         access memory or other volatile re-writable memory. Additionally, the computer-readable
+         medium can include a magneto-optical or optical medium, such as a disk or tapes or other
+                                                      - 15 -
+
+     1001997676
+         storage device to capture carrier wave signals such as a signal communicated over a
+         transmission medium. Accordingly, the disclosure is considered to include any computer
+         readable medium or other equivalents and successor media, in which data or instructions may
+         be stored.
+[62]              Although the present application describes specific embodiments which may be
+         implemented as code segments in computer-readable media, it is to be understood that
+         dedicated hardware implementations, such as application specific integrated circuits,
+         programmable logic arrays and other hardware devices, can be constructed to implement one
+         or more of the embodiments described herein.        Applications that may include the various
+         embodiments set forth herein may broadly include a variety of electronic and computer
+         systems.     Accordingly, the present application may encompass software, firmware, and
+         hardware implementations, or combinations thereof.
+[63]              The present specification     describes   components   and functions that may be
+         implemented in particular embodiments with reference to particular standards and protocols,
+         the disclosure is not limited to such standards and protocols. Such standards are periodically
+         superseded by faster or more efficient equivalents having essentially the same functions.
+         Accordingly, replacement standards and protocols having the same or similar functions are
+         considered equivalents thereof.
+[64]              The illustrations of the embodiments described herein are intended to provide a
+         general understanding of the various embodiments.        The illustrations are not intended to
+         serve as a complete description of all of the elements and features of apparatus and systems
+         that utilize the structures or methods described herein.    Many other embodiments may be
+         apparent to those of skill in the art upon reviewing the disclosure. Other embodiments may
+         be utilized and derived from the disclosure, such that structural and logical substitutions and
+         changes may be made without departing from the scope of the disclosure. Additionally, the
+         illustrations are merely representational and may not be drawn to scale. Certain proportions
+         within the illustrations may be exaggerated, while other proportions may be minimized.
+         Accordingly, the disclosure and the figures are to be regarded as illustrative rather than
+         restrictive.
+                                                     - 16 -
+
+     1001997676
+[651             One or more embodiments of the disclosure may be referred to herein, individually
+         and/or collectively, by the term "disclosure" merely for convenience and without intending to
+         voluntarily limit the scope of this application to any particular disclosure or inventive
+         concept.    Moreover, although specific embodiments have been illustrated and described
+         herein, it should be appreciated that any subsequent arrangement designed to achieve the
+         same or similar purpose may be substituted for the specific embodiments shown.              This
+         disclosure is intended to cover any and all subsequent adaptations or variations of various
+         embodiments.      Combinations of the above embodiments, and other embodiments not
+         specifically described herein, will be apparent to those of skill in the art upon reviewing the
+         description.
+[661             In addition, in the foregoing Detailed Description, various features may be grouped
+         together or described in a single embodiment for the purpose of streamlining the disclosure.
+         This disclosure is not to be interpreted as reflecting an intention that the claimed
+         embodiments require more features than are expressly recited in each claim. Rather, as the
+         following claims reflect, inventive subject matter may be directed to less than all of the
+         features of any of the disclosed embodiments. Thus, the following claims are incorporated
+         into the Detailed Description, with each claim standing on its own as defining separately
+         claimed subject matter.
+[671             The above disclosed subject matter is to be considered illustrative, and not restrictive,
+         and the appended claims are intended to cover all such modifications, enhancements, and
+         other embodiments which fall within the true spirit and scope of the present disclosure.
+         Thus, to the maximum extent allowed by law, the scope of the present disclosure is to be
+         determined by the broadest permissible interpretation of the following claims and their
+         equivalents, and shall not be restricted or limited by the foregoing detailed description.
+                                                      - 17 -
+
+1001997676
+WHAT IS CLAIMED:
+1.       A method for decoding video data comprising:
+         decoding encoded video data to determine transformed residual sample data and to
+determine a selected inverse color transform for a current image area;
+         performing the selected inverse color transform on the transformed residual sample data
+to produce inverse transformed residual sample data; and
+         combining the inverse transformed residual sample data with motion predicted image
+data to generate restored image data for the current image area of an output video.
+2.       The method of claim 1, wherein a first color component of the inverse transformed
+residual sample data is produced based on only one color component of the transformed residual
+sample data, and the other color components of the inverse transformed residual sample data are
+predicted based on the first color component of the inverse transformed residual sample data.
+3.       The method of claim 1, wherein the encoded video data is split into individual color
+components, and wherein processing paths for each color component are separate from each
+other.
+4.       The method of claim 1, wherein the current image area is a transform unit (TU) and
+wherein the encoded video data identifying the selected inverse color transform is contained in a
+transform unit syntax.
+5.       The method of claim 1, wherein the decoding encoded video data includes entropy
+decoding.
+                                                -18  -
+
+1001997676
+6.       The method of claim 1, wherein the encoded video data identifying the selected inverse
+color transform specifies two coefficients of the selected inverse color transform.
+7.       A system comprising:
+         a decoder that receives and decodes encoded video data to determine transformed
+residual sample data and to determine a selected inverse color transform for a current image area;
+         a selectable residue inverse transformer, controlled by the decoder, the selected inverse
+color transform on the transformed residual sample data to produce inverse transformed residual
+sample data; and
+         an integrator that combines the inverse transformed residual sample data with motion
+predicted image data to generate restored image data for the current image area of an output
+video.
+8.       The system of claim 7, wherein a first color component of the inverse transformed
+residual sample data is produced based on only one color component of the transformed residual
+sample data, and the other color components of the inverse transformed residual sample data are
+predicted based on the first color component of the inverse transformed residual sample data.
+9.       The system of claim 7, wherein the encoded video data is split into individual color
+components, and wherein processing paths for each color component are separate from each
+other.
+10.      The system of claim 7, wherein the current image area is a transform unit (TU) and
+wherein the encoded video data identifying the selected inverse color transform is contained in a
+transform unit syntax.
+11.      The system of claim 7, wherein the decoder includes an entropy decoder.
+                                                - 19 -
+
+1001997676
+12.      The system of claim 7, wherein the encoded video data identifying the selected inverse
+color transform specifies two coefficients of the selected inverse color transform.
+13.        A non-transitory computer readable medium comprising instructions that, when executed
+by a processor, cause:
+         decoding encoded video data to determine transformed residual sample data and to
+determine a selected inverse color transform for a current image area;
+         performing the selected inverse color transform on the transformed residual sample data
+to produce inverse transformed residual sample data; and
+         combining the inverse transformed residual sample data with motion predicted image
+data to generate restored image data for the current image area of an output video.
+14.      The non-transitory computer readable medium of claim 13, wherein a first color
+component of the inverse transformed residual sample data is produced based on only one color
+component of the transformed residual sample data, and the other color components of the
+inverse transformed residual sample data are predicted based on the first color component of the
+inverse transformed residual sample data.
+15.      The non-transitory computer readable medium of claim 13, wherein the encoded video
+data is split into individual color components, and wherein processing paths for each color
+component are separate from each other.
+16.      The non-transitory computer readable medium of claim 13, wherein the current image
+area is a transform unit (TU) and wherein the encoded video data identifying the selected inverse
+color transform is contained in a transform unit syntax.
+                                                - 20 -
+
+1001997676
+17.      The non-transitory computer readable medium of claim 13, wherein the instructions that
+cause decoding encoded video data include instructions that cause entropy decoding.
+18.      The non-transitory computer readable medium of claim 13, wherein the encoded video
+data identifying the selected inverse color transform specifies two coefficients of the selected
+inverse color transform.
+                                              - 21 -
+
+                                                             <U+2701><U+2702>
+<removed-date>
+                                                                                                FIG. 1
+                                                                                                 100
+<removed-apn>
+                    Input Video 110
+                                                 Frame Buffers
+                                                     120
+                                                                                             Analyzer 130
+                                      Inter Prediction 150
+              Integrator
+                    140                                           Intra Prediction 152
+                      Selectable Residue
+                       Transformer 160
+                                                     Encoder 170
+                                        Transformer 172
+                                         Quantizer 174
+                                                                                     Output Data 190
+                                                                                                            13316/1943710
+
+                                          <U+2701><U+2702>
+<removed-date>
+               Input Data 210
+                                                                              FIG. 2
+                                                        Decoder 230            200
+                                       Inverse Transformer 232
+                                        Inverse Quantizer 233
+<removed-apn>                                        Selectable Residue
+                                               Inverse Transformer 220
+                                                                           Integrator
+                                                                           240
+              Inter Prediction 250   Intra Prediction 260
+                                                            Adjuster 270
+                                                                               Output Video
+                                                 Deblocking 272
+                                                                                   290
+                                            Sample Adaptive Offset
+                                                 (SAO) 274
+                                                 Frame Buffers
+                                                     280
+                                                                                              13316/1943710
+
+                       <U+2701><U+2702>
+<removed-date>
+                            FIG. 3
+                             300
+                 ANALYZING IMAGE TO SELECT
+<removed-apn>
+                      TRANSFORM 310
+              PERFORM TRANSFORM ON RESIDUE
+               FOR CURRENT IMAGE BLOCK 320
+              ENCODE THE TRANSFORMED RESIDUE
+                 IMAGE FOR OUTPUT DATA 330
+                                               13316/1943710
+
+                <removed-apn>   <removed-date>
+                                           <U+2702><U+2701><U+2702>
+13316/1943710
+

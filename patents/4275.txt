@@ -1,0 +1,242 @@
+                              Abstract for <removed-apn>
+A cloud task scheduling algorithm and efficient physical resource scheduling method to
+improve the utilization of resources and enhance the reliability of their application, which
+includes the following steps: 1. When a new task arrives at the resource pool, the type and
+priority of the task must be determined; 2. Gather each node's resource utilization
+information in the cloud cluster, where the resources include CPU, memory, network and
+storage; 3. Calculate the score of each node; 4. Obtain a queue by sorting the scores of
+nodes in the cloud cluster; 5. Assign the pods required by the task to the optimum nodes.
+Created by Examiner                          9/4/2018                                        Page 1
+
+                                                         Task
+                                                        arriving
+            aAnalysis
+          module
+                                    Computing
+    Parameters                        m                   The
+   configuration                                       resource
+                                                      scheduling
+                                     Scheduling         system
+       Resource                       decision
+     information
+  Collector
+Node 1        Node   2 Node  3                  NodeN
+CPU1           CPU 2   CPU 3                    CPUN      The
+                       MEM3             '       MEMN     cloud
+MEM1          MEM2
+               NET2    NET                      NETN    custer
+NET
+DISK1          DISK 2  DISK3                    DISKN
+                              Figure 1
+
+   A physical resource scheduling method in cloud
+                                      cluster
+1      TECHNICAL FIELD
+The present invention relates to the cloud computing, more specifically, its
+related to a cloud task scheduling algorithm.
+2     BACKGROUND
+With the development of cloud computing, lots of large-scale enterprises, re
+search institutions, and governments have established their respective data cen
+ter to provide the storage or/and computing services to public. Due to the
+large scale of resources, different types of service requirement, and the com
+plexity of applications, it is significant important to develop a efficient physical
+resource scheduling method to improve the utilization of resources and enhance
+the reliability of application.
+    Kubernetes is a portable, extensible open-source platform for managing con
+tainerized workloads and services, that facilitates both declarative configuration
+and automation. It has a large, rapidly growing ecosystem. Kubernetes services,
+support, and tools are widely available.
+    But, the resource scheduling methods built in the Kubernetes is quit simple,
+and can not meet the diverse need of users. At present, the main scheduling
+methods of Kubernetes includes two kinds of methods: Predicates and Priori
+ties. However, there exit some disadvantages to those approaches. Firstly, the
+scoring method of CPU and memory resources can not be applied in heteroge
+neous cluster. Secondly, Only the resources of CPU and memory are considered
+whereas the resources of network and storage are not involved. Thirdly, due
+to scheduling one single Pod each time, the consistency of several Pods in the
+same Service can not be guaranteed.
+3     DESCRIPTION
+The scheduling method proposed in this invention includes following steps:
+    Step 1. When a new task arriving at the resource pool, the type T and
+priority P of this task must be determined, where T E {1, 2, 3, ... , Tmiiax} and
+                                           1
+
+P E {1, 2, 3, ..., Pm.iax}. More specifically, the type T can be determined through
+a K-means clustering algorithm based on the resource requirements of task.
+And the priority P can also be determined through the K-means clustering
+algorithm based on the request URL.
+      Step 2. Gather each node's resource utilization information in the cloud
+cluster, where the resources include CPU, memory, network and storage.
+      Step 3. Calculate the score of each node as following, So t       = WCpUSpy+
+    mmo±             +wnetWOkSCOTk -|-wdskS~               where Sotal is the total score
+of node i, and SCrP, Smemory, Shetwork, disk denote the resource scores of
+node i in CPU, memory, network and storage respectively, and wcpu, memory,
+?network, 'disk denote the weight of corresponding indexes. Moreover, wcpu,
+Memory, 'Wnetwork, Wdisk are positive constant, and wcpu+Wmemory+Wnetwork +
+?disk      1.
+      In a hybrid cloud consisting of heterogeneous nodes, it is highly possible
+there are variety of types of CPUs, memory items, network cards and disks.
+Although there are so many indicators that can infect the performance of CPU,
+here we take the dominant frequency as its Key Performance Indicator (KPI)
+for simplify. Similarly, we take the capacity, bandwidth, and size as the KPIs
+of memory items, network cards and disks respectively.
+      Furthermore, we set the score of the node of which the CPU has the best per
+formance in the hybrid cloud as 1 when its CPU is completely unoccupied. Then
+for any node i in this hybrid cloud, we have Su              = (1 - RCPU) f f>CPU'CPU  La
+where fCPUm..ax represents the highest dominant frequency of CPU in cloud,
+f CPU, is the CPU frequency of node i, and RCPU, (0 < RCPU, < 100%)
+is its utilization rates. Obviously, for any node i, 0          S'pu 1, and the less
+utilization and the higher performance lead a higher score.
+      Similarly, we set the score of the node which has the maximum size of
+memory in the cloud as 1 when its memory is completely unoccupied. Then
+                                                                             0
+for any node i,   forweany have S emory = (1 - R-memory) f-mem                 h
+                                                                      memory__ax    where
+f_memoryimax represents        the  maximum      capability of memory    of  one  node  in
+the cloud, f-memoryi is the memory capability of node i, and R-memory
+(0 < R-memory              100%) is its utilization rates. Obviously, for any node i,
+0      Semory
+        m       < 1
+      For the network resource score of node i, we similarly have Shetwork
+(1 - Rnetwork) f-tt                  where fnetworkmax represents the maximum
+bandwidth of network cards in the cloud, f networksi is the network cards band
+width of node i, and R~etworki (0 < R_networki < 100%) is its utilization
+rates. Obviously, for any node i, 0 < SAetwork < 1.
+      And for the storage resource score, we have Siis=           (1 - Ris)fisk).
+where f_diskmax represents the maximum storage capability of one node in
+the cloud, f_diski is the disk storage capability of node i, and Rdiski (0
+R-diski < 100%) is its utilization rates. Obviously, for any node i, 0 < S kik <
+1.
+      Otherwise, different tasks commonly require different resources. For ex
+ample, the compute-intensive task requires higher performance in computing
+                                              2
+
+resources such as CPU and memory, whereas data-transmission task requires
+higher performance in network resources. Hence, we initially define different
+combines of weights for different types of tasks. And the user also can dynami
+cally changes the weights according the actual situation.
+    Step 4. Obtain a queue Q[N] by sorting the scores Sl,         of all N nodes in
+the cloud cluster, where Q[1] > Q[2]      Q[3]   ... > Q[N].
+    Step 5. Assuming that the new task require m Pods in Kubernetes, then
+they must be assigned to the m optimum nodes from Q[N], where m << N.
+For a given priority P of task, Cp is define as its corresponding the consistency
+threshold. Then the m nodes can be selected through following several substeps.
+    Substep 5.1. Set i = 1.
+    Substep 5.2. If i > N - m + 1, return empty and end the process there,
+else, choose the first m scores of Q[N] from Q[i], i.e., Q[i], Q[i+ 1], Q[i+ 2],
+Q[i +  m  - 1].
+    Substep 5.3. Calculate the consistency of the chosen m scores which is
+defined as their statistical variance, i.e., a =   A    i 1 (Q[j] - Q,)2, where
+        kZA  L1 -Qi].
+    Substep 5.4. Compare a with Cp. If sigma > Cp, set i          i + 1, and repeat
+the Substep 5.2-5.4, else, obtain the value of i and end this process.
+    As a result, we obtain the m nodes, i.e., node i, node i+1,..., node i+im -1
+4      FIGURES
+Figure 1 is the system framework of the proposed physical resource scheduling
+method.
+    Figure 2 briefly displays the proposed physical resource scheduling
+                                         3
+
+                                            Claims
+      The claims defining the invention are as follows:
+      i.The scheduling method proposed in this invention includes following steps:
+      Step 1. When a new task arriving at the resource pool, the type T and
+priority P of this task must be determined, where T E {1, 2, 3, ... , Tmiiax} and
+P E {1, 2, 3,..., Pm.ax}.
+      Step 2. Gather each node's resource utilization information in the cloud
+cluster, where the resources include CPU, memory, network and storage.
+      Step 3. Calculate the score of each node as following, Sota = CpuS'py+
+    memor          emor+WnetworkSetork -+wdkS , where Sotl is the total score
+  memory, memory +                                1dkdsk  1ntokntwr       toa
+of node i, and SCyP, smemory, Snetwork,                  isk denote the resource scores of
+node i in CPU, memory, network and storage respectively, and wcpu, m emory,
+ n              47
+   etwork,         disk denote the weight of corresponding indexes. Moreover, wcpu,
+Memory,         ?network, Wdisk  are positive constant, and       wcpu+7Umemory+7Unetwork+
+?disk        1.
+      Furthermore, we set the score of the node of which the CPU has the best per
+formance in the hybrid cloud as 1 when its CPU is completely unoccupied. Then
+for any node i in this hybrid cloud, we have S5,p = (1 - RCPU) f>CPU'
+where fCPUm..ax represents the highest dominant frequency of CPU in cloud,
+f CPU, is the CPU frequency of node i, and RCPU, (0 < RCPU, < 100%)
+is its utilization rates. Obviously, for any node i, 0                 S'L    < 1, and the less
+utilization and the higher performance lead a higher score.
+      Similarly,Smemory = (1-Rimemory) f-'memory_ where f _memorymax rep
+resents the maximum capability of memory of one node in the cloud, f _memory
+is the memory capability of node i, and R-memory (0                       R-memory < 100%)
+is its utilization rates. Obviously, for any node i, 0 < Smemory < 1
+        SIetwork =(1             twork).-i f-t           ' where f networkk          represents
+the maximum bandwidth of network cards in the cloud, f network is the net
+work cards bandwidth of node i, and R~etworki (0                       R-networki < 100%) is
+its utilization rates. Obviously, for any node i, 0 <              SIetwork  < 1
+      Sdisk     = (1 -    R-dis) _isk          where f-diskmax represents the maximum
+storage capability of one node in the cloud, f diski is the disk storage capability
+of node i, and R-diski (0           R-diski < 100%) is its utilization rates.
+      Step 4. Obtain a queue Q[N] by sorting the scores Siotal of all N nodes in
+the cloud cluster, where Q[1] > Q[2]              Q[3]     ... > Q[N].
+      Step 5. Assuming that the new task require m Pods in Kubernetes, then
+they must be assigned to the m optimum nodes from Q[N], where m << N.
+                                                  1
+
+For a given priority P of task, C, is define as its corresponding the consistency
+threshold. Then the m nodes can be selected through following several substeps.
+    Substep 5.1. Set i = 1.
+    Substep 5.2. If i > N - m + 1, return empty and end the process there,
+else, choose the first m scores of Q[N] from Q[i], i.e., Q[i], Q[i+ 1], Q[i+ 2],
+Q[i + m - 1].
+    Substep 5.3. Calculate the consistency of the chosen m scores which is
+defined as their statistical variance, i.e., a -     Z17 1 (Q[j] - Q,)2, where
+    Substep 5.4. Compare a with Cp. If sigma > Cp, set i           i + 1, and repeat
+the Substep 5.2-5.4, else, obtain the value of i and end this process.
+    As a result, we obtain the m nodes, i.e., node i, node i+ 1,..., node i+im -1
+                                         2
+
+<removed-date>
+                        <U+271D><U+2701><U+2702><U+260E>       <U+271D><U+2701><U+2702><U+270E>           <U+2711><U+2711><U+2711>       <U+271D><U+2701><U+2702><U+2729>               <U+2721><U+271C><U+2714><U+272A>
+                                                                              <U+271C><U+2716><U+2716><U+2718><U+272B><U+2718><U+2719><U+2724>
+                       <U+2725><U+2719><U+271C><U+2723><U+2726><U+2714><U+2718><U+2714>
+                       <U+271B><U+2701><U+2702><U+2715><U+2723><U+2704>
+                                                        <U+2706><U+2701><U+271B><U+2727><U+2715><U+2722><U+2718><U+2719><U+2724>
+                  <U+271D><U+271C><U+2716><U+271C><U+271B><U+2704><U+2722><U+2704><U+2716><U+2714>                             <U+271B><U+2701><U+2702><U+2715><U+2723><U+2704>                  <U+2721><U+2605><U+2704>
+<removed-apn>
+                 <U+2717><U+2701><U+2719><U+271A><U+2718><U+2724><U+2715><U+2716><U+271C><U+2722><U+2718><U+2701><U+2719>                                                <U+2716><U+2704><U+2714><U+2701><U+2715><U+2716><U+2717><U+2704>
+                                                                             <U+2714><U+2717><U+2605><U+2704><U+2702><U+2715><U+2723><U+2718><U+2719><U+2724>
+                                                        <U+270C><U+2717><U+2605><U+2704><U+2702><U+2715><U+2723><U+2718><U+2719><U+2724>             <U+2714><U+2726><U+2714><U+2722><U+2704><U+271B>
+                    <U+2713><U+2704><U+2714><U+2701><U+2715><U+2716><U+2717><U+2704>                             <U+2702><U+2704><U+2717><U+2718><U+2714><U+2718><U+2701><U+2719>
+                  <U+2718><U+2719><U+271A><U+2701><U+2716><U+271B><U+271C><U+2722><U+2718><U+2701><U+2719>
+                    <U+2717><U+2701><U+2723><U+2723><U+2704><U+2717><U+2722><U+2701><U+2716>
+               <U+2701><U+2702><U+2704><U+260E>         <U+2701><U+2702><U+2704><U+270E>           <U+2701><U+2702><U+2704><U+270F>                       <U+2701><U+2702><U+2704><U+2712>
+              <U+2706><U+271D><U+271E><U+260E>         <U+2706><U+271D><U+271E><U+270E>           <U+2706><U+271D><U+271E><U+270F>                       <U+2706><U+271D><U+271E><U+2712>       <U+2721><U+2605><U+2704>
+              <U+271F><U+2720><U+271F><U+260E>         <U+271F><U+2720><U+271F><U+270E>           <U+271F><U+2720><U+271F><U+270F>           <U+2711><U+2711><U+2711>         <U+271F><U+2720><U+271F><U+2712>      <U+2717><U+2723><U+2701><U+2715><U+2702>
+                <U+2720><U+2721><U+260E>          <U+2720><U+2721><U+270E>            <U+2720><U+2721><U+270F>                        <U+2720><U+2721><U+2712>    <U+2717><U+2723><U+2715><U+2714><U+2722><U+2704><U+2716>
+              <U+261B><U+261E><U+270C><U+270D><U+260E>        <U+261B><U+261E><U+270C><U+270D><U+270E>          <U+261B><U+261E><U+270C><U+270D><U+270F>                      <U+261B><U+261E><U+270C><U+270D><U+2712>
+                                                <U+2666><U+272C><U+272D><U+272E><U+2663><U+272F> <U+2730>
+
+<removed-date>
+                                <U+272D><U+2702><U+261B><U+2704><U+2702>
+                      <U+2701><U+2702><U+2701><U+2704><U+260E><U+2706><U+271D><U+2701> <U+2702><U+271E><U+2701> <U+2702><U+271F><U+2720><U+2701> <U+2721> <U+261B><U+271D><U+261E>
+                          <U+2702><U+271E><U+2701> <U+2720><U+2704><U+2706><U+270C><U+2704><U+2706><U+2702><U+271F> <U+270D>
+                   <U+270E><U+261B><U+2702><U+271E><U+2701><U+2704> <U+2701><U+261B><U+270F><U+271E> <U+271D><U+270C><U+261E><U+2701><U+2711><U+2712> <U+2704><U+2701><U+2712><U+270C><U+2713><U+2704><U+270F><U+2701>
+                     <U+2713><U+2702><U+2706><U+2714><U+2706><U+2715><U+261B><U+2702><U+2706><U+270C><U+271D> <U+2706><U+271D><U+2716><U+270C><U+2704><U+260E><U+261B><U+2702><U+2706><U+270C><U+271D>
+                       <U+2717><U+261B><U+2714><U+270F><U+2713><U+2714><U+261B><U+2702><U+2701> <U+2702><U+271E><U+2701> <U+2712><U+270F><U+270C><U+2704><U+2701> <U+270C><U+2716>
+<removed-apn>
+                            <U+2701><U+261B><U+270F><U+271E> <U+271D><U+270C><U+261E><U+2701>
+                          <U+2718><U+2719><U+2702><U+261B><U+2706><U+271D> <U+2702><U+271E><U+2701> <U+271A><U+271B><U+271C><U+2722>
+                            <U+2719><U+271F> <U+2712><U+270C><U+2704><U+2702><U+2706><U+271D><U+2723>
+                                 <U+2706><U+2724><U+2725>
+                              <U+2726><U+2727><U+2605><U+2729><U+272A><U+272B><U+272C>                    <U+273D>   <U+273C><U+2701><U+2702><U+2713><U+2704><U+271D>
+                                                             <U+2701><U+260E><U+2720><U+2702><U+271F>
+              <U+273D>                      <U+271C>
+                                <U+2737> <U+2738><U+272E>
+                                 i m
+                                                 <U+272F>
+                                <U+273B> <U+2730>Q<U+2731> j <U+2732> <U+273A> Qi <U+2733>
+                  <U+2717><U+261B><U+2714><U+270F><U+2713><U+2714><U+261B><U+2702><U+2701> <U+2736> <U+2734> j <U+2739>i
+                                       <U+2735>
+                               <U+273E> <U+2727>Cp
+                                  <U+271C>
+                            <U+2718><U+2719><U+261B><U+2706><U+271D> <U+2702><U+271E><U+2701> <U+273F>
+                              <U+271D><U+270C><U+261E><U+2701><U+2712>
+                                <U+2740><U+271D><U+261E>
+                                          <U+2666><U+272C><U+272D><U+272E><U+2663><U+272F>     <U+2663>
+

@@ -1,0 +1,1154 @@
+Abstract
+A method of encrypting a passcode is disclosed. In one embodiment, the method
+includes: receiving an indication of a portion of the passcode; calculating a plaintext
+value based at least in part on the indication, wherein the plaintext value represents
+an encoded portion of the passcode; encrypting the plaintext value into ciphertext
+using a homomorphic encryption system; and updating a cumulative encryption string
+by executing a cumulative operation to aggregate the ciphertext corresponding to the
+encoded portion into the cumulative encryption string computed for a previous portion
+of the passcode, wherein the cumulative operation is dictated by a homomorphic
+property of the homomorphic encryption system.
+
+                          HOMOMORPHIC PASSCODE ENCRYPTION
+                            CROSS-REFERENCE TO RELATED APPLICATIONS
+   [00011           This application claims the benefit of U.S. Provisional Patent Application
+ 5 No. 61/938,495, filed February 11, 2014, which is incorporated by reference herein in its entirety.
+   100021           This application claims the benefit of U.S. Patent Application No. 14/209,381, filed
+   March 13, 2014, which is incorporated by reference herein in its entirety
+                                               BACKGROUND
+10 100031           A financial transaction system, as used herein, is a system that allows a
+   merchant to use. for example, a mobile device, to accept payment for selling a product, a
+   service, or a rental to a purchaser.
+   [00041           In one example, the financial transaction system includes a mobile device
+   (e.g., a tablet computer, a smartphone, etc.) and a card reader. The card reader is in the form
+15 of an accessory and couples to the mobile electronic device (e.g., the card reader couples to
+   the mobile device through the audio jack of the mobile device). In this example, a purchaser
+   uses a financial transaction card (e., a credit card, a debit card, a pre-paid gift card, etc.) to
+   purchase the seller's product or service by allowing his/her credit card to be swiped through
+   the card reader. The card reader communicates the card's data to the mobile device, allowing
+20 the mobile device to confirm the authenticity of the card and further to initiate authorization
+   of the purchase transaction. In another example, the financial transaction system may include
+   a mobile device that accepts card-less payments from purchasers. In this example, a
+   purchaser may convey his/her credit card information to the seller through a direct or indirect
+   form of wireless communication with the seller's mobile device. A person of any skill in this
+25 space would easily be aware of countless other mechanisms that allow similar financial
+   transactions to proceed in the context of such "mobile" payments.
+   [00051           While such mobile payment opportunities offer convenience and ease of use to
+   both the seller and the purchaser, there are scenarios that may present new security concerns.
+   For example, as part of the transaction flow, the purchaser may sometimes be required to
+30 enter a PIN code as an additional layer of security. Such PIN codes are required, for
+   example, in debit card-based purchases and even in some credit card-based (e.g., Europay,
+   MasterCard, Visa (EMV) card-based) purchases. In such scenarios, the financial transaction
+   system needs to protect the PIN from being discovered by, for example, malware or other
+   phishing events.
+                                                       1
+
+                                BRiEF DEsCRIPTION OF THE DRAWINGS
+   100061           FIG. I is a control flow diagram illustrating a technique for encrypting a
+   passcode utilizing homomorphic cryptography.
+   [00071           FIG. 2 is a block diagram illustrating an example of a passcode verification
+ 5 system including a passcode entry device and an authentication device.
+    0008            FIG. 3 is a diagram illustrating an example of a timeline for encrypting a
+   sequence of symbols representing a passcode.
+   [00091           FG. 4 is a flow chart of a process to encrypt a passcode using homomorphic
+   cryptography.
+10 [00101           FIG. 5 is a flow chart of a process to authenticate a passcode entry based at
+   least in part on an encrypted message.
+   [00111           FIG. 6 is a block diagram of an example of a financial transaction system
+   including an electronic device and a card reader.
+   [00121           The figures depict various embodiments of the present invention for purposes
+15 of illustration only. One skilled in the art will readily recognize from the following
+   discussion that alternative embodiments of the structures and the methods illustrated herein
+   may be employed without departing from the principles of the disclosure described herein.
+                                                     2
+
+                                       DETAILED DESCRIPTION
+   100131          The financial transaction system described herein involves a card reader and a
+   general-purpose electronic device, such as a mobile device or a stationary/semi-stationary
+   system. For example, the mobile device may be a mobile phone or a tablet computer and the
+ 5 stationary/semi-stationary system may be a point-of-sale system or a desktop computer. The
+   tern "card reader" here refers to any object that can be used to obtain information from an
+   object used to make an electronic payment where the object must be in the general vicinity of
+   the object, such as an optical scanner, a near field communications device, a Bluetooth
+   communications device, etc. The card reader may be an external device (e.g., in the form of a
+10 mobile phone accessory) that can be coupled to the general-p urpose electronic device. When
+   the card reader detects a financial transaction card (based on, for example, the card being
+   swiped through the card reader, the card being brought in proximity to enable radio frequency
+   (RF), Near Field Communication (NEC), or Bluetooth Low Energy (BLE) communication
+   between the card and the card reader, etc.), the card reader retrieves card information stored
+15 on the financial transaction card to initiate a financial transaction through the general-purpose
+   electronic device. The term financial transaction card refers to any object that can be used to
+   make an electronic payment, such as a mobile device via a digital wallet application, an
+   object containing an optical code such as a quick response (QR() code, etc. The financial
+   transaction card can store financial account related data to be used in a financial transaction,
+20 such as to make a purchase. For example, the financial transaction card may be a credit card,
+   a debit card, or an integrated circuit card in accordance with the EMV standard.
+   [00141           In some instances, a user (i.e., a purchaser) initiating the financial transaction
+   may need to enter a passcode, such as a personal identification number (PIN) or a password,
+   on a passcode entry interface to authenticate and/or authorize the financial transaction. The
+25 passcode entry interface may solicit the user to identify a sequence of symbols/digits
+   representing the passcode. As the user enters the passcode, the electronic device can encrypt
+   the passcode to protect against discovery of the passcode by a malicious third party.
+   [00151          One security consideration in designing a passcode entry system is whether a
+   memory snapshot of the passcode entry device can compromise the passcode entered by the
+30 user. The disclosed technique involves a method of encrypting portions (e.g., characters,
+   digits or alphabets) of the passcode entered by the user separately, and accumulating the
+   enciypted portions into a cumulative encryption string (e.g., a single encrypted digital string).
+   Hence, the disclosed technique protects the data flow through the memory of the passcode
+                                                      3
+
+   entry device such that any given memory snapshot can reveal at most a single portion (e.g., a
+   character, a digit, or an alphabet) of the passcode.
+   [00161          The cumulative encryption string can be represented as a tuple, including a
+   cumulative nonce product and a cumulative message string. The cumulative encryption
+ 5 string can be decrypted with a single set of decryption keys. That is, the decryption process
+   needs only be run once to derive the unencrypted plaintext, even though the cumulative
+   encryption string embodies multiple encrypted portions. The electronic device can capture a
+   sequence of user inputs indicative of a sequence of symbols representing the passcode via an
+   input component, such as buttons or a touchscreen. The card reader or an external server
+10 coupled to tie electronic device can then authenticate and/or authorize the financial
+   transaction by verifying the passcode entered by the user. Conventionally, as a user (e.g.,
+   purchaser) enters the passcode, an unencrypted digital representation of the entire passcode
+   may sometimes have to be stored on a memory device(s) of the electronic device. The
+   disclosed technique, instead, encrypts each portion of the passcode separately to prevent
+15 discovery of the entire passcode by malicious entities. The electronic device can encrypt
+   each portion of the passcode as the portion is entered or determined, such that no memory
+   device of the electronic device ever stores the entire unencrypted passcode.
+   [00171          A challenge associated with encrypting multiple portions of a passcode is that
+   delivery of multiple encrypted files puts a burden on the network used for delivery. Further,
+20 decryption of the multiple encrypted files is memory and processor intensive and thus may
+   necessitate more memory and computing resources at the receiving device. The disclosed
+   technique overcomes these challenges by encrypting each portion (e.g., a symbol or digit) of
+   the passcode using a homomorphic cryptosystem and aggregating the encrypted portions into
+   a master encryption file (i.e., the cumulative encryption string). The cumulative encryption
+25 string includes only a single layer of encryption despite including multiple separately
+   encrypted portions. The electronic device can utilize the homomorphic property of the
+   homomorphic cryptosystem to combine multiple encrypted portions into a final cumulative
+   encryption string, thus reducing the burden on the network and the receiver-side memory and
+   processor. The disclosed technique enables a single encrypted file to be sent from the
+30 electronic device to the card reader without having to send multiple encryption files for each
+   symbol/digit of the passcode. Further, the electronic device can encrypt each individual
+   symbol/digit as the user enters the symbol/digit, thus preventing discovery of the passcode by
+   a malicious third party.
+                                                    4
+
+   [0018]          Homomorphic encryption is a forrn of encryption that allows specific type(s)
+   of computational operations) to be carried out on ciphertexts (i.e., results of encryption) and
+   obtain an encrypted result which, when decrypted, matches the result of the same
+   computational operation(s) performed on the plaintext (i.e., inputs to the encryption). The
+ 5 specific type of computational operation may be referred to as the homomorphic property of
+   the homomorphic cryptosystem. A homomorphic encryption scheme may preserve the
+   homomorphic property for only multiplication, only addition, or for both addition and
+   multiplication. For example, the unpadded RSA and the ElGamal are cryptosystems that
+   preserve the homomorphic property for multiplication. A cryptosystem refers to a suite of
+10 mechanisms/processes for implementing a particular form of encryption and decryption,
+   including, for example, a key generation mechanism, an encryption mechanism, and a
+   decryption mechanism.
+   [00191          In at least one embodiment, the electronic device may implement a
+   homomorphic encryption process, such as according to the ElGamal cryptosystem, that
+15 preserves the homomorphic property for multiplication. Under the ElGamal cryptosystem, in
+   a group G, if the public key is (G, q. g, h), where h    = g, x is the private key, and r is a
+   random variable selected from the set {0, ... , q- I }, then the encryption of a message m is
+    c(m)= (gr m- hr). The homomorphic property can be illustrated as s(mi) - 8(n 2 )= (g              m;
+         h) ( m h    = (gh"r?   n - mr hr)=        E(mi - l2).
+20 [00201          The electronic device can encode each portion (e.g., a symbol or digit) of the
+   passcode as a plaintext value, before encrypting the plaintext value into ciphertext. For
+   example, the electronic device can encrypt a plaintext value calculated based in part on a
+   numeric representation of each symbol/digit with the ElGarnal cryptosystem. As a specific
+   example, the plaintext value can be a prime number raised to the power of the digit or to the
+25 power of a numeric representation of the symbol. Each ciphertext outputted by the
+   cryptosystem is multiplied together with a cumulative encryption string that s the product of
+   all previous ciphertexts produced from the previous symbols or digits. This product is then
+   updated as the new cumulative encryption string. In this manner, instead of producing a
+   sequence of ciphertexts (e.g., e(mi), c(m 2 ), ... ) from a sequence of symbols or digits, the
+30 electronic device only has to upkeep a cumulative master encryption string (e.g.,         (i 1 ) - c(n2)
+    S(n)    )
+            ..  Because of the homomorphic property of the ElGamal cryptosystem, this
+   cumulative encryption string is identical to the ciphertext resulting from encrypting the
+   product of the plaintext values associated with each symbol or digit, e.g., s(mi - M2 -M-.)
+                                                       5
+
+   [00211           The disclosed technique can encode the portions of the passcode as powers on
+   small primes. In particular, if the passcode (e.g., represented as a sequence of digits) is
+   denoted by a vector d:= [di, d2,  ... , dy], then the encoded portions may be denoted as EPs   =
+   [pid-l, p22, ,      d-_], where the p denotes a set of prime bases and M denotes the number
+ 5 of portions in the passcode. The set of prime bases can be chosen in accordance with various
+   security restrictions. For example, the set of prime bases may include small primes for ease
+   of calculation.
+   [00221           The set of prime bases may be chosen for semantic security. For example,
+   under embodiments utilizing the ElGamal cryptosystem or other similar cryptosystems, the
+10 prime bases can be chosen to have order q instead of 2q. Here, "q" denotes the public
+   encryption parameter for the ElGamal cryptosystem. Under the ElGamal cryptosystem, the
+   modulus N used for the encryption mechanism is equal to 2q+ 1. An order (n) of a prime
+   basis (p) is the number of elements in a cyclic group of modulo N for exponents of the prime
+   basis. That is, the order is the smallest number n such that'      = e,. where "e" denotes the
+15 identity element in the cyclic group. For example, using "2" as one of the prime bases for
+   encoding may lead to a leak of information about the associated passcode portion. A
+   malicious third party can observe that the order of the resulting encoding depends on the
+   parity of the exponent. Exploiting the Legendre symbol of the message, the malicious third
+   party can reverse-engineer the parity of the passcode portion. If the passcode portion is a
+20 digit, the malicious third party can determine the parity of the digit through this exploit. To
+   combat this issue, the set of prime bases can be chosen to have order q. That is, every prime
+   number in the set satisfies p$    1 (mod N). This holds, for example, for the small prime "3"
+   and many other prime numbers.
+   100231           The set of prime bases can be chosen by an external server system along with
+25 other static cryptography parameters of the homomorphic cryptosystem that are accessible by
+   both the encryption-side device (e.g., the electronic device) and the decryption-side device
+   (e.g., the card reader). The set of prime bases can be stored in a static file maintained by the
+   external server system. Alternatively, multiple sets of potential prime bases may be
+   associated with particular decryption side devices, such as by hardware identifications of
+30 such devices. In either case, the electronic device can receive the set of prime bases and/or
+   the public key for encryption by requesting such parameters from the external server system.
+   Alternatively, the set of prime bases and/or the public key may be part of a mobile
+   application downloaded and installed onto the electronic device.
+                                                       6
+
+   [0024]          It is noted that whilst portions of the passcode that are encoded and encrypted
+   have been illustrated as individual symbols or digits of the passcode, the portions may be
+   partitioned in other ways as well. For example, the portions can be pairs of symbols or digits.
+   The portions can further be values indicative of the symbols/digits that represent the
+ 5 passcode. For example, where the passcode is determined based on touch events on the
+   passcode entry interface, the electronic device can encode and encrypt the (X,Y) coordinates
+   of each touch separately. In some embodiments, the electronic device can encrypt the
+   portions directly without first encoding the portions or values indicative of the portions.
+   [00251          After the cumulative encryption string captures every portion of the passcode
+10 entered by the user, the electronic device sends the cumulative encryption string in a message
+   to verify the passcode. The electronic device can send a message including the cumulative
+   encryption string to an external server or the card reader to verify the passcode. The card
+   reader or the external server can access a decryption key consistent with the encryption key
+   used in the homomorphic cryptosystem implemented on the electronic device. The card
+15 reader or the external server can decrypt the cumulative encryption string to determine the
+   product of the encoded portions of the passcode entered by the user.
+   [00261          The card reader or the external server can verify the user passcode entry
+   against an authentic passcode in the financial transaction card in various manners. For
+   example, the card reader can access the financial transaction card via a read head to
+20 determine the authentic passcode associated with the purchaser's financial account. The card
+   reader or the external server can factor the encoded portions of the passcode (e.g., using the
+   set of prime numbers that is used to encode) to determine the passcode entry and use the
+   passcode entry to verify against the authentic passcode. As another example, the card reader
+   can send the decrypted and decoded user passcode entry to the financial transaction card for
+25 verification against the authentic passcode.
+   [00271          In other embodiments, the card reader or the external server can calculate a
+   comparison value based at least in part on the authentic passcode to verify the passcode. For
+   example, the comparison value can be a product of prime numbers, each raised to the power
+   of respective digits in the authentic passcode. The prime numbers used here are the same
+30 prime numbers used to calculate the plaintext values (i.e., the encoded portions) during the
+   encryption process. In this way, the card reader or the external server can compare the
+   comparison value against the decrypted cumulative encryption string. When both values
+   match or when both values maintain an equivalent mathematical property, the card reader or
+   the external server can authorize and authenticate the financial transaction.
+                                                     7
+
+   [0028]          FIG. I is a control flow diagram illustrating a technique for encrypting a
+   passcode utilizing homomorphic cryptography. A user can enter a passcode on an electronic
+   device 102, such as the PIN digits "8144" as shown. The electronic device 102 may be a
+   general-purpose electronic device, such as a mobile device or a stationary device. The
+ 5 electronic device 102 may include and execute a general-purpose operating system capable of
+   running one or more third-party applications that may be downloaded, installed, and executed
+   on the electronic device 102.
+   [0029]          For example, the electronic device 102 provides a passeode entry interface 104
+   to enable the user to identify a sequence of symbols representing the passcode. The sequence
+10 of symbols may include numeric digits, alphabetical characters, alphanumeric characters,
+   pictograms, icons, other types of enumeration, or any combination thereof. Each symbol can
+   have a numeric representation, such as a binary representation, that can be used for
+   encryption.
+   [00301          The passcode entry interface 104 may be implemented as a user interface
+15 displayed on a touchscreen. The electronic device 102 generates and displays the passcode
+   entry interface 104 when the electronic device 102 needs to authenticate a financial
+   transaction or other types of user operations. Alternatively, the passcode entry interface 104
+   may instead be implemented with a set of physical buttons.
+   [00311          As the user enters the passcode, the electronic device 102 can separately
+20 encrypt portions of the passcode utilizing a homomorphic cryptography system 106. The
+   homomorphic cryptography system 106 is a processing module of the electronic device 102
+   capable of encrypting datasets into ciphertexts according to a homomorphic cryptosystem,
+   such as the ElGamal cryptosystem. The ciphertexts generated by the homomorphic
+   cryptography system 106 maintain a homomorphic property. The homomorphic
+25 cryptography system 106 may be implemented as an application specific integrated circuit or
+   as instructions executable by a processor.
+   [00321          The portions to encrypt can correspond to the individual symbols that make up
+   the passeode. The portions can also correspond to subsets of the symbols. Alternatively, the
+   portions to encrypt can be datasets that are used, at least partially, to determine the individual
+30 symbols. For example, the portions can be locations on the passcode entry interface where a
+   touch event has been detected. The electronic device 102 can encrypt each portion whenever
+   each portion is determined. For example, the encryption of a portion can occur in response to
+   identifying a symbol entered by the user or to detecting a touch event on the passcode entry
+   interface 104.
+                                                   8
+
+   [0033]           In some embodiments, the electronic device 102 can first encode each portion
+   into a plaintext value and then encrypt the plaintext value corresponding to such portion. For
+   example, the electronic device 102 calculates the plaintext value based at least partly on
+   raising the power of a prime number to a numeric value of the portion (i.e., multiplying the
+ 5 prime number for a number of times equal to the numeric value of the portion). In the
+   example shown in FIG. 1, the ciphertexts of the encoded plaintext values are [p j], [P2 1 ,
+   [p34], and [p44], wherein the bracket denotes the encryption and "p;" denotes the prime
+   number used for each sequential position of the encoded portions (e.g., "p1" being the prime
+   number used for the first portion and "P2" being the prime number used for the second
+10 portion, etc.).
+   100341           For each portion, the electronic device 102 encrypts the encoded plaintext and
+   aggregates the resulting ciphertext into a cumulative encryption string 108. The cumulative
+   encryption string 108 is a ciphertext file, which aggregates all previously generated
+   ciphertexts corresponding to previously encrypted portions of the passcode. How the
+15 electronic device 102 aggregates the ciphertexts depends on the homomorphic property of the
+   homomorphic cryptography system 106. For example, if the homomorphic property
+   preserves multiplication, the ciphertexts are aggregated as a product; and if the homomorphic
+   property preserves addition, the ciphertexts are aggregated as a summation. As each new
+   ciphertext is generated, the homomorphic cryptography system 106 updates the cumulative
+20 encryption string 108 by multiplying or adding the previous instance of the cumulative
+   encryption string 108 with the new ciphertext.
+   [0035]           The passcode entry interface 104 and the homomorphic cryptography
+   system 106 may both be part of a mobile application (commonly referred to as an "app") that
+   is downloaded and installed onto the electronic device 102. The mobile application is stored
+25 in a memory device (not shown), such as a volatile or a non-volatile storage medium, and can
+   be executed by a processor (not shown) of the electronic device 102.
+   [0036]           After the user enters the entire passcode, the homomorphic cryptography
+   system 106 would have aggregated ciphertexts corresponding to every portion or encoded
+   portion of the passcode into the final cumulative encryption string 108. The electronic device
+30  102 can then send the final cumulative encryption string 108 to a passcode verification
+   system 110 in a message 112. The passeode verification system 110 is a device capable of
+   verifying the authenticity of the passcode entered by the user (henceforth referred to as the
+   "passcode entry"). The passcode verification system 110 has access to an authentic version
+                                                     9
+
+   of the passcode (henceforth referred to as the "authentic passeode"). The passcode
+   verification system 110 can use the authentic passcode to verify the passcode entry.
+   [00371           In some embodiments, the passcode entry and the passcode encryption
+   processes are initiated by the passcode verification system 110. For example, the passcode
+ 5 verification system 110 may be a card reader coupled to the electronic device 102. The card
+   reader can initiate a financial transaction upon detecting a swipe of a payment card, such as a
+   credit card, a debit card, an EMV card (a payment card in accordance with the Europay,
+   MasterCard, Visa standard), etc. The card reader can send the card information of the
+   payment card to the electronic device 102. The electronic device 102 can then try to
+10 authenticate the financial transaction by requesting the user to enter the passcode through the
+   passcode entry interface 104.
+   [00381          The passcode verification system 110 extracts the cumulative encryption
+   string 108 from the message 112 and decrypts the cumulative encryption string 108 to
+   determine an accumulated value indicative of a sequence of symbols that represents the
+15 passcode entered by the user.
+   [00391          The accumulated value can uniquely identify the passcode entry. In some
+   embodiments, the accumulated value can be factored using the set of prime numbers used to
+   calculate the encoded portions of the passcode to determine the sequence of symbols. The
+   sequence of symbols can then be used to verify against an authentic passcode associated with
+20 the financial transaction card. In other embodiments, to verify the passcode entry, the
+   passcode verification system 110 can calculate a comparison value based on the authentic
+   passcode associated with the financial transaction card in the same manner that the
+   accumulated value is calculated. That is, the passcode verification system 110 can encode
+   portions of the authentic passcode in the same encoding process as the portions of the
+25 passcode entry, and can accumulate the encoded portions of the authentic passcode using the
+   same cumulative operation based on the homomnorphic property of the homomorphic
+   cryptography system 106.
+   [0040]           For example, the passcode verification system 110 can calculate the
+   comparison value by taking the powers of the same prime numbers used by the homomorphic
+30 cryptosystem 106 to the numeric digits of the authentic passeode. The passcode verification
+   system 10 can then verify the passcode entry by comparing whether the accumulated value
+   and the comparison value match each other. In other embodiments, the passcode verification
+   system 110 can determine the passcode entry from the accumulated value (e.g., by decrypting
+                                                   10
+
+   and decoding the accumulated value as described in disclosure), and verify the determined
+   passcode entry against the known authentic passcode in the financial transaction card.
+   [00411          FIG. 2 is a block diagram illustrating an example of a passcode verification
+   system 200 including a passcode entry device 202 and an authentication device 204. The
+ 5 passcode verification system 200 may be consistent with various other embodiments
+   described in this disclosure. The passcode entry device   2 02 is illustrated as a mobile device
+   with a touchscreen, but may be implemented as another type of electronic device with
+   computing capabilities. For example, the passcode entry device 202 may be the electronic
+   device 102. of FIG. 1. The authentication device 204 is illustrated as a card reader, but may
+10 be implemented also as another type of electronic device with computing capabilities. For
+   example, the authentication device 204 may be the passcode verification system 110 of FIG.
+   L.
+   [00421          The authentication device 204 includes logic circuitry 206. The logic circuitry
+   206 controls and executes processes operated by the authentication device 204. The logic
+15 circuitry 206 may comprise one or more of an application-specific integrated circuit (ASIC),
+   field programmable gate array (FPGA), a controller, a microprocessor, and other types of
+   digital and/or analog circuitry.
+   [00431          The logic circuitry 206 can comnmunicate with a read head 208. The read head
+   208 can detect a financial transaction card, such as detecting the card being swiped or the
+20 card entering the proximity of the read head 208 (e.g., via RF or BLE). The read head 208
+   may be a magnetic strip reader, an NFC smart card, a radiofrequency identification (RFID)
+   reader, a Bluetooth reader, a radio frequency receiver, an optical reader, or any combination
+   thereof.
+   [00441          In various embodiments, the logic circuitry 206 may include a signal converter
+25 214, a signal processor 216, and a security module 218 to facilitate communication with the
+   read head 208. The signal converter 214 is circuitry that converts analog readings from the
+   read head 208 into digital data. The signal processor 216 is circuitry for processing and
+   interpreting the digital data from the signal converter 214 into card information,
+   representative of financial account information of a user. Optionally, the logic circuitry 206
+30 may include the security module 218 to encrypt and/or decrypt information to and from the
+   financial transaction card or otherwise provide secure access to a financial transaction card
+   via the read head 208,
+   [00451          The logic circuitry 206 can communicate with the passcode entry device 202
+   via a first connection interface 220. The first connection interface 220 is adapted to
+                                                   11
+
+   communicate with the passcode entry device 202, such as via a wired connection (e g.,an
+   audio cable or a bus) or wirelessly (e.g., RF or Bluetooth communication). The logic
+   circuitry 206 can initiate a financial transaction with the passcode entry device 202 through
+   the first connection interface 220 when the read head 208 detects the financial transaction
+ 5 card. The logic circuitry 206 can send a message to the passcode entry device 202 through
+   the first connection interface 220 to initiate a process to authenticate and authorize the
+   financial transaction. In some embodiments, the message can cause the electronic device to
+   generate and display a passcode interface.
+   [00461          The passcode entry device 202 includes a second connection interface 222 that
+10 couples to the first connection interface 220 of the authentication device 204 directly or
+   indirectly, including via a wired connection or a wireless connection. The passcode entry
+   device 202 includes a transaction manager rnodule 224 to facilitate authorization of the
+   financial transaction. The transaction manager module 224 can manage identity of goods,
+   services, and/or rentals associated with the financial transaction. The transaction manager
+15 module 224 can process messages received via the second connection interface 222,
+   including the message to initiate the process to authenticate the financial transaction. The
+   transaction manager module 224 can notify a passcode interface module 226 to solicit a user
+   to enter a passcode in response to the message. For example, the passcode interface module
+   226 can generate and display a passcode entry interface on a touchscreen 228. The passeode
+20 entry interface may include buttons labeled with symbols (e.g., digits, characters, icons, etc.)
+   that the user may interact with to indicate a sequence of symbols representing the passcode.
+   The passcode interface module 226 monitors the touchscreen 228 and records locations of
+   any "touch" events to determine the sequence of symbols.
+   100471          The passcode entry device 202 includes an encryption module 230 to
+25 implement a piecemeal encryption of portions of the passcode using a homomorphic
+   crptosystenm. The encryption module 230 can encrypt the portions sequentially as [tie user
+   enters each portion. For example, each portion can correspond to a touch event or a set of
+   touch events from the user. Each portion can also correspond to a symbol in the passcode
+   entry,
+30 [00481          In some embodiments, the encryption module 230 can encode each portion of
+   the passcode as a plaintext value. That is, as each portion is identified, the encryption module
+   230 can calculate the plaintext value based at least partly on the identified portion and
+   encrypt the plaintext value into ciphertext utilizing a homomorphic cryptosystem, such as
+   with the ElGamal asymmetric encryption. In one example, the plaintext values may just be
+                                                    12
+
+   numeric representations (di) of the symbols of the passcode. Alternatively, a hash function or
+   an encoding process can be used to determine the plaintext value from the numeric
+   representation of each portion. For example, the encryption module 230 can calculate the
+   plaintext value for each symbol by selecting a prime number from a set of prime bases (pt)
+ 5 and calculating the plaintext value by raising the small prime to the power represented by the
+   numeric representation of the symbol. In this example, the plaintext is equal to pi.     The
+   encryption module 230 can select the small prime based at least in part on a sequential
+   counter of the symbol entered, such as selecting pi for the first portion entered by the user
+   and selecting p2 for the second portion entered by the user.
+10 [0049]          The encryption module 230 then "accumulates" the ciphertexts generated for
+   the portions into a cumulative encryption string 232 by means of a cumulative operation, e.g.,
+   the cumulative encryption string 232 including a summation or product of the ciphertexts.
+   For example, the cumulative operation can be a running product, where each ciphertext is
+   multiplied together to form the cumulative encryption string 232. In some embodiments, the
+15 ciphertexts are multiplied together when all portions of the passcode is entered by the user.
+   In other embodiments, the encryption module 230 iteratively updates the cumulative
+   encryption string 232 to include each newly calculated ciphertext in its cumulative product.
+   The cumulative encryption string 232 can be stored in a cryptography storage 234. In
+   embodiments, the ciphertexts of each portion is deleted from the memory of the passcode
+20 entry device 202 after the ciphertext is "accumulated" into the cumulative encryption string
+   232.
+   [0050]          Cryptography provisions 236 may be required to implement the homomorphic
+   cryptosystem, particularly for the encryption module 230. The cryptography provisions 236
+   may include, for example, an encryption key (e.g., a public key), a set of prime bases, a
+25 modulus, a generator, other static parameters or random variables, or any combination
+   thereof. Some or all of the provisions/parameters may be associated with a hardware
+   identification data of the authentication device 204 (i.e., where decryption occurs). The
+   encryption module 230 can receive the hardware identification data (henceforth referred to as
+   "hardware I)") from the authentication device 2 0 4 , such as when the authentication device
+30 204 first connects with the passcode entry device 202. Subsequently, the hardware ID may
+   be used to query an external server system, via a network interface 238, for some or all of the
+   cryptography provisions 236. Alternatively, the encryption module 230 can receive some of
+   the cryptography provisions 236, such as the public key for encryption, directly from the
+   authentication device 204. The cryptography provisions 236 may be stored in the
+                                                   13
+
+   cryptography cache 232 as well or another memory device of the passcode entry device 202.
+   In some embodiments, an association between each set of the cryptography provisions 236
+   (e.g., the public key) and the hardware ID of a corresponding device for decryption can be
+   stored in the cryptography storage 234. Accessing that association enables the encryption
+ 5 module 20 to select the correct set of provisions corresponding to the intended destination of
+   the cumulative encryption string 232, such as using the public key that matches the private
+   key used for decryption at the intended destination.
+   [0051]           Other examples of the cryptography provisions 2 3 6 may be necessary to
+   implement the homomorphic encryption, such as the ElGamal cryptosystem, including a
+10 modulus (henceforth referred to as "N"), a generator (henceforth referred to as "g"), and the
+   set of prime bases pi. These parameters may be provisioned as part of a mobile application
+   that is downloaded and installed on the passcode entry device 202. Alternatively, these
+   parameters may be requested from an external server system or be part of a factory setting of
+   the passcode entry device 202.
+15  100521          In some embodiments, to verify the authenticity of the passcode entry, the
+   transaction manager module 224 transmits a message containing the cumulative encryption
+   string 232 indicative of the passcode entry through the second connection interface 222 to the
+   authentication device 204. In alternative embodiments, the transaction manager module 224
+   transmits the message through the network interface 238 to an external server system to
+20 verify the passcode entry. The logic circuitry 206 receives the message through the first
+   connection interface 220 and extracts the cumulative encryption string 232 from the message.
+   The logic circuitry 206 can impilenient a decryption module 240. The decryption module 240
+   is configured to decrypt data encrypted by the homomorphic cryptosystem implemented in
+   the encryption module 230. For example, the decryption module 240 can access
+25 cryptography provision storage 242. The cryptography provision storage 242 can include a
+   private key associated with the public key used by the encryption module 230. The
+   cryptography provision storage 242 can include other parameters needed for decryption, such
+   as the modulus N, the generator g, and the set of prime bases p,.
+   [0053]           The decryption module 240 determines an accumulated value indicative of the
+30 passcode entry by decrypting the cumulative encryption string 232. For example, the
+   accumulated value can be a product of multiplying together encoded portions of the passcode
+   entered by the user. The logic circuitry 206 can then use the accumulated value to verify
+   against an authentic passcode. For example, the logic circuitry 206 can access the authentic
+   passcode when the read head 208 detects the financial transaction card. A sequence of
+                                                  14
+
+   symbols representative of the passcode entry can be factored from the accumulated value
+   using the set of prime numbers used to encode the symbols of the passcode. The logic
+   circuitry 206 can then verify the determined passcode entry against the authentic passcode in
+   either the financial transaction card (e.g., by sending the determined passcode entry to the
+ 5 financial transaction card) or the authentication device 104.
+   100541           Alternatively, the logic circuitry 206 can calculate a comparison value based at
+   least in part on the authentic passcode to compare against the accumulated value of the
+   encoded portions representing the passcode entry. Based on the comparison, the logic
+   circuitry 206 can either authorize or deny the financial transaction.
+10 [0055]           Regarding FIG. I and FIG. 2. blocks, components, and/or modules associated
+   with the electronic device 102, the passcode verification system 110, the passcode entry
+   device 202 and the authentication device 204, each may be implemented in the form of
+   special-purpose circuitry, or in the form of one or more appropriately programmed
+   programmable processors, or a combination thereof. For example, the modules described can
+15 be implemented as instructions on a tangible storage memory capable of being executed by a
+   processor or a controller on a machine. The tangible storage memory may be a volatile or a
+   non-volatile meniory. In some embodiments, the volatile memory may be considered "non
+   transitory" in the sense that it is not a transitory signal. Modules may be operable when
+   executed by a processor or other computing device, e.g., a single board chip, application
+20 specific integrated circuit, a field programmable field array, a network capable computing
+   device, a virtual machine terminal device, a cloud-based computing terminal device, or any
+   combination thereof. Caches, memory space, and storages described in the figures can be
+   implemented with the tangible storage memory as well, including volatile or non-volatile
+   memory.
+25  100561         Each of the modules may operate individually and independently of other
+   modules. Some or all of the modules may be executed on the same host device or on separate
+   devices. The separate devices can be coupled via a communication module to coordinate its
+   operations via an interconnect or wirelessly. Some or all of the modules may be combined as
+   one module.
+30 [00571          A single module may also be divided into sub-modules, each sub-module
+   performing separate method step or method steps of the single module. In some
+   embodiments, the modules can share access to a memory space. One module may access
+   data accessed by or transformed by another module. The modules may be considered
+   "coupled" to one another if they share a physical connection or a virtual connection, directly
+                                                      15
+
+   or indirectly, allowing data accessed or modified from one module to be accessed in another
+   module. In some embodiments, some or all of the modules can be upgraded or modified
+   remotely. The electronic device 102, the passcode verification system 110, the passcode
+   entry device 202, or the authentication device 204 may include additional, fewer, or different
+ 5 modules for various applications.
+   [00581             FIG. 3 is a diagram illustrating an example of a timeline 300 for encrypting a
+   sequence of symbols representing a passcode. The disclosed technique involves piecemeal
+   encryption of portions of the passcode. This technique minimizes the available time window
+   during which an unencrypted passcode symbol, such as a PIN digit, is present (i.e., available
+10 on memory) on a passcode entry device, such as the electronic device 102 of FIG. I or the
+   passcode entry device 202 of FIG. 2. The piecemeal encryption technique decouples the
+   digits from each other.
+   [0059]             Time tags 302A-F (collectively, "time tags 302") indicate events related to a
+   user's entry of the sequence of symbols. For example, time tag 302A ("to") indicates when a
+15 passcode entry interface is provided on the passcode entry device. Time tags 30213 to 302E3
+   ("t1 " to "t4 ") indicate when the passcode entry device identifies/determines each syrbol/digit
+   of the passcode entry. For example, t1 may correspond to when the first digit entered by the
+   user is identified and t2 may correspond to when the second digit is identified. Where the
+   passcode entry device uses a touchscreen to display an interactive passcode entry interface,
+20 each of the time tags 302B-E may correspond with when a touch event is detected or when
+   the passcode entry device determines which symbol corresponds to that touch event. Under
+   the disclosed technique of passcode encryption, the passcode entry device can immediately or
+   substantially immediately encrypt each of these symbols/digits after the symbol/digit is
+   identified on the device.
+25  100601            One security consideration in designing a passcode entry system is whether a
+   memory snapshot of the passcode entry device can compromise the passcode entered by the
+   user. As shown, if memory were captured shortly after ti, then the memory snapshot would
+   reveal no information about the first digit through the (i-1)    digit of the passcode. The
+   memory snapshot would also reveal no information about subsequent digits, such as (i-+1)t
+30 digit through the last digit, of the passcode. In the example of using the ElGamal
+   cryptosyst em, once the per-digit secret/multiplier is deleted, the encryption is not reversible
+   by any party who does not possess the private key. In the end, the passcode entry device can
+   safely transmit the cumulative encryption to a passcode verification system at time tag 302F.
+                                                      16
+
+   [0061]            FIG. 4 is flow chart of a process 400 to encrypt a passcode using
+   homomorphic cryptography. The process 400 may be consistent with various other
+   embodiments described in this disclosure. The process 400 performs a piecemeal encryption
+   of the passcode in a cumulative manner. Step 402 includes an electronic device, such as the
+ 5 electronic device 102 of FIG. 1 or the passcode entry device 202 of FIG. 2, initializing a
+   financial transaction (e.g., a payment transaction). Step 402 may include receiving card data
+   from a card reader in response to the card reader detecting a financial transaction card. For
+   example, the card reader may be the passcode verification device 110 of FIG. I or the
+   authentication device 204 of FIG. 2.
+10 [0062]           The electronic device then displays a passcode entry interface to solicit a user
+   to enter the passcode in step 404, where the passcode is used to authenticate the financial
+   transaction. For example, the electronic device can display the passcode entry interface on a
+   touchscreen. The passcode entry interface may include interactive elements labeled with
+   symbols (e.g., characters, digits, icons, etc.) for composing the passcode.
+15  100631          Through the passcode entry interface, the electronic device receives an
+   indication from the user identifying at least a portion of the passcode in step 406. For
+   example, the indication can be a key entry corresponding to a symbol that is part of the
+   passcode. Specifically, the indication can be a touch event on the touchscreen, where a
+   location of the touch event corresponds to a label of the symbol on the passcode entry
+20 interface.
+   [00641           The electronic device can encode the identified portion as a plaintext value in
+   step 408, prior to step 410 of encrypting the encoded portion. The identified portion, such as
+   a symbol, can have a numeric representation (di), such as a number represented by binary
+   bits. Here, '" denotes the position of the symbol in the passcode. The encoding in step 408
+25 may include selecting a prime number (pi) from a set of small prime bases and calculating the
+   prime nuniber raised to the power equal to the numeric representation of the identified
+   portion, i.e., pi-   The prime number used to encode the identified portion can be selected
+   based at least in part on the position of the portion in the passcode relative to other portions.
+   100651           This set of small prime bases may be part of the cryptography parameters
+30 stored in the electronic device. The cryptography parameters may include an encryption key
+   (e.g., a public encryption key), a generator g, a modulus N, the set of prime bases, or any
+   combination thereof. The process 400 may include step 412 of receiving such cryptography
+   parameters from an external source. The electronic device may receive at least a portion of
+   the cryptography parameters directly or indirectly from the card reader. The electronic
+                                                     17
+
+   device may instead receive at least a portion of the cryptography parameters directly or
+   indirectly from an external server system. For example, the electronic device may first
+   retrieve a hardware ID of the card reader, and then query the external server system for
+   cryptography parameters associated with the hardware ID. In some embodiments, the
+ 5 cryptography parameters may be retrieved from both the card reader and the external server
+   system. This way, the electronic device has an opportunity to verify the parameters against
+   each other. The cryptography parameters may also be encrypted and/or otherwise encoded
+   with a verifiable signature. Upon receiving the cryptography parameters, the electronic
+   device can verify these cryptography parameters using the verifiable signature, such as via a
+10 certificate authority. In alternative embodiments, at least a portion of the cryptography
+   parameters is downloaded onto the electronic device when a mobile application
+   implementing the process 400 is downloaded and installed onto the electronic device.
+   [0066]          The prime numbers used for encoding in step 408 may be based on one or
+   more of the cryptography parameters retrieved in step 412. For example, when encrypting
+15 using the [IGamal encryption mechanism, the prime numbers may satisfy the requirement
+   that p-    1 (mod N). Here, N is the modulus chosen to perform the ElGamal encryption and
+   q is a Sophie Gernain prime associated with N such that N       = 2q +1. N and/or I may be part
+   of the cryptography parameters accessible to the electronic device.
+   [0067]          Step 410 includes the electronic device encrypting the encoded portion from
+20 step 408 or the identified portion from step 406 into ciphertext using a homomorphic
+   encryption system, such as the encryption mechanism of the ElGamal cryptosystem or a
+   variant thereof. The encryption may utilize the received cryptography parameters in
+   step 412, including the encryption key.
+   100681          Certain encryption mechanisms, including the El Gamal encryption
+25 mechanism, generate and use a random variable as part of the encryption to protect the
+   confidentiality of the ciphertexts. It is noted that in step 410, the electronic device may
+   generate the random variable by reading a pseudorandom stream using a non-buffering I/O
+   call. A non-buffering I/O call can minimize exposure of the random variable in the memory
+   buffer of the electronic device to avoid a third party from influencing or reading the random
+30 variable in order to extract information related to the passcode.
+   [00691          The electronic device updates a cumulative encryption string when the
+   encryption finishes in step 414. If the encoded portion corresponds to the first portion of the
+   passcode, step 414 sets the cumulative encryption string as the ciphertext for that portion.
+   Otherwise, the cumulative encryption string is updated by executing a cumulative operation
+                                                    18
+
+   on the ciphertext based on the cumulative encryption string computed for a previous portion
+   of the passcode. The homomorphic property of the homomorphic encryption system dictates
+   which cumulative operation to execute. For example, where ElGamnal encryption mechanism
+   is used, the cumulative operation is a cumulative product (i.e., multiplying the ciphertexts
+ 5 together). That is, the cumulative encryption string can be set as a cumulative product of the
+   ciphertext and all previous ciphertexts corresponding to all previously encrypted portions of
+   the passcode.
+   [00701           Step 406, step 408, step 410, and step 414 are repeated until Ithe cumulative
+   encryption string "accumulates" every portion of the passcode. In step 416, the electronic
+10 device transmits a message containing the cumulative encryption string to a destination
+   device to verify the passcode. For example, the destination device can be the card reader or
+    n external server system.
+   [00711           F1G. 5 is a flow chart of a process 500 to authenticate a passcode entry based
+   at least partly on an encrypted message. The process 500 may be consistent with various
+15 other embodiments described in this disclosure. The process 500 may be implemented by a
+   passcode verification system, such as the passcode verification system 110 of FIG. I or the
+   authentication device 204 of FIG. 2. Step 502 includes receiving ciphertext from a passcode
+   entry device, such as the electronic device 102 of FIG. I or the passcode entry device 202 of
+   FIG. 2. The passeode verification system can decrypt the ciphertext into plaintext in step
+20 504. The decryption uses a decryption mechanism of a homomorphic cryptosystem, such as
+   the ElGamal cryptosystem.
+   [00721           The plaintext is indicative of a product or a sum of encoded portions of the
+   passcode entry. Each encoded portion represents a portion of the passcode entry and a
+   position of the portion relative to other portions of the passcode entry. For example, the
+25 encoded portion may be indicative of a symbol that is part of the passcode. Subsequently, in
+   step 506, the passcode verification system verifies the passcode entry based at least in part on
+   the product or the sum of the encoded portions.
+   [0073]           As a specific example, step 506 can include sub-step 508 to retrieve an
+   authentic passcode. Where the passcode verification system is a card reader device, sub-step
+30 508 includes retrieving the authentic passcode from a financial transaction card via a read
+   head. In sub-step 510, the passcode verification system can encode portions of the authentic
+   passcode in the same manner as how the encoded portions of the passcode entry are
+   calculated on the passcode entry device. In sub-step 512, the passcode verification system
+   can calculate a cumulative value through a cumulative operation on the encoded portions of
+                                                     19
+
+   the authentic passcode. The cumulative operation is dictated by the homomorphic property
+   of the homomorphic cryptosystem. For example, where the homomorphic property preserves
+   multiplication, the cumulative value is calculated as a cumulative product of the encoded
+   portions of the authentic passcode. In sub-step 5 14, the passcode verification system can
+ 5 authenticate the passcode entry by comparing the cumulative value against the product or the
+   sum of the encoded portions of the passcode entry.
+   [00741          As another specific example, after retrieving the authentic passcode in sub
+   step 508, the passcode verification system can determine a sequence of symbols
+   representative of the passcode entry by factoring the product of the encoded portions in sub
+10 step 516. The product may be factored using a set of prime numbers used to encode each
+   portion. The passcode verification system can then compare the sequence against the
+   authentic passcode in sub-step 518. In other embodiments, the passcode verification system
+   sends the sequence to the financial transaction card for the financial transaction card to verify
+   the sequence against the authentic passcode.
+15  100751         While processes or blocks are presented in a given order in FIGs. 4 and 5,
+   alternative embodiments may perform routines having steps, or employ systems having
+   blocks, in a different order, and some processes or blocks may be deleted, moved, added,
+   subdivided, combined, and/or modified to provide alternative or subcombinations. Each of
+   these processes or blocks may be implemented in a variety of different ways. In addition,
+20 while processes or blocks are at times shown as being performed in series, these processes or
+   blocks may instead be performed in parallel, or may be performed at different times.
+   [00761           FIG. 6 is a block diagram of an example of a financial transaction system 600
+   including an electronic device 602 (e.g. the electronic device 102 of FIG. 1 or the passcode
+   entry device 202 of FIG. 2) and a card reader 604 (e.g., the passcode verification system 110
+25 of FIG. 1 or the authentication device 204 of FIG. 2). Note that the architecture shown in
+   FIG. 6 is only one example architecture of the financial transaction system 600, and that the
+   electronic device 602 can have more or fewer components than shown, or a different
+   configuration of components. The various components shown in FIG. 6 can be implemented
+   by using hardware, software, firmware or a combination thereof, including one or more signal
+30 processing and/or application specific integrated circuits.
+   [00771          The electronic device 602 that can include one or more computer-readable
+   mediums 610, processing system 620, touch subsystem 630, display/graphics subsystem 640,
+   communications circuitry 650, storage 660, and audio circuitry 670. These components may
+   be coupled by one or more communication buses or other signal lines.
+                                                  20
+
+   [0078]          The communications circuitry 650 can include RF circuitry 652 and/or
+   port 654 for sending and receiving information. The RF circuitry 652 permits transmission of
+   information over a wireless link or network to one or more other devices and includes well
+   known circuitry for performing this function. The port 654 permits transmission of
+ 5 information over a wired link. The communications circuitry 650 can communicate, for
+   example, with the card reader 604. Alternatively, the card reader 604 may be connected
+   through the audio circuitry 670. The communications circuitry 650 can be coupled to the
+   processing system 620 via a peripherals interface 624. The peripherals interface 624 can
+   include various known components for establishing and maintaining communication between
+10 peripherals and the processing system 620.
+   100791          The audio circuitry 670 can be coupled to an audio speaker (not shown), a
+   microphone (not shown), the card reader 604, or any combination thereof and includes
+   known circuitry for processing signals received from the peripherals interface 624 to enable a
+   user to communicate in real-time with other users or system(s). In some embodiments, the
+15 audio circuitry 670 includes a headphone jack (not shown).
+   [00801          The peripherals interface 624 can couple with various peripherals, such as the
+   card reader 604, of the system to one or more processors 626 and the computer-readable
+   medium 610. The one or more processors 626 can communicate with one or more computer
+   readable mediumns 610 via a controller 622. The computer-readable medium 610 can be any
+20 device or medium that can store code and/or data for use by the one or more processors 626.
+   The medium 610 can include a memory hierarchy, including but not limited to cache, main
+   memory, and secondary memory. The memory hierarchy can be implemented using any
+   combination of RAM (e.g. SRAM, DRAM, DDRAM), ROM, FLASH, magnetic and/or
+   optical storage devices, such as disk drives, magnetic tape, CDs (compact disks) and DVDs
+25 (digital video discs). The medium 610 may also include a transmission medium for carrying
+   information-bearing signals indicative of computer instructions or data (with or without a
+   carrier wave upon which the signals are modulated). For example, the transmission medium
+   may include a communications network, including but not limited to the Internet, intranet(s),
+   Local Area Networks (LANs), Wide Local Area Networks (WLANs), Storage Area
+30 Networks (SANs), Metropolitan Area Networks (MAN) and the like.
+   [00811          The one or more processors 626 can nm various software components stored
+   in the medium 610 to perform various functions for the electronic device 602. Note that the
+   order of the modules in the medium 610 does not denote the order of a software stack as
+   implemented in the medium 610. In some embodiments, the software components include an
+                                                  21
+
+   operating system 611, a communication module (or set of instructions) 612, a touch
+   processing module (or set of instructions) 613, a passcode interface module (or set of
+   instructions) 615, such as the passcode interface module 226 of FIG. 2, and one or more
+   applications (or set of instructions) 618, for example, including one or more of the modules
+ 5 described in the electronic device 102 and/or the passcode entry device 202. Each of these
+   modules and above noted applications correspond to a set of instructions for performing one
+   or more functions described above and the methods described in this application (e.g., the
+   computer-implemented methods and other information processing methods described herein).
+   These modules (e.g., sets of instructions) need not be implemented as separate software
+10 prograins, procedures, or modules, and thus various subsets of these modules may be
+   combined or otherwise rearranged in various embodiments. In some embodiments, the
+   medium 610 may store a subset of the modules and data structures identified above.
+   Furthermore, the medium 610 may store additional modules and data structures not described
+   above.
+15  100821         The operating system 611 can include various procedures, sets of instructions,
+   software components, and/or drivers for controlling and managing general system tasks (e.g.,
+   memory management, storage device control, power management, etc.) and facilitates
+   communication between various hardware and software components.
+   [0083]          The commununication module 612 facilitates communication with other devices
+20 using the communications circuitry 650 and includes various software components for
+   handling data received from the RF circuitry 652 and/or the port 654.
+   [00841          The touch-processing module 613 includes various software components for
+   performing various tasks associated with touch hardware 634 including but not limited to
+   receiving and processing touch input received from the L'O device 630 via a touch I/O device
+25 controller 632. For example, the touch-processing module 613 can also include software
+   components for performing tasks associated with other I/O devices (not shown).
+   [00851          The passcode interface module 615 is configured to present and maintain a
+   passcode interface for a user to enter a passcode to authenticate the user's identity. The
+   passcode interface module 615 can include various known software components for
+30 rendering, animating and displaying graphical objects on a display surface. In embodiments,
+   in which the touch hardware 634 is a touch sensitive display (e.g., touch screen), the passcode
+   interface module 615 includes components for rendering, displaying, and animating objects
+   on the touch sensitive display. The passcode interface module 615 can provide graphics
+   instructions (e.g., animation or still image) to graphics I/O controller 644, so that the graphics
+                                                    22
+
+   I/O controller 644 can display the graphics on display 646. The passcode interface module
+   615 can further control the audio circuitry 670 to provide an auditory component to the
+   passcode interface.
+   [00861           One or more applications 618 can include any applications installed on the
+ 5 electronic device 602, including without limitation, modules of the electronic device 102
+   and/or the passcode entry device 202, a browser, keyboard emulation, widgets, JAVA
+   enabled applications, encryption, digital rights management, voice recognition, voice
+   replication, location determination capability (such as that provided by the global positioning
+   system (GPS)), etc.
+10 [0087]          The touch I/O controller 632 is coupled to the touch hardware 634 for
+   controlling or performing various functions. The touch hardware 634 communicates with the
+   processing system 620 via the touch I/O device controller 632, which includes various
+   components for processing user touch input (e.g., scanning hardware). One or more other
+   input controllers (not shown) receives/sends electrical signals from/to other I/O devices (not
+15 shown). Other 1/0 devices may include physical buttons, dials, slider switches, sticks,
+   keyboards, touch pads, additional display screens, or any combination thereof
+   [00881           If embodied as a touch screen, the touch hardware 634 displays visual output
+   to the user in a GUI.  The visual output may include text, graphics, video, and any
+   combination thereof. Some or all of the visual output may correspond to user-interface
+20 objects. The touch hardware 634 forms a touch-sensitive surface that accepts touch input
+   from the user. The touch hardware 634 and the touch controller 632 (along with any
+   associated modules and/or sets of instructions in the medium 610) detects and tracks touches
+   or near touches (and any movement or release of the touch) on the touch hardware 634 and
+   converts the detected touch input into interaction with graphical objects, such as one or more
+25 user-interface objects. In the case in which the touch hardware 634 and the display 646 are
+   embodied as a touch screen, the user can directly interact with graphical objects that are
+   displayed on the touch screen. Alternatively, in the case in which hardware 634 is embodied
+   as a touch device other than a touch screen (e.g., a touch pad), the user may indirectly interact
+   with graphical objects that are displayed on a separate display screen. In some embodiments,
+30 the touch controller 632 may be configured such that it is disabled when a passcode interface
+   is being displayed by the display 646.
+   [0089]          Embodiments in which the touch hardware 634 is a touch screen, the touch
+   screen may use LCD (liquid crystal display) technoloov, LPD (light emitting polymer
+                                                   23
+
+   display) technology, OLED (organic light emitting diode), or OEL (organic electro
+   luminescence), although other display technologies may be used in other embodiments.
+   [00901           In some embodiments, the peripherals interface 624, the one or more
+   processors 626, and the memory controller 622 may be implemented on a single chip. In
+ 5 some other embodiments, they may be implemented on separate chips. The storage 660 can
+   be any suitable medium for storing data, including, for example, volatile memory (e.g., cache,
+   RAM), non-volatile memory (e.g., Flash, hard-disk drive), or a combination of both for
+   storing data.
+   EXAMPLES
+10 To summarize, therefore, the above disclosure includes the following examples.
+           1.       A method comprising:
+               initializing, at a mobile device, a financial transaction and receiving card data
+                        from a card reader attached to the mobile device, wherein the initializing is
+                        in response to detecting a swipe of a financial transaction card at the card
+15                      reader;
+               displaying a passcode entry interface on a touchscreen of the mobile device to
+                        enable a user to enter a passcode;
+               detennining a sequence of digits corresponding to the passcode entered by the
+                        user;
+20             for each digit of the sequence, encoding the digit into an encoded digit, and
+                        encrypting the encoded digit into ciphertext using homomorphic
+                        cryptography; and
+               maintaining a cumulative product based at least partly on the ciphertexts
+                        corresponding to the digits of the sequence; and
+25             initiating a process to authenticate the financial transaction by transmitting a
+                        message indicative of at least the cumulative product, wherein the
+                        cumulative product represents the passcode entered by the user.
+           2.       The method of example 1, wherein maintaining the cumulative product
+   includes multiplying the ciphertext corresponding to a newly entered digit with the
+30 cumulative product calculated for all previous digits in the sequence.
+           3.       The method of example 1, wherein encoding each digit and encrypting each
+   encoded digit are performed in response to determining the digit entered by the user; and
+   wherein maintaining the cumulative product includes updating the cumulative product in
+   response to encrypting each encoded digit.
+                                                     24
+
+            4.      The method of example 1, wherein encoding the digit includes calculating the
+   encoded digit as a prime number raised to the power of the digit.
+            5.      The method of example 1, further comprising:
+                receiving a public key for said encrypting using the homomorphic cryptography
+ 5                      from an external server system; and
+                verifying a signature of the public key using a certificate authority.
+            6.      A method of encrypting a passcode, the method comprising:
+                receiving an indication of a portion of the passeode;
+                calculating, via a processor of a computing device, a plaintext value based at least
+10                      in part on the indication, wherein the plaintext value represents an encoded
+                        portion of the passcode;
+                encrypting, via the processor, the plaintext value into ciphertext using a
+                        homomorphic encryption system; and
+                updating, via the processor, a cumulative encryption string by executing a
+15                      cumulative operation to aggregate the ciphertext corresponding to the
+                        encoded portion into the cumulative encryption string computed for a
+                        previous portion of the passcode, wherein the cumulative operation is in
+                        accordance with a homomorphic property of the homomorphic encryption
+                        systern.
+20          7.      The method of example 6, wherein receiving the indication includes receiving
+   a key entry corresponding to a symbol that is part of the passcode.
+            8.      The method of example 7, wherein calculating the plaintext value is based at
+   least in part on a numeric representation ("d,") of the symbol.
+            9.      The method of example 8, wherein the symbol is a numeric digit and the
+25 numeric representation of the symbol is the numeric digit.
+            10.     The method of example 8, wherein calculating the plaintext value comprises:
+                selecting, based on a sequential position ("i") of the portion corresponding to the
+                        indication received, a prime number ("pi") from a set of prime number
+                        bases; and
+30              calculating the selected prime number raised to the power of the numeric
+                        representation of the symbol.
+            I.      The method of example 10, further comprising selecting the prime number
+   from a set of prime bases based at least partly on the position of the digit in the sequence of
+   digits.
+                                                    25
+
+            12.    The method of example 11, wherein each prime number (p) in the set of prime
+   bases satisfies pq    1 (mod N), wherein the homomorphic cryptography is based on ElGamal
+   asymmetric encryption and N is the modulus chosen to perform the ElGarmal encryption and
+   q is a Sophie Germain prime associated with N such that N     = 2q +1.
+ 5          13.    The method of example 10, further comprising receiving at least a portion of
+   cryptography parameters, including the set of prime bases, for the homomorphic
+   cryptography from an external server system, wherein the cryptography parameters are
+   associated with a hardware ID of the card reader.
+            14.    The method of example 10, further comprising receiving at least a portion of
+10 cryptography parameters, including the set of prime bases, for the homomorphic
+   cryptography from the card reader.
+            15.    The method of example 7, further comprising displaying a passcode entry
+   interface on a touchscreen, the passcode entry interface includes interactive elements labeled
+   with symbols for composing passeodes; wherein receiving the key entry includes receiving a
+15 touch event on the touchscreen; and wherein the touch event includes a location on the
+   passcode entry interface where the touch event occurs.
+            16.    The method of example 6, wherein encrypting using the homomorphic
+   encryption system includes encrypting using an ElGamal encryption system or a variant
+   thereof.
+20          17.    The method of example 6, further comprising transmitting a message
+   indicative of at least the cumulative encryption string to a destination device to verify the
+   passcode.
+            18.    The method of example 17, further comprising requesting a public key
+   associated with a hardware ID of the destination device from an external server; and wherein
+25 encrypting the plaintext value includes encrypting the plaintext value using the public key.
+            19.    The method of example 17, further comprising requesting a public key from
+   the destination device; and wherein encrypting the plaintext value includes encrypting the
+   plaintext value using the public key.
+           20,     The method of example 6, wherein executing the cumulative operation
+30 includes computing a product of the ciphertext and a cumulative product of all previous
+   ciphertexts corresponding to all previously encrypted portions of the passcode.
+           21.     The method of example 6, wherein encrypting the plaintext value includes
+   generating a random variable by reading a pseudorandom stream using a non-buffering I/O
+                                                  26
+
+   call; and wherein encrypting the plaintext value is based at least in part on the random
+   variable.
+           22.      A method of verifying a passcode entry by a user, the method comprising:
+               receiving ciphertext from a passcode entry device;
+ 5             decrypting the ciphertext into plaintext, wherein the plaintext is indicative of a
+                       product of encoded portions of the passcode entry, wherein each encoded
+                       portion represents a portion in the passcode entry and a position of the
+                       portion in the passcode entry; and
+               verifying the passcode entry based at least partly on the product of the encoded
+10                      portions.
+           23.      The method of example 22, wherein each encoded portion is indicative of a
+   symbol that is part of the passcode entry and the position of the symbol in the passcode entry.
+           24.      The method of example 22, wherein decrypting the ciphertext includes
+   decrypting the ciphertext using a decryption mechanism of a homomorphic cryptosystem.
+15         25,      The method of example 24, wherein decrypting the ciphertext includes
+   decrypting using an ElGamal encryption system or a variant thereof.
+           26.      The method of example 22, wherein verifying the passcode entry includes:
+               calculating a hash string based at least partly on an authentic passcode; and
+               verifying the passcode entry based at least partly on the hash string and the
+20                     product of the encoded portions.
+           27.      The method of example 22, wherein verifying the passcode entry includes:
+               retrieving an authentic passcode; and
+               determining a sequence of symbols representative of the passcode entry by
+                        factoring the product of the encoded portions using a set of prime numbers
+25                     used to encode each portion; and
+               sending the sequence of symbols to be compared against the authentic passcode in
+                        a financial transaction card.
+           28.      An apparatus comprising:
+               a memory device storing executable instructions, that, when executed by a
+30                     processor, is operable to:
+                       receive an indication of a portion of a passcode;
+                        calculate a plaintext value based at least in part on the indication, wherein
+                                the plaintext value represents an encoded portion of the passcode;
+                                                     27
+
+                       encrypt the plaintext value into ciphertext using a homomorphic
+                                encryption system; and
+                       update a cumulative encryption string by executing a cumulative operation
+                               to aggregate the ciphertext corresponding to the encoded portion
+ 5                             into the cumulative encryption string computed for a previous
+                               portion of the passeode, wherein the cumulative operation is in
+                                accordance with a homomorphic property of the homomorphic
+                                encryption system
+           29.     An apparatus comprising:
+10             an interface to receive a message including ciphertext representing a passcode
+                       entry of a user;
+               a read head to access card information stored in a payment card; and
+               a logic circuitry configured to:
+                       decrypt the ciphertext into plaintext, wherein the plaintext is indicative of a
+15                             product of encoded portions of the passcode entry, wherein each
+                                encoded portion represents a portion in the passcode entry and a
+                               position of the portion in the passcode entry; and
+   verify the passcode entry based at least partly on the product of the encoded portions and an
+   authentic passcode accessible via the read head.
+                                                    28
+
+   What is claimed is:
+           1.       A method comprising:
+               initializing, at a mobile device, a financial transaction and receiving card data
+                        from a card reader attached to the mobile device, wherein the initializing is
+ 5                      in response to detecting a swipe of a financial transaction card at the card
+                        reader;
+               displaying a passcode entry interface on a touchscreen of the mobile device to
+                        enable a user to enter a passcode;
+               determining a sequence of digits corresponding to the passcode entered by the
+10                      user;
+               for each digit of the sequence, encoding the digit into an encoded digit, and
+                        encrypting the encoded digit into ciphertext using homnomnorphic
+                        cryptography; and
+               maintaining a cumulative product based at least partly on the ciphertexts
+15                      corresponding to the digits of the sequence; and
+               initiating a process to authenticate the financial transaction by transmitting a
+                        message indicative of at least the cumulative product, wherein the
+                        cumulative product represents the passcode entered by the user.
+           2.       The method of claim 1, wherein maintaining the cumulative product includes
+20 multiplying the ciphertext corresponding to a newly entered digit with the cumulative product
+   calculated for all previous digits in the sequence.
+           3.       The method of claim 1, wherein encoding each digit and encrypting each
+   encoded digit are performed in response to determining the digit entered by the user; and
+   wherein maintaining the cumulative product includes updating the cumulative product in
+25 response to encrypting each encoded digit.
+           4.       The method of claim 1, wherein encoding the digit includes calculating the
+   encoded digit as a prime number raised to the power of the digit.
+                    The method of claim 1, further comprising:
+               receiving a public key for said encrypting using the homomorphic cryptography
+30                      from an external server system; and
+               verifying a signature of the public key using a certificate authority.
+           6.       A method of encrypting a passcode, the method comprising:
+               receiving an indication of a portion of the passcode;
+                                                     29
+
+                calculating, via a processor of a computing device, a plaintext value based at least
+                        in part on the indication, wherein the plaintext value represents an encoded
+                        portion of the passcode;
+                encrypting, via the processor, the plaintext value into ciphertext using a
+ 5                      homomorphic encryption system; and
+                updating, via the processor, a cumulative encryption string by executing a
+                        cumulative operation to aggregate the ciphertext corresponding to the
+                        encoded portion into the cumulative encryption string computed for a
+                        previous portion of the passcode, wherein the cumulative operation is in
+10                      accordance with a homomorphic property of the homomorphic encryption
+                        system.
+            7.      The method of claim 6, wherein receiving the indication includes receiving a
+   key entry corresponding to a symbol that is part of the passcode.
+            8.      The method of claim 7, wherein calculating the plaintext value is based at least
+15 in part on a numeric representation ("di") of the symbol.
+            9.      The method of claim 8, wherein the symbol is a numeric digit and the numeric
+   representation of the symbol is the numeric digit.
+            10.     The method of claim 8, wherein calculating the plaintext value comprises:
+                selecting, based on a sequential position ("i"') of the portion corresponding to the
+20                      indication received, a prime number ("'pI'") from a set of prime number
+                        bases; and
+                calculating the selected prime number raised to the power of the numeric
+                        representation of the symbol.
+            11,     The method of claim 10, further comprising selecting the prime number from
+25 a set of prime bases based at least partly on the position of the digit in the sequence of digits.
+            12.     The method of claim 11, wherein each prime number (p) in the set of prime
+   bases satisfies pq - 1 (mod N), wherein the homomorphic cryptography is based on ElGamal
+   asymmetric encryption and N is the modulus chosen to perform the ElGamal encryption and
+   q is a Sophie iermain prime associated with N such that N:=        2q +L.
+30          13.     The method of claim 10, further comprising receiving at least a portion of
+   cryptography parameters, including the set of prime bases, for the homomorphic
+   cryptography from an external server system, wherein the cryptography parameters are
+   associated with a hardware ID of the card reader.
+                                                    30
+
+            14.     The method of claim 10, further comprising receiving at least a portion of
+   cryptography parameters, including the set of prime bases, for the homomorphic
+   cryptography from the card reader.
+            15.     The method of claim 7, further comprising displaying a passcode entry
+ 5 interface on a touchscreen, the passcode entry interface includes interactive elements labeled
+   with symbols for composing passcodes; wherein receiving the key entry includes receiving a
+   touch event on the touchscreen; and wherein the touch event includes a location on the
+   passcode entry interface where the touch event occurs.
+            16.     The method of claim 6, wherein encrypting using the homomorphic
+10 encryption system includes encrypting using an ElGanal encryption system or a variant
+   thereof.
+            17.     The method of claim 6, further comprising transmitting a message indicative
+   of at least the cumulative encryption string to a destination device to verify the passcode.
+            18.     The method of claim 17, further comprising requesting a public key associated
+15 with a hardware ID of the destination device from an external server; and wherein encrypting
+   the plaintext value includes encrypting the plaintext value using the public key.
+            19.     The method of claim 17. further comprising requesting a public key from the
+   destination device; and wherein encrypting the plaintext value includes encrypting the
+   plaintext value using the public key.
+20         20.      The method of claim 6, wherein executing the cumulative operation includes
+   computing a product of the ciphertext and a cumulative product of all previous ciphertexts
+   corresponding to all previously encrypted portions of the passcode.
+           21.      The method of claim 6, wherein encrypting the plaintext value includes
+   generating a random variable by reading a pseudorandom stream using a non-buffering I/O
+25 call: and wherein encrypting the plaintext value is based at least in part on the random
+   variable.
+           22.      A method of verifying a passcode entry by a user, the method comprising:
+                receiving ciphertext from a passcode entry device;
+                decrypting the ciphertext into plaintext, wherein the plaintext is indicative of a
+30                      product of encoded portions of the passcode entry, wherein each encoded
+                        portion represents a portion in the passcode entry and a position of the
+                        portion in the passcode entry; and
+                verifying the passcode entry based at least partly on the product of the encoded
+                        portions.
+                                                    31
+
+          23.      The method of claim 22, wherein each encoded portion is indicative of a
+   symbol that is part of the passcode entry and the position of the symbol in the passcode entry.
+          24.      The method of claim 22. wherein decypting the ciphertext includes
+   decrypting the ciphertext using a decryption mechanism of a homomorphic cryptosystem.
+ 5        251      The method of claim 24, wherein decrypting the ciphertext includes
+   decrypting using an ElGamal encryption system or a variant thereof.
+          26.      The method of claim 22. wherein verifying the passcode entry includes:
+              calculating a hash string based at least partly on an authentic passcode; and
+              verifying the passcode entry based at least partly on the hash string and the
+10                     product of the encoded portions.
+          27.      The method of claim 22, wherein verifying the passcode entry includes:
+              retrieving an authentic passcode; and
+              determining a sequence of symbols representative of the passcode entry by
+                       factoring the product of the encoded portions using a set of prime numbers
+15                     used to encode each portion; and
+              sending the sequence of symbols to be compared against the authentic passcode in
+                       a financial transaction card.
+          28.      An apparatus comprising:
+              a memory device storing executable instructions, that, when executed by a
+20                     processor, is operable to:
+                       receive an indication of a portion of a passcode;
+                       calculate a plaintext value based at least in part on the indication, wherein
+                               the plaintext value represents an encoded portion of the passcode;
+                       encrypt the plaintext value into ciphertext using a homomorphic
+25                             encryption system; and
+                       update a cumulative encryption string by executing a cumulative operation
+                               to aggregate the ciphertext corresponding to the encoded portion
+                               into the cumulative encryption string computed for a previous
+                               portion of the passcode, wherein the cumulative operation is in
+30                             accordance with a homomorphic property of the homomorphic
+                               encryption system
+          29.      An apparatus comprising:
+              an interface to receive a message including ciphertext representing a passcode
+                       entry of a user;
+                                                     32
+
+   a read head to access card information stored in a payment card; and
+   a logic circuitry configured to:
+           decrypt the ciphertext into plaintext, wherein the plaintext is indicative of a
+                   product of encoded portions of the passcode entry, wherein each
+ 5                  encoded portion represents a portion in the passcode entry and a
+                   position of the portion in the passcode entry; and
+           verify the passcode entry based at least partly on the product of the
+                    encoded portions and an authentic passcode accessible via the read
+                   head.
+10
+                                        33
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+
+ <removed-date>
+ <removed-apn>
+This data, for application number 2015217346, is current as of 2017-12-19 21:00 AEST
+

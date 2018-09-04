@@ -1,0 +1,2306 @@
+  ABSTRACT
+  An encoder and a method therein for Pyramid Vector Quantizer, PVQ, shape search,
+  the PVQ taking a target vector x as input and deriving a vector y by iteratively adding
+  unit pulses in an inner dimension search loop. The method comprises, before
+5 entering a next inner dimension search loop for unit pulse addition, determining,
+  based on the maximum pulse amplitude, maxampy, of a current vector y, whether
+  more than a current bit word length is needed to represent enloopy, in a lossless
+  manner in the upcoming inner dimension loop. The variable enloopy is related to an
+  accumulated energy of the vector y. The performing of this method enables the
+0 encoder to keep the complexity of the search at a reasonable level. For example, it
+  enables the encoder to apply an increased precision loop only when it may be
+  needed, by analyzing whether the "worst case scenario" in the upcoming inner loop
+  would require an inner loop with a higher precision than the one currently used.
+5 (Figure 1)
+
+                                1/10
+          Determine word length for enloopy for
+            next inner loop, based on maxampy             102
+      Run inner loop with determined word length
+           for enloopy (selected precision loop)           103
+       Update maxampy after addition of pulse              104
+                         in inner loop
+                                                     Figure 1
+            Keep track of/Determine maxampy               201
+                     Determine xabsmax                     202
+-----    Determine max upshift of corrxy for next
+               inner loop, based on xabsmax        ['--203
+          Determine word length for enloopy for
+           next inner loop, based on maxampy               204
+      Run inner loop with determined word length      I
+     for enloopy and determined upshift for corrxy
+                     Update maxampy                        206
+           after addition of pulse in inner loop        i
+                   ~ - ~- - - - - -
+                   -~~~~                         _
+                                        --- - - -I        Figure 2
+
+                                               1
+                     PYRAMID VECTOR QUANTIZER SHAPE SEARCH
+   This application has been divided out of Australian patent application 2015297066
+   (AU 2015297066). In the description in this specification reference may be made
+   to subject matter which is not within the scope of the appended claims. That
+ 5 subject matter should be readily identifiable by a person skilled in the art and may
+   assist in putting into practice the invention as defined in the presently appended
+   claims.
+   AU 2015297066 is the national phase entry in Australia of PCT international
+   application PCT/SE2015/050743 (published as WO 2016/018185 Al). The full
+10 disclosure of WO 2016/018185 Al is incorporated herein by reference.
+   TECHNICAL FIELD
+   The disclosure herein generally relates to vector quantization (VQ) performed by
+   an encoder.
+   BACKGROUND
+15 It is known that unconstrained vector quantization is the optimal quantization
+   method for grouped samples, i.e. vectors, of a certain length. However,
+   implementation of unconstrained vector quantization implies high requirements in
+   terms of complexity and memory capacity. A desire to enable implementation of
+   vector quantization also in situations with memory and search complexity
+20 constraints, have led to the development of so-called structured vector quantizers.
+   Different structures gives different trade-offs in terms of search complexity and
+   memory requirements. One such method is the so-called gain-shape vector
+   quantization, where the target vector t is represented using a shape vector x and a
+   gain value G:
+                         t
+25                 X = -                                                       (Eq 0)
+                         G
+   The concept of gain-shape vector quantization is to quantize the pair {x, G}
+   instead of directly quantizing the target vector t. The gain(G) and shape(x)
+   components are encoded using a shape quantizer which is tuned for the
+   normalized shape input, and a gain quantizer which handles the dynamics of the
+   10176965_1.docx
+
+                                              2
+   signal. This gain-shape structure is frequently used in audio coding since the
+   division into dynamics and shape, also denoted fine structure, fits well with the
+   perceptual auditory model. The gain-shape concept can also be applied to
+   Discrete Cosine Transform coefficients or other coefficients used in video coding.
+ 5 Many speech and audio codecs such as ITU-T G.718 and IETF Opus (RFC 6716)
+   use a gain-shape VQ based on a structured PVQ in order to encode the spectral
+   coefficients of the target speech/audio signal.
+   The PVQ-coding concept was introduced by R. Fischer in the time span 1983
+   1986 and has evolved to practical use since then with the advent of more efficient
+10 Digital Signal Processors, DSPs. The PVQ encoding concept involves searching
+   for, locating and then encoding a point on an N-dimensional hyper-pyramid with
+   the integer Li-norm of K unit pulses. The so-called L1-norm is the sum of the
+   absolute values of the vector, i.e. the absolute sum of the signed integer PVQ
+   vector is restricted to be exactly K, where a unit pulse is represented by an integer
+15 value of "1". A signed integer is capable of representing negative integers, in
+   relation to unsigned which can only represent non-negative integers.
+   One of the interesting benefits with the structured PVQ-coding approach in
+   contrast to many other structured VQs is that there is no inherent limit in regard of
+   a dimension N, so the search methods developed for PVQ-coding should be
+20 applicable to any dimension N and to any K value.
+   One issue with the structured PVQ-shape quantization is to find the best possible
+   quantized vector using a reasonable amount of complexity. For higher rate speech
+   and audio coding, when the number of allowed unit pulses K, may become very
+   high and the dimension N may also be high, there is even stronger demands on
+25 having an efficient PVQ- search, while maintaining the quality, e.g. in terms of
+   Signal to Noise Ratio, SNR, of the reconstructed speech/audio.
+   Further, the use of the PVQ concept is not restricted to the speech and audio
+   coding area. Currently, the so-called Internet Engineering Task Force, IETF, is
+   pursuing a video codec development where Discrete Cosine Transform, DCT,
+30 coefficients are encoded using a PVQ-based algorithm. In video coding it is even
+   10176965_1.docx
+
+                                                 3
+   more important than in audio coding to have an efficient search procedure, as the
+   number of coefficients may become very large with large displays.
+   SUMMARY
+   The present invention provides a method for Pyramid Vector Quantizer (PVQ)
+ 5 shape search, performed by a digital signal processor, the PVQ taking a target
+   vector x as input and deriving a vector y by iteratively adding unit pulses in an
+   inner dimension search loop, the method comprising: before entering a next inner
+   dimension search loop for unit pulse addition: determining, based on a maximum
+   pulse amplitude (maxampy), of a current vector y, whether more than a current bit
+10 word length is needed to represent, in a lossless manner, a variable (enloopy)
+   related to an accumulated energy of y, in the next inner dimension search loop.
+   The present invention further provides a digital signal processor configured for
+   Pyramid Vector Quantization (PVQ) shape search; the PVQ taking a target vector
+   x as input and deriving a vector y by iteratively adding unit pulses in an inner
+15 dimension search loop, the digital signal processor being configured to: before
+   entering a next inner dimension search loop for unit pulse addition: determine,
+   based on a maximum pulse amplitude (maxampy) of a current vector y, whether
+   more than a current bit word length is needed to represent, in a lossless manner, a
+   variable (enloopy) related to an accumulated energy of y, in the next inner
+20 dimension search loop.
+   The present invention still further provides a communication device comprising the
+   digital signal processor as defined above.
+   For a structured PVQ it is desired to enable a computationally efficient shape
+   search which still provides a high Signal to Noise ratio. Especially for
+25 implementations involving a fixed precision DSP. The solution provided herein
+   enables a computationally efficient PVQ shape search, by providing an improved
+   PVQ fine search.
+   Alternatively or additionally, it is desirable to at least provide the public with a
+   useful choice.
+   10176965_1.docx
+
+                                              4
+   According to a first aspect of the present disclosure, a method is provided for PVQ
+   shape search, to be performed by an encoder. The PVQ is assumed to involve
+   taking a target vector x as input deriving a vector y by iteratively adding unit pulses
+   in an inner dimension search loop. The provided method comprises, before
+ 5 entering a next inner dimension search loop for unit pulse addition: determining,
+   based on a maximum pulse amplitude, maxampy, of a current vector y, whether
+   more than a current bit word length is needed to represent, in a lossless manner, a
+   variable, enloopy. The variable enloopy being related to an accumulated energy of
+   y, in the next inner dimension search loop.
+10 According to a second aspect of the present disclosure, an encoder is provided,
+   for PVQ shape search. The PVQ is assumed to involve taking a target vector x as
+   input deriving a vector y by iteratively adding unit pulses in an inner dimension
+   search loop. The provided encoder is configured to, before entering a next inner
+   dimension search loop for unit pulse addition: determine, based on a maximum
+15 pulse amplitude, maxampy, of a current vector y, whether more than a current bit
+   word length is needed to represent, in a lossless manner, a variable, enloopy. The
+   variable enloopy being related to an accumulated energy of y, in the next inner
+   dimension search loop.
+   The method may comprise and the encoder may be configured to, before entering
+20 the next inner dimension search loop for unit pulse addition: determining, based on
+   a maximum absolute value, xabSmax, of the input vector, x, a possible upshift, in a
+   bit word, of the next inner dimension search loop's accumulated in-loop correlation
+   value, corrxy, between x and the vector y.
+   The method may comprise and the encoder may be configured to, when more
+25 than the current bit word length is needed to represent enloopy, perform the inner
+   loop calculations using a longer bit word length to represent enloopy.
+   The method may comprise and the encoder may be configured to, when more
+   than the current bit word length is needed to represent enloopy, perform the inner
+   loop calculations using a longer bit word length to represent a squared
+   10176965_1.docx
+
+                                                5
+   accumulated in-loop correlation value, corrxy2 , between x and the vector y, in the
+   inner dimension search loop.
+   The method may further comprise and the encoder may be configured to,
+   when more than the current bit word length is not needed to represent enloopy:
+ 5       -performing the inner loop calculations by employing a first unit pulse addition
+         loop using a first bit word length to represent enloopy, and:
+   when more than the current bit word length is needed to represent enloopy:
+         -performing the inner loop calculations by employing a second unit pulse
+         addition loop using a longer bit word length to represent enloopy than the first
+10       unit pulse addition loop.
+   The determining, based on maxampy, of whether more than the current bit word
+   length is needed to represent enloopy may comprise determining characteristics of
+   the case when, in the upcoming inner search loop, a unit pulse is added to the
+   position in y being associated with maxampy.
+15 The method may further comprise and the encoder may be configured to, in the
+   inner dimension search loop for unit pulse addition:
+   -determining a position, best, in y for addition of a unit pulse by evaluating a cross
+   multiplication, for each position n in y, of a correlation and energy value for the
+   current n; and a squared correlation, BestCorrSq and an energy value, bestEn,
+20 saved from previous values of n, as:
+         corrxy2    * bestEn > BestCorrSq * enloopy
+         where
+                   nbest - n
+            bestEn = enloopy          when corrxy2 * bestEn > BestCorrSq * enloopy
+                             =    2
+         BestCorrSq = corr),
+   10176965_1.docx
+
+                                               6
+   The method may also comprise and the encoder be configured to keep track of
+   maxampy when a final value of K, associated with the target vector x, exceeds a
+   threshold value. Here the method may comprise and the encoder may be
+   configured to calculate an energy margin, enmargin, only if a current value of K
+ 5 exceeds a threshold value which may be the threshold value mentioned in the
+   preceding sentence.
+   According to a third aspect of the present disclosure, a communication device is
+   provided, which comprises an encoder according to the second aspect.
+   According to a fourth aspect of the present disclosure, a computer program is
+10 provided, which comprises instructions which, when executed on at least one
+   processor, such as a DSP, cause the at least one processor to carry out the
+   method according to the first aspect.
+   According to a fifth aspect of the present disclosure, a carrier is provided,
+   containing the computer program according to the fourth aspect, the carrier being
+15 one of an electronic signal, optical signal, radio signal, or computer readable
+   storage medium.
+   According to a sixth aspect of the present disclosure, and encoder is provided,
+   which is configured for PVQ shape search; the PVQ taking a target vector x as
+   input and deriving a vector y by iteratively adding unit pulses in an inner dimension
+20 search loop. The provided encoder comprises a first determining unit for, before
+   entering a next inner dimension search loop for unit pulse addition, determining,
+   based on a maximum pulse amplitude, maxampy, of a current vector y, whether
+   more than a current bit word length is needed to represent, in a lossless manner, a
+   variable, enloopy, related to an accumulated energy of y, in the upcoming inner
+25 dimension loop.
+   The encoder according to the sixth aspect may comprise a second determining
+   unit for, before entering a next inner dimension loop for unit pulse addition,
+   determining, based on a maximum absolute value, xabSmax, of the input vector, x,
+   a possible upshift, in a bit word, of the next loop's accumulated in-loop correlation
+30 value, corrxy, between x and the vector y.
+   10176965_1.docx
+
+                                               7
+   The encoder according to the sixth aspect may comprise a fine search unit for
+   performing the inner loop calculations using a longer bit word length to represent
+   enloopy, when more than a current bit word length is needed to represent enloopy.
+   The encoder according to the sixth aspect may comprise a fine search unit for:
+ 5 -performing the inner loop calculations by employing a first unit pulse addition loop
+   using a first bit word length when more than a current bit word length is not
+   needed to represent enloopy, and:
+   -performing the inner loop calculations by employing a second unit pulse addition
+   loop using a longer bit word length than the first unit pulse addition loop when
+10 more than a current bit word length is needed to represent enloopy.
+   The encoder according to the sixth aspect may comprise a fine search unit for
+   -performing the inner loop calculations by employing a first unit pulse addition
+   loop, having a certain precision, when more than a current bit word length is not
+   needed to represent enloopy; and to
+15 -performing the inner loop calculations by employing a second unit pulse addition
+   loop, having a higher precision than the first unit pulse addition loop, when more
+   than a current bit word length is needed to represent enloopy.
+   The encoder according to the sixth aspect may be configured to perform the
+   determining, based on maxampy, of whether more than a current bit word length is
+20 needed to represent enloopy by determining characteristics of the case when, in
+   the upcoming inner search loop, the unit pulse is added to the position in y being
+   associated with maxampy.
+   The encoder according to the sixth aspect may comprise a fine search unit for, in
+   the inner dimension search loop for unit pulse addition,:
+25 -determining a position, nbest, in y for addition of a unit pulse by evaluating a
+   cross-multiplication, for each position n in y, of a correlation and energy value for
+   10176965_1.docx
+
+                                              8
+   the current n; and a correlation, BestCorrSq, and energy value, bestEn, saved
+   from previous values of n, as:
+   corrxy2  * bestEn > BestCorrSq * enloopy
+                   where
+                        best -- n
+ 5                  bestEn = enloopy    when corrxy 2 * bestEn > BestCorrSq * enloopy
+                   BestCorrSq = corr y
+       The encoder according to the sixth aspect may comprise a storing unit for
+       keeping track of maxampy when a number of final unit pulses, K, associated
+      with the target vector x, exceeds a threshold value.
+   According to a seventh aspect of the present disclosure, a communication device
+10 is provided, which comprises an encoder according to the sixth aspect.
+   BRIEF DESCRIPTION OF DRAWINGS
+   The foregoing and other objects, features, and advantages of the technology
+   disclosed herein will be apparent from the following more particular description of
+   embodiments as illustrated in the accompanying drawings. The drawings are not
+15 necessarily to scale, emphasis instead being placed upon illustrating the principles
+   of the technology disclosed herein.
+   Figures 1-4 illustrate a method for PVQ shape search (fine search), according to
+   different exemplifying embodiments.
+   Figure 5 shows steps of an embodiment of a PVQ shape search (fine search),
+20 according to an exemplifying embodiment.
+   Figure 6 shows steps of the PVQ shape search (fine search) of figure 5 in more
+   detail, according to an exemplifying embodiment.
+   Figure 7 illustrates embodiments of a PVQ-shape search.
+   Figure 8 shows an embodiment of a communication device equipped with an EVS
+25 encoder.
+   10176965_1.docx
+
+                                                9
+   Figure 9 shows an embodiment of a communication device, and
+   Figure 10 also shows an embodiment of a communication device.
+   Figure 11 a-c show an encoder according to exemplifying embodiments.
+   Figure 12 shows an example of a PVQ audio coding system, where at least one
+ 5 part of the system is comprised in an encoder and/or codec which in turn is
+   comprised in a communication device, such as a mobile phone.
+   DETAILED DESCRIPTION
+   In floating point arithmetic there is no major issue related to establishing the
+   dynamics of inner loop PVQ shape search iteration parameters, however in fixed
+10 precision DSPs with e.g. 16/32 bit limited accumulators (a register in which
+   intermediate arithmetic and/or logic results are stored) and variables, it is very
+   important to employ efficient search methods where the limited dynamic range of
+   the DSP variables is maximized and the precision is maximized, while being able
+   to use as many of available fast limited-dynamic range DSP operations as
+15 possible.
+   The term "precision" above refers to being able to represent as small numbers as
+   possible, i.e. the number of bits after the decimal point for a specific word length.
+   Another way of saying it is that the precision corresponds to the resolution of the
+   representation, which again is defined by the number of decimal or binary digits.
+20 The reason for that the precision in embodiments described below may be said to
+   correlate with the number of bits after the decimal point and not necessarily with
+   the word length itself is that in fixed point arithmetics, there may be different
+   precisions for the same word length. For example, the data formats 1Q15 and
+   2Q14 both have word length 16, but the first one has 15 bits after the decimal
+25 point and the other 14 bits. The smallest number representable would then be 2A
+   15 and 2A14 respectively.
+   A way of performing pyramid vector quantization of the shape is disclosed in
+   section 3.2 of Valin et.al, "A full-bandwidth audio codec with low complexity and
+   very low delay", EUSIPCO, 2009. In this document an MDCT codec is presented
+30 where the details, i.e. the shape, in each band are quantized algebraically using a
+   10176965_1.docx
+
+                                               10
+   spherical codebook and where the bit allocation is inferred from information shared
+   between the encoder and the decoder. Aspects and embodiments of the
+   disclosure of this application at least loosely relate to how to do a search
+   according to Equations 4-7 in Valin et. al., in an efficient way in fixed point limited
+ 5 to e.g. 16/32 bit arithmetic instead of float values as in Valin et. al.
+   In some aspects and embodiments disclosed hereinafter, given a target vector
+   x(n) (t in Equation 0) of certain dimension N, and given a certain number of unit
+   pulses K, the shape is analyzed and a suitable reconstruction vector xq(n)=func(
+   y(n) ), which minimizes the shape quantization error, and thus maximizes a
+10 perceived quality e.g. in case of audio coding, is determined. At least some of the
+   aspects and embodiments are implemented to aim for a finding of the optimal
+   constellation of K unit pulses, in a vector y(n) which needs to adhere to the Li
+   norm, while keeping the complexity under control, i.e.as low as practically
+   possible.
+15 Instead of using prior art open loop methods to determine approximate values for
+   the inner loop dynamic range and accumulator precision, some of the aspects and
+   embodiments are designed to use low cost, in terms of DSP cycles needed and in
+   terms of additional Program Read-Only Memory (ROM) needed, "near optimal"
+   pre-analysis of the worst case numerator and/or worst case denominator before
+20 starting the costly evaluations of the PVQ-shape distortion quotient in the
+   innermost search loop. The "near-optimal" pre-analysis is not targeting to scale the
+   values to the exact optimal maximum dynamic range, but instead the pre-analysis
+   determines the near-optimal power of 2 scale factor, as power of 2 scaling may be
+   implemented as shifts of a binary number and such shifts have a low cost in DSP
+25 cycles and in DSP ROM.
+   The denominator precision selection is perceptually motivated as spectrally peaky
+   regions will be allocated more precision than flatter regions.
+   10176965_1.docx
+
+                                               11
+   While some of the main concepts described in this disclosure cover various
+   modifications and alternative constructions, embodiments of the aspects are
+   shown in drawings and exemplary code and will hereinafter be described in detail.
+   PVQ-search general optimization introduction
+ 5 An Li-norm structured PVQ-quantizer allows for several search optimizations,
+   where a primary optimization is to move the target to the all positive "quadrant"
+   (could also be denoted orthant or hyper octant) in N-dimensional space and a
+   second optimization is to use an LI-norm projection as a starting approximation for
+   y(n). An Li-norm of K for a PVQ(NK) means that the absolute sum of all
+10 elements in the PVQ-vector y(n) has to be K, just as the absolute sum of all
+   elements in the target shape vector x(n).
+   A third optimization is to iteratively update QPvQ quotient terms corrxy 2 and
+   energyy, instead of re-computing Eq. 4 (below) over the whole vector space N, for
+   every candidate change to the vector y(n) in pursuit of reaching the Li-norm K,
+15 which is required for a subsequent indexing step.
+   The above three major optimization steps are optimizations which generally may
+   exist in past PVQ-implementations such as CELT and IETF-Opus, and partly in
+   G.718, however for the completeness of the description of aspects and
+   embodiments, these steps are also briefly outlined below.
+20 Efficient PVQ vector shape search
+   An overview of an audio encoding and decoding system applying an embodiment
+   of the herein proposed PVQ shape search can be seen in Fig 12. A general shape
+   search using a pyramid projection followed by a fine (shape) search flow can be
+   seen e.g. in figure 5. Another embodiment of a fine search part of a shape search
+25 is depicted in figure 6. A PVQ shape search may comprise a pyramid projection
+   and a fine search. When no pyramid projection is applied, the shape search only
+   comprises the fine search. Therefore, "fine search" and "shape search" may
+   sometimes be used interchangeably herein, since the fine search is a part of the
+   shape search, and when there is no initial coarse search, by pyramid projection,
+30 performing of the shape search is even the same thing as performing the fine
+   10176965_1.docx
+
+                                              12
+   search. In other words, the fine search may sometimes be or constitute the shape
+   search, and when pyramid projection is applied, the fine search is a part of the
+   shape search.
+   PVQ-search introduction
+ 5 The goal of the PVQ(NK) search procedure is to find the best scaled and
+   normalized output vector xq(n). xq(n) is defined as:
+                   Xq
+                               Y           (Eq 1)
+   Where y = YN,K is a point on the surface of an N-dimensional hyper-pyramid and
+   the Li norm of YN,K is K. In other words, YN,K is the selected integer shape code
+10 vector of size N, also denoted dimension N, according to:
+                                N-1
+                   YN,K       e:Iei|=K
+                                 i=J                  (Eq 2)
+   That is, the vector xq is the unit energy normalized integer sub vector YN,K . The
+   best y vector is the one minimizing the mean squared shape error between the
+   target vector x(n) and the scaled normalized quantized output vector xq. This is
+15 achieved by minimizing the following search distortion:
+                                              T
+                               T             XY
+                   dPvQ     -x TXq
+                                                      (Eq 3)
+   Or equivalently, by squaring numerator and denominator, maximizing the quotient
+   QPVQ:
+   10176965_1.docx
+
+                                             13
+                                 y     (corr,)
+                   QPVQ-        T
+                              y y        energy        (Eq 4)
+   where corrxy is the correlation between x and y. In the search of the optimal PVQ
+   vector shape y(n) with Li -norm K, iterative updates of the QpvQ variables are
+   made in the all positive "quadrant" in N-dimensional space according to:
+                   corry (k,n)        corrxy (k -)+1          -x(n)            (Eq 5)
+                   energyy(k,n) = energy(k -1)+           2 -12 .y(k -1,n)+1      2
+                                                                               (Eq 6)
+   where corrxy(k-1) signifies the correlation achieved so far by placing the previous
+   k-I unit pulses, and energyy(k-1) signifies the accumulated energy achieved so
+10 far by placing the previous k-I unit pulses, and y(k-1, n) signifies the amplitude of
+   y at position n from the previous placement of k-I unit pulses. To further speed
+   up the in-loop iterative processing the energy term energyy(k) is scaled down by
+   2, thus removing one multiplication in the inner-loop.
+                         enloop, (k, n) = energy, (k, n) / 2,->
+                   enloop, (k, n) = enloop, (k - 1) + y(k - 1,n) +
+                                                                   0.5         (Eq 7)
+15 where enloopy(kn) is the preferred energy variable used and accumulated inside
+   the innermost unit pulse search loop, as its iterative update requires one
+   multiplication less than energyy(kn).
+                                      corr ,(k,n)2
+                   QpVQ(kn)        =  __
+                                      enloopy (k, n)               (Eq 8)
+   10176965_1.docx
+
+                                               14
+   The best position best for the k'th unit pulse, is iteratively updated by increasing
+   n from 0 to N-1:
+                    best      n    ,'f     QpVQ(kfn)>QpVQ(kfbest)
+                                                                      (Eq 9)
+ 5 To avoid costly divisions, which is especially important in fixed point arithmetic, the
+   QPvQ maximization update decision is performed using a cross-multiplication of
+   the saved best squared correlation numerator bestCorrSq and the saved best
+   energy denominator bestEn so far, which could be expressed as:
+             best = n          1
+    bestCorrSq = corry,(k,n )2 ,if  corry,(k,n   -bestEn >bestCorrSq enloop,(k, n)
+10    bestEn = enloop, (k, n)
+                   (Eq 10)
+   The iterative maximization of QpvQ(k, n) may start from a zero number of placed
+   unit pulses or from an adaptive lower cost pre-placement number of unit pulses,
+   based on an integer projection to a point below the Kth-pyramid's surface, with a
+15 guaranteed undershoot of unit pulses in the target LI norm K.
+   PVQ search preparation analysis
+   Due to the structured nature of the YN,K PVQ integer vector, where all possible
+   sign combinations are allowed and it is possible to encode all sign combinations,
+   as long as the resulting vector adheres to the LI norm of K unit pulses, the search
+20 is performed in the all positive first "quadrant" (the reason for the citation marks on
+   "quadrant" is that a true quadrant only exists when N=2, and N may here be more
+   than 2). Further, as realized by the inventor, to achieve as a high accuracy as
+   possible for a limited precision implementation, the maximum absolute value
+   xabsmax of the input signal x(n) may be pre-analyzed for future use in the setup
+25 of the inner loop correlation accumulation procedure.
+   10176965_1.docx
+
+                                              15
+                    xabs(n) =x(n)j,for n =,...,N-1                    (E 11)
+                   xabsma, = max(xabsO,...,xabSN- 1)                  (Eq 12)
+   Handling of very low energy targets and very low energy sub-vectors
+   In case the input target vector(x in Eq. 3 or t in Eq. 0) is an all zero vector and/or
+ 5 the vector gain (e.g. G in Eq. 0) is very low, the PVQ-search may be bypassed,
+   and a valid PVQ-vector y may be deterministically created by assigning half of the
+   K unit pulses to the first position
+   (y[O]  =  [)
+   and the remaining unit pulses to the last position ( y[N - 1] = y[N -1] + (K - y[o])
+10 The term "very low energy targets" and "very low vector gain" is in one
+   embodiment as low as zero, as illustrated in the exemplary ANSI C-code disclosed
+   below, where the corresponding code is:
+      IF( Lxsum == 0 || neggain == 0 )
+      { /* zero input or zero gain case */
+15 However, it may also be less than or equal to epsilon, or EPS, where EPS is the
+   lowest value which is higher than zero and which is regarded as being worth
+   representing in a selected precision. For example, in a precision Q15 in a signed
+   16 bit word, the sub-vector gain becomes less or equal to EPS 1/2^15= 1/32768
+   (e.g. vector gain less or equal to 0.000030517578125), and in case of precision
+20 Q1 2 in a signed 16 bit word for target vector x(n), then the "very low" value
+   becomes EPS = (1/2A12), e.g. sum (abs (x(n))) less or equal to 0.000244140625.
+   In one embodiment of fixed-point DSP arithmetics with 16 bit word, an unsigned
+   integer format may take any integer value from 0 to 65546, whereas a signed
+   integer may take the value of -32768 to +32767. Using unsigned fractional format,
+25 the 565536 levels are spread uniformly between 0 and+1, whereas in a signed
+   fractional format embodiment the levels would be equally spaced between -1 and
+   +1.
+   10176965_1.docx
+
+                                               16
+   By applying this optional step related to zero-vectors and low gain values, the
+   PVQ-search complexity is reduced and the indexing complexity is spread/shared
+   between encoder indexing and decoder de-indexing, i.e. no processing is "wasted"
+   for searching a zero target vector or a very low target vector which would in any
+ 5 way be scaled down to zero.
+   Optional PVQ pre-search projection
+   If the pulse density ratio KIN is larger than 0.5 unit pulses per coefficient, e.g.
+   modified discrete cosine transform coefficient, a low cost projection to the K-1 sub
+   pyramid is made and used as a starting point for y. On the other hand, if the pulse
+10 density ratio is less than 0.5 unit pulses per coefficient, the iterative PVQ-search
+   will start off from 0 pre-placed unit pulses. The low cost projection to "K-1" is
+   typically less computationally expensive in DSP cycles than repeating the unit
+   pulse inner loop search K-1 times. However, a drawback of the low cost projection
+   is that it will produce an inexact result due to the N-dimensional floor function
+15 application. The resulting Li-norm of the low cost projection using the floor
+   function may typically be anything between "K-I" to roughly "K-5", i.e. the result
+   after the projection needs to be fine searched to reach the target norm of K.
+   The low cost projection is performed as:
+                                    K-1
+                   proffac     n=N-1
+                                 I3xabs(n)
+                                 n=0                     (Eq 13)
+20                 y(n)  =  Ystart (n)  = Lxabs(n) - projfac]         for n=0,..,N-1 (Eq
+   14)
+   If no projection is made, the starting point is an all zeroed y(n) vector. The DSP
+   cost of the projection in DSP cycles is in the neighborhood of N(absolute
+   sum)+25(the division)+2N(multiplication and floor) cycles.
+25 In preparation for the fine search to reach the K'th-pyramid's surface the
+   accumulated number of unit pulses pulsetot, the accumulated correlation
+   10176965_1.docx
+
+                                               17
+   corrxy(pulsetot)and the accumulated energy energyy(pulsetot)for the starting
+   point is computed as:
+                              n=N-1
+                   pulsetot =      y(n)
+                               n=0                                   (Eq 15)
+                                        n=N-1
+                   corrcy (pulsetot)=        y(n)-xabs(n)
+                                         n=0                         (Eq 16)
+                                         n=N-1
+                   energy , (pulsetot) =       y(n) -y(n) =| |y|L2
+ 5                                         n=O                       (Eq 17)
+                   enlooy(pulsqot) = energy(pulsqot)/2               (Eq 18)
+   PVQ fine search
+   The solution disclosed herein is related to the PVQ fine search (which constitutes
+   or is part of the PVQ-shape search, as previously described). What has been
+10 described in the preceding sections is mainly prior art PVQ, except for the upfront
+   determining of xabsmax, which will be further described below. The final integer
+   shape vector y(n) of dimension N must adhere to the Li norm of K pulses. The
+   fine search is assumed to be configured to start from a lower point in the pyramid,
+   i.e. below the K'th pyramid, and iteratively find its way to the surface of the N
+15 dimensional K'th-hyperpyramid. The K-value in the fine search can typically range
+   from 1 to 512 unit pulses.
+   The inventor has realized, that in order to keep the complexity of the search and
+   PVQ indexing at a reasonable level, the search may be split into two main
+   branches, where one branch is used when it is known that the in-loop energy
+20 representation of y(n) will stay within a signed, or unsigned, 16 bit word during a
+   next inner search loop iteration, and another branch is used when the in-loop
+   energy may exceed the dynamic range of a 16 bit word during a next inner search
+   loop iteration.
+   10176965_1.docx
+
+                                                18
+   Fixed precision fine search for a low number of unit pulses
+   When the final K is lower than or equal to a threshold of tp=l 27 unit pulses, the
+   dynamics of the energyy(K) will always stay within 14 bits, and the dynamics of
+   the 1 bit upshifted enloopy(K) will always stay within 15 bits. This allows use of a
+ 5 signed 16 bit word for representing every enloopy(k) within all the fine pulse
+   search inner loop iterations up to k=K. In other words, there will be no need for a
+   word bit length exceeding 16 bits for representing energyy(K) or enloopy(K) in
+   any fine pulse search inner loop iteration when K<127.
+   In the case of the availability of efficient DSP Multiply, MultiplyAdd (multiply-add)
+10 and MultiplySubtract (multiply-subtract) operators for unsigned 16 bit variables, the
+   threshold can be increased to tp = 255, as then enloopy(K) will always stay within
+   an unsigned 16 bit word. MultiplyAdd is here in one embodiment multiply-add
+   instructions or equivalent operations to multiply data values representing audio
+   and video signals by filter or transform values and accumulate the products to
+15 produce a result. MultiplySubtract operations are the same as the MultiplyAdd
+   operations, except the adds are replaced by subtracts.
+   In preparation for the next unit pulse addition, the near optimal maximum possible
+   upshift of the next loop's accumulated in-loop correlation value, corrxy, in a signed
+   32 bit word is pre-analyzed using the previously calculated maximum absolute
+20 input value xabsmax as:
+     corrupshift = 31 - [log2 (corrzy(pulsetot) + 2 - (1 - xabsax)) (Eq 19)
+   This upshift calculated in Eq 19 represents the "worst case", and covers the
+   maximum possible upshift that can be done in the next inner loop, and thus
+   ensures that the most significant information related to correlation will not be lost,
+25 or outshifted, during the inner loop iteration, even for the worst case scenario.
+   This worst case pre-inner loop dynamic analysis can be performed in 2-3 cycles in
+   most DSP architectures using MultiplyAdd and Norm instructions (normalization),
+   10176965_1.docx
+
+                                                19
+   and the analysis is always the same independent of the dimension N. In an ITU-T
+   G.191 virtual 16/32-bit DSP the operations in Eq.19 become:
+   "corr upshift = normI(Lmac(*Lcorrxy,1, xabs max));" with a cost of 2 cycles.
+   It should be noted that norm_1(x) here corresponds to "31 - ceil(log2(x))", and
+ 5 could alternatively be denoted 31 - ceil(log2(x)), where ceil(x) is the so-called
+   ceiling function, mapping a real number to the smallest following integer. More
+   precisely, ceiling(x) = [x] is the smallest integer not less than x. For
+   Corrupshift,the term within the brackets with upper horizontal bar is always a
+   positive number. The corrupshift could alternatively be calculated using a floor
+10 function as:
+    corrupshif = 30 -           [log2 (corrxy(pulsetot) + 2 (1' xabsmax))A
+   where floor(x)      [x] is the largest integer not greater than x.
+   Another benefit of the herein suggested approach to near optimal shape search
+   correlation scaling is that the proposed method does not require a pre-normalized
+15 target vector x, which will save some additional complexity before starting the
+   shape search.
+   To make the iterative Eq. 10 update as efficient as possible, the corrxy(kn) 2
+   numerator may be represented by a 16 bit signed word, even when comprising
+20 more information than fits in a 16 bit word, by the following approach.
+                                                                                    corrupshift
+    corrxy16(k, n) 2 =     Round 16 (corrxy (pulsetot ) + 2 - (I -xabs(n)))- 2
+                                                                                   (Eq20)
+                best = n
+                                  2.                     2
+    bestCorrSql6 = corrxy 16 (k,n)    if  corrxy16 (k,n)   -bestEn16 >bestCorrSq16 -enloop,(kn)
+       bestEn16 = enloop,(k,n)
+                                                                                   (Eq21)
+   10176965_1.docx
+
+                                              20
+   where the function "Round16" extracts the top 16 bits of a signed 32 bit variable
+   with rounding. This near optimal upshift (Eq 10) and the use of 16 bit
+   representation of the squared correlation bestCorrSq16 enables a very fast inner
+   loop search using only -9 cycles for performing the Eq. 21 test and the three
+ 5 variable updates, when using a DSPs optimized Multiply, MultiplyAdd,
+   MultiplySubtract functions.
+   The location of the next unit pulse in the vector y is now determined by iterating
+   over the n=O,..., N-1 possible positions in vector y, while employing equations Eq
+   20, Eq 6 and Eq 21.
+10 When the best position best for the unit pulse (in the vector y achieved so far)
+   has been determined, the accumulated correlation corrxy(k), the accumulated
+   inloop energy enloopy(k) and the number of accumulated unit pulses pulsetot are
+   updated. If there are further unit pulses to add, i.e. when pulsetot < K, a new
+   inner-loop is started with a new near optimal corrupshiftanalysis (Eq.19) for the
+15 addition of a next unit pulse.
+   In total, this suggested approach has a worst case complexity for each unit pulse
+   added to y(n) of roughly 5/N+1 5 cycles per quantized coefficient. In other words, a
+   loop over a vector of size N for adding a unit pulse has a worst case complexity of
+   about N*(5/N+15) cycles, i.e. 5+15*N cycles.
+20 Fixed precision fine search for a high number of unit pulses
+   When K is higher than a threshold tp , which in this exemplifying embodiment
+   assuming a 16/32 bit restricted DSP, is tp=127 unit pulses, the dynamics of the
+   parameter energyy(K) may exceed 14 bits, and the dynamics of the 1 bit upshifted
+   enloopy(K) may exceed 15 bits. Thus, in order not to use unnecessarily high
+25 precision, the fine search is configured to adaptively choose between 16 bit
+   representation and 32 bit representation of the pair { corrxy(kn)2, enloopy(kn) }
+   when K is higher than tp. When K for the vector y(n) is known to end up in a final
+   10176965_1.docx
+
+                                                21
+   value higher than 127 in advance, the fine search will keep track of the maximum
+   pulse amplitude maxampy in y achieved so far. This may also be referred to as
+   that maxampy is determined. This maximum pulse amplitude information is used
+   in a pre-analysis step before entering the optimized inner dimension loop. The pre
+ 5 analysis comprises determining of what precision should be used for the upcoming
+   unit pulse addition inner-loop. As shown in figure 12 by the input of N, K to the
+   PVQ-shape search, the bit allocation is known/determined before the PVQ search
+   is initiated. The bit allocation may use formulas or stored tables for obtaining,
+   determining and/or calculating the K to be input to the PVQ-shape search, e.g. K =
+10 function(bits(band), N) for a certain band with the dimension N and a certain
+   number of bits(band).
+                 bits required
+                 for PVQ(N,K)          N=8          N=16              N=32
+                           K=4      11.4594        15.4263           19.4179
+                           K=5      13.2021        18.1210           23.1001
+                           K=6      14.7211        20.5637           26.5222
+                           K=7      16.0631        22.7972           29.7253
+   For example, a stored table as the one shown above may be used to determine or
+   select a value of K. If the dimension N is 8 and the available bits for the band
+15 bits(band) is 14.0, then K will be selected to be 5, as PVQ(N=8,K=6) requires
+   14.7211 bits which is higher than the number of available bits 14.0.
+   If the pre-analysis indicates that more than a signed 16 bit word is needed to
+   represent the in-loop energy without losing any energy information, a higher
+   precision and computationally more intensive high precision unit pulse addition
+20 loop is employed, where both the saved best squared correlation term and the
+   saved best accumulated energy term are represented by 32 bit words.
+            enmar      = 31 -  [log2 ((I + energyy(pulsetot) + 2 - (1 maxampy)))]
+                                                                                 (Eq22)
+   10176965_1.docx
+
+                                                    22
+                    highprecisionactive:     =FALSE, if(enm argin>16)
+                     highprecisionactive = TRUE,             if(enm argin < 16) (Eq23)
+   The worst case pre-inner loop dynamic analysis can be performed in 5-6 additional
+   cycles in most DSP's, and the analysis cost is the same for all dimensions. In an
+   ITU-T G.191 STL 2009 virtual 16132bit DSP the operations in Eq.22 and Eq 23
+ 5 becomes:
+    "Lenergy-y          = L_add(LKenergy-y, 1); /* 0.5 added */
+      en-margin        = norm_(Lmac(Lenergy-y, 1,maxamp-y));
+      highprecisionactive= 1;                 move16();
+      if(sub(16,en margin <= 0){
+10      highprecisionactive = 0;              movel6();
+       }",
+   with a cost of maximum 6 cycles.
+   The corresponding code in an ANSI-C code example below is:
+   L_yy        = Ladd(Lyy,1);    /* .5added */
+15 en margin = normI(Lmac(Lyy,1, maxampy)); /*find max "addition", margin,-2 ops */
+   endnshift = sub(16, en-margin); /* calc. shift to lower word */
+   high-prec active = 1;     move16();
+   if(endnshift <= 0 ){ /* only use 32 bit energy if actually needed */
+   high-prec active = 0; move16();
+20  }
+   Alternatively the energy margin en_margin in Eq(22) could in line with an
+   operation of the G.191 STL function norm_10 be calculated using the floor
+   function as:
+     enmargin = 30 - 1og2 ((1 + energy,(pulsetot) + 2 - (1 - maxampy)))]
+25 If highprecisionactiveis FALSE, i.e. =0, the lower precision inner search loop in
+   Eq 20, Eq 6 and Eq21 is employed, on the other hand, when highprecisionactive
+   is TRUE, i.e.=1, the location of the next unit pulse is performed employing a
+   10176965_1.docx
+
+                                               23
+   higher precision inner loop, representing enloopy and corrxy 2 with 32 bit words in
+   this example. That is, when highprecisionactive is TRUE, the location of the next
+   unit pulse in y(n) is determined by iterating over the n=O,..., N-1 possible positions,
+   using equations Eq 24, Eq 6 and Eq 25.
+ 5
+    corry3 2 (k,n)
+                     2  = (corrx (pulseot) + 2 - (I -xabs(n))).       2 corrpshift
+                                                                       (Eq 24)
+                best =n
+    bestCorrSq3 2 = corrxy32 (k,n)2   if  corrxy32 (k,n)2 -bestEn3 2 >bestCorrSq3 2 -enloop,(k,n)
+       bestEn3 2 = enloopy (k,n)
+10                                                                                  (Eq25)
+   In other words, en_margin is indicative of how many upshifts that can be used to
+   normalize the energy in the next loop. If 16 or more upshifts can be used, then the
+   energy stays in the lower word length, assuming 16/32 bit word lengths, and there
+   is no need for the high precision (32 bit representation) loop, so
+15 highprecisionactiveis set to FALSE. One implementation reason for doing it in
+   this way (allowing the energy information to stay in the low part of the Lenergy 32
+   bit word ) is that it is computationally cheaper: it costs only 1 cycle to compute
+   extractI (L energy) whereas an alternative round fx(L shl(L energy,enmargin))
+   takes two cycles.
+20 When the best position best of the unit pulse has been determined, the
+   accumulated correlation corrxy(k), the accumulated inloop energy enloopy(k)
+   and the number of accumulated unit pulses pulsetotare updated. Further, the
+   maximum amplitude maxampy in the best integer vector y so far, is kept up to
+   date, i.e. determined, for the next unit pulse addition loop.
+25                 maxamp,         =max(maxampy, yfnbest )                          (Eq 26)
+   10176965_1.docx
+
+                                                24
+   If there are further unit pulses to add, i.e. when pulsetot < K, a new inner-loop is
+   started with a new near optimal corrupshift analysis Eq.19 and a new energy
+   precision analysis Eq 22 and Eq 23, and then commencing the next unit pulse loop
+   with equations Eq.24, Eq.6 and Eq. 26.
+ 5 The high precision approach (in this example 32 bit words) worst case complexity
+   for each unit pulse added to y(n) is roughly 7/N+31 cycles per quantized
+   coefficent.
+   The effect of the in-loop accumulated energy based inner loop precision selection
+   is that target sub vectors that have a high peakiness, or have very fine granularity,
+10 i.e. the final K is high, will be using the higher precision loop and more cycles more
+   often, while non-peaky or low pulse granularity sub vectors will more often use the
+   lower precision loop and fewer cycles.
+   It should be noted that the analysis described in the above section could be
+   performed also when K<tp. However, an embodiment may be made more efficient
+15 by the introduction of a threshold tp for applying the above analysis.
+   PVQ vector finalization and normalization
+   After shape search, each non-zero PVQ- vector element is assigned its proper
+   sign and the vector is L2-normalized (a.k.a. Euclidean normalization) to unit
+   energy. Additionally, if the band was split, it is further scaled with a sub vector
+20 gain.
+    if(y(n) >     o)n (x(n)   < 0) - y(n) = -y(n), for          n = 0,...,N - 1
+                                                          (Eq 27)
+                   normgain =
+                                                                       (Eq 28)
+25                 Xq(n) = normgain -y(n),for          n    0,...,N -1            (Eq 29)
+   10176965_1.docx
+
+                                                  25
+   Above, two precision methodologies were presented and specified:
+   "En16 x CorrSq16", as defined in section above, (equations 19 thorough 21) and
+   "En32 x CorrSq32", (equations 22 through 26). Two further medium complexity
+   methods where the precision of the numerator Correlation Squared term and the
+ 5 Energy term are varied are described below.
+   "En16 x CorrSq32" and "En32 x CorrSq16" methods
+   The "En16 x CorrSq32" method is similar to the "En32 x CorrSq32", but with the
+   difference that the inner loop best found unit pulse update and comparison uses a
+   16 bit representation of the best Energy bestEn16 so far, according to:
+                 nbest = n
+    bestCorrSq s = corrxy 32(k,n)      if    corrxy 32 (k,n)2 -bestEn 16 >bestCorrSq32 - enloop ,(k, n)
+10      bestEn 16 = enloop,(k,n)
+                                                                                        (Eq 30)
+   The approximate cost of the "En16 x CorrSq32" method per unit pulse is 5/N + 21
+   cycles.
+15 The "En32 x CorrSq16" method is similar to the "En32 x CorrSq32", but with the
+   difference that the inner loop best found unit pulse update and comparison uses a
+   16 bit representation of the best squared correlation bestCorrSq16 so far,
+   according to:
+                best = n
+   bestCorrSq 16 = corrxy16 (kn)  2 ,i    corrx1          -bestEn 32 >bestCorrSq 16 -enloop ,(k, n)
+                                                 6 (k,n)'
+       bestEn 32 = enloop ,(k, n)
+20                                                                                      (Eq 31)
+   The approximate cost of the "En32 x CorrSq16" method per unit pulse addition is
+   6/N+20 cycles per coefficient.
+   10176965_1.docx
+
+                                               26
+   Aspects and exemplifying embodiments
+   Below, some exemplifying embodiments of the solution disclosed herein will be
+   described with reference to figures 1-4.
+   Figure 1 is a flow chart illustrating a method concerning the fine search of PVQ
+ 5 shape search. The method is intended to be performed by an encoder, such as a
+   media encoder for audio and/or video signals. The PVQ takes a target shape
+   vector x as input, and derives a vector y by iteratively adding unit pulses in an
+   inner dimension search loop. The method relates to a pre-analysis, which is done
+   before entering the inner loop. An output vector xq will then be derived based on
+10 the vector y, as previously described. However, the forming of xq is not central to
+   the solution described herein, and will therefore not be further described here.
+   In the method illustrated in figure 1, it may be assumed that the encoder keeps
+   track of a value maxampy of a current vector y. By "current vector y" is here meant
+   the vector y composed, found or constructed so far, i.e. for a k < K. As previously
+15 described, a starting point for the vector y may be a projection to a surface below
+   the Kth pyramid, or an empty all-zero vector. The method illustrated in figure 1
+   comprises, before entering a next inner dimension search loop for unit pulse
+   addition, determining 101, based on the maximum pulse amplitude, maxampy, of a
+   current vector y, whether more than a current bit word length is needed to
+20 represent enloopy, in a lossless manner in the upcoming inner dimension loop.
+   The variable enloopy is related to an accumulated energy of the vector y. The
+   performing of this method enables the encoder to keep the complexity of the
+   search at a reasonable level. For example, it enables the encoder to apply an
+   increased precision (implying higher complexity) loop only when it may be needed,
+25 by analyzing whether the "worst case scenario" in the upcoming inner loop would
+   require an inner loop with a higher precision than the currently used.
+   The pre-analysis described above is performed before each entry 102 to the inner
+   loop, i.e. before each addition of a unit pulse to the vector y. In an exemplifying
+   embodiment where only two different bit representations, i.e. bit word lengths such
+30 as 16 and 32 bits, are available, the inner loop will be performed using a 16 bit
+   representation of enloopy until it is determined that a longer bit word is needed to
+   10176965_1.docx
+
+                                                27
+   represent enloopy, after which the higher bit word length, i.e. the 32 bit
+   representation will be applied for the inner loop calculations. The loop using a 16
+   bit representation may be referred to as a "low precision loop", and the loop using
+   a 32 bit representation may be referred to as a "high precision loop".
+ 5 The determining 102 of whether more than an initial or current bit word length is
+   needed could alternatively be expressed as that it is determined which bit word
+   length, out of at least two different, alternative, bit word lengths, that will be
+   required for representing the "worst case" (largest possible increase) enloopy
+   during the next inner loop. The at least two different word bit lengths could
+10 comprise at least e.g. 16 and 32 bit word lengths.
+   In other words, when more than a current bit word length is determined 102 to be
+   needed to represent enloopy in the next inner loop, the inner loop calculations are
+   performed 103 with a longer bit word length, than an initial or current bit word
+   length, for representing enloopy in the inner loop. On the other hand, when more
+15 than a current bit word length is determined not to be needed to represent
+   enloopy, the inner loop calculations may be performed by employing a first unit
+   pulse addition loop using a first or current bit word length to represent enloopy, i.e
+   the current bit word length may continue to be used. This is also illustrated e.g. in
+   figure 4, as the use of two different loops. Figure 4 shows one, low precision inner
+20 loop, which is run 405 when it is determined 403 that it is sufficient with a current
+   (lower) bit word length; and one high precision inner loop, which is run when it is
+   determined 403 that a higher bit word length is needed to represent the energy in
+   the inner loop, in order not to lose information.
+   The method builds on the realization that the maximum possible increase of an
+25 energy variable, such as enloopy, in a next inner loop will occur when the unit
+   pulse is added to the position in y associated with the current maxampy. Having
+   realized this, it is possible to determine, before entering the inner loop, whether
+   there is a risk for exceeding the representation capacity of the currently used bit
+   word length, e.g. 16 bits, during the next inner loop, or not. In other words, the
+30 determining of whether more than a current bit word length is needed to represent
+   10176965_1.docx
+
+                                              28
+   enloopy comprises determining characteristics of the case when, in the upcoming
+   inner search loop, the unit pulse is added to the position in y being associated with
+   maxampy. For example, the number of bits needed to represent enloopy in the
+   upcoming inner loop may be determined, or, alternatively, a remaining margin in a
+ 5 bit word representing enloopy in the upcoming inner loop.
+   For target shape vectors being associated with a low K, it is possible to say in
+   advance that there will be no need for a longer bit word length than the one offered
+   by the initial and currently used bit word length. Therefore, it would be possible to
+   apply a threshold value Tk, such that certain operations are performed only for
+10 target shape vectors being associated with a K which exceeds the threshold value
+   Tk. For such target vectors, the encoder will keep track of maxampy, by updating
+   this value after each pulse addition. For target vectors associated with a K which is
+   lower than the threshold value, it is not necessary to keep track of maxampy. For
+   the example with 16 and 32 bit words, a possible Tk would be 127, as previously
+15 described. In other words, the keeping track of maxampy and the determining of
+   whether more than a current bit word length is needed is performed, e.g., only
+   when a final value of K associated with the input target shape vector exceeds a
+   threshold value Tk.
+   An embodiment illustrated in figure 2 comprises keeping track of or determining
+20 201 maxampy, and determining 202 xabsmax.The value of maxampy may be
+   changed when adding a new unit pulse in the inner loop and therefore maxampy
+   needs to be updated, in order to be kept up to date after each loop. For example,
+   the action 201 may comprise keeping track of maxampy until a value of k has
+   reached a threshold value where the initial or current bit word length used for
+25 representing enloopy may no longer be sufficient, and the analysis represented
+   e.g. by action 204 is commenced. The updating of maxampy after an inner loop
+   following the analysis of e.g. action 204 is illustrated as action 206 in figure 2. It
+   should be noted, however, that xabsmax is not changed in the process, and
+   therefore only needs to be determined 202 once. As illustrated in figure 2, an
+30 embodiment of the method could also comprise, before entering 205 a next inner
+   dimension loop for unit pulse addition, determining 203, based on a maximum
+   10176965_1.docx
+
+                                               29
+   absolute value, xabsmax, of the input shape vector, x, a possible upshift, in a bit
+   word, of the next loop's accumulated in-loop correlation value, corrxy, between x
+   and the vector y. The upshift could also be denoted an upscaling. Equation 19
+   above illustrates the determining of the maximum possible upshift. By performing
+ 5 this, it may be ensured that as many correlation information bits as possible are
+   maintained during the inner loop evaluation, especially the most significant ones. It
+   should be noted here that the correlation value corrxy, in form of corrxy 2, need not
+   necessarily be represented in a lossless manner. The determining of the maximum
+   upshift may be performed in a "longer"bit word, irrespective of the current bit word
+10 length used in the inner loop. That is, the maximum possible upshift may be
+   determined for a 32 bit word even when a 16 bit word will be used in the inner
+   loop. When a shorter bit word is to be used in the inner loop, the determined
+   upshift will then be "rounded" to the shorter bit word, as illustrated by Eq 20. Note
+   that the correlation value, corrxy, always is less than or equal to one(1.0) in the
+15 applied DSP precision for the correlation value, i.e. corrxy 1.0, and therefore, the
+   maximum upshift determined for corrxy is also valid for corrxy2 .
+   When more than a current bit word length is determined to be needed to represent
+   enloopy, the inner loop calculations may be performed using a longer bit word
+   length (than the current bit word length, e.g. 32 instead of 16 bits) to represent
+20 enloopy.
+   In one embodiment, when more than a current bit word length is determined to be
+   needed to represent enloopy, the inner loop calculations are performed with a
+   longer bit word length (than the current bit word length), representing also an
+   accumulated in-loop correlation value, corrxy 2, in the inner loop. This is illustrated
+25 e.g. in figure 3, in action 305. That is, a bit word length determined for the energy
+   value enloopy may also be applied for corrxy 2.
+   As previously mentioned, it is preferred to avoid performing the division of Eq 8 in
+   the inner dimension search loop for unit pulse addition. Therefore, a cross
+   10176965_1.docx
+
+                                               30
+   multiplication may be performed, as illustrated in Eq 10. That is, a position, nbest,
+   in y for addition of a unit pulse, could be determined by evaluating a cross
+   multiplication, for each position n in y, of a correlation and energy value for the
+   current n; and a "best so far" correlation, BestCorrSq, and a "best so far" energy
+ 5 value bestEn, saved from previous values of n, as:
+                   corrxy 2 * bestEn > BestCorrSq * enloopy
+                   where
+                          best -- n
+                    bestEn = enloopy       when corrxy 2 * bestEn > BestCorrSq * enloopy
+                   BestCorrSq = corr)
+   The position nbest could be referred to as a "best" position in y for addition of a unit
+10 pulse. It should be noted that ">"could be used in the expressions above instead
+   of ">". However, ">", i.e. "larger than" may be preferred when trying to keep the
+   computational cost as low as possible, e.g. in regard of number of cycles.
+   The performing of the method according to any of the embodiments described
+   above enables this cross-multiplication to be performed in an efficient manner (e.g.
+15 by not using a higher precision than actually needed).
+   Implementations
+   The methods and techniques described above may be implemented in an encoder
+   or codec, which may be comprised in e.g. in a communication device.
+   Encoder, figures 11a-11c
+20 An exemplifying embodiment of an encoder is illustrated in a general manner in
+   figure 11 a. The encoder may be a media encoder, configured for encoding of e.g.
+   audio and/or video signals. The encoder 1100 is configured to perform at least one
+   of the method embodiments described above with reference to any of figures 1-5.
+   The encoder 1100 is associated with the same technical features, objects and
+25 advantages as the previously described method embodiments. In some
+   implementations, the encoder is associated with constraints in regard memory
+   and/or complexity, such as e.g. when the encoder is configured with a fixed
+   10176965_1.docx
+
+                                             31
+   precision DSP. The encoder will be described in brief in order to avoid
+   unnecessary repetition.
+   The encoder may be implemented and/or described as follows:
+   The encoder 1100 is configured for Pyramid Vector Quantization, including so
+ 5 called fine search or fine shape search, where a Pyramid Vector Quantizer, PVQ,
+   is configured to take a target vector x as input and derives a vector y by iteratively
+   adding unit pulses in an inner dimension search loop. The input vector x has a
+   dimension N and an L1-norm K. The encoder 1100 comprises processing circuitry,
+   or processing means 1101 and a communication interface 1102. The processing
+10 circuitry 1101 is configured to cause the encoder 1100 to, before entering a next
+   inner dimension search loop for unit pulse addition: determine, based on a
+   maximum pulse amplitude, maxampy, of a current vector y, whether more than a
+   current bit word length is needed to represent, in a lossless manner, a variable,
+   enloopy, related to an accumulated energy of y, in the upcoming inner dimension
+15 loop. The communication interface 1102, which may also be denoted e.g.
+   Input/Output (1/O) interface, includes an interface for sending data to and receiving
+   data from other entities or modules.
+   The processing circuitry 1101 could, as illustrated in figure 11b, comprise
+   processing means, such as a processor 1103, e.g. a CPU, and a memory 1104 for
+20 storing or holding instructions. The memory would then comprise instructions, e.g.
+   in form of a computer program 1105, which when executed by the processing
+   means 1103 causes the encoder 1100 to perform the actions described above.
+   An alternative implementation of the processing circuitry 1101 is shown in figure
+   11 c. The processing circuitry here comprises a determining unit 1106, configured
+25 to cause the encoder 1100 to, before entering a next inner dimension search loop
+   for unit pulse addition: determine, based on a maximum pulse amplitude,
+   maxampy, of a current vector y, whether a higher precision than allowed with a
+   current bit word length is needed to represent, in a lossless manner, a variable,
+   enloopy, related to an accumulated energy of y, in the upcoming inner dimension
+30 loop. The processing circuitry 1101 could comprise more units, such as a fine
+   10176965_1.docx
+
+                                               32
+   search unit 1107, configured to cause the encoder to run an inner dimension loop
+   with a certain bit word length and/or a certain precision.
+   The encoders described above could be configured for the different method
+   embodiments described herein, such as e.g. to perform the inner loop calculations
+ 5 using a longer bit word representing enloopy and possibly corrxy 2 , when more than
+   a current bit word length is determined to be needed to represent enloopy.
+   "Longer", here refers to longer than a current or initial bit word length.
+   The encoder 1100 may be assumed to comprise further functionality, for carrying
+   out regular encoder functions.
+10 The encoder described above may be comprised in a device, such as a
+   communication device. The communication device may be a user equipment (UE)
+   in the form of a mobile phone, video camera, sound recorder, tablet, desktop,
+   laptop, TV set-top box or home server/home gateway/home access point/home
+   router. The communication device may in some embodiments be a
+15 communications network device adapted for coding and/or transcoding. Examples
+   of such communications network devices are servers, such as media servers,
+   application servers, routers, gateways and radio base stations. The
+   communication device may also be adapted to be positioned in, i.e. being
+   embedded in, a vessel, such as a ship, flying drone, airplane and a road vehicle,
+20 such as a car, bus or lorry. Such an embedded device would typically belong to a
+   vehicle telematics unit or vehicle infotainment system.
+   The steps, functions, procedures, modules, units and/or blocks described herein
+   may be implemented in hardware using any conventional technology, such as
+   discrete circuit or integrated circuit technology, including both general-purpose
+25 electronic circuitry and application-specific circuitry.
+   Particular examples include one or more suitably configured digital signal
+   processors and other known electronic circuits, e.g. discrete logic gates
+   interconnected to perform a specialized function, or Application Specific Integrated
+   Circuits (ASICs).
+   10176965_1.docx
+
+                                              33
+   Alternatively, at least some of the steps, functions, procedures, modules, units
+   and/or blocks described above may be implemented in software such as a
+   computer program for execution by suitable processing circuitry including one or
+   more processing units. The software could be carried by a carrier, such as an
+ 5 electronic signal, an optical signal, a radio signal, or a computer readable storage
+   medium before and/or during the use of the computer program in the
+   communication device.
+   The flow diagram or diagrams presented herein may be regarded as a computer
+   flow diagram or diagrams, when performed by one or more processors. A
+10 corresponding apparatus may be defined by a group of function modules, where
+   each step performed by the processor corresponds to a function module. In this
+   case, the function modules are implemented as a computer program running on
+   the processor. It is to be understood that the function modules do not have to
+   correspond to actual software modules.
+15 Examples of processing circuitry includes, but is not limited to, one or more
+   microprocessors, one or more Digital Signal Processors, DSPs, one or more
+   Central Processing Units, CPUs, and/or any suitable programmable logic circuitry
+   such as one or more Field Programmable Gate Arrays, FPGAs, or one or more
+   Programmable Logic Controllers, PLCs. That is, the units or modules in the
+20 arrangements in the different devices described above could be implemented by a
+   combination of analog and digital circuits, and/or one or more processors
+   configured with software and/or firmware, e.g. stored in a memory. One or more of
+   these processors, as well as the other digital hardware, may be included in a
+   single application-specific integrated circuitry, ASIC, or several processors and
+25 various digital hardware may be distributed among several separate components,
+   whether individually packaged or assembled into a system-on-a-chip, SoC.
+   It should also be understood that it may be possible to re-use the general
+   processing capabilities of any conventional device or unit in which the proposed
+   technology is implemented. It may also be possible to re-use existing software,
+30 e.g. by reprogramming of the existing software or by adding new software
+   components.
+   10176965_1.docx
+
+                                                 34
+   Further exemplifying embodiments
+   Expressed in a slightly different manner, the disclosure herein relates to, for
+   example, the following aspects and embodiments.
+   One of the aspects is an encoder/codec, wherein the encoder/codec is configured
+ 5 to perform one, more than one or even all of the following steps, illustrated e.g. in
+   figures 5-6:
+       -   determining, calculating or obtaining a maximum absolute value (xabsmax)
+           of an input target vector (x(n)), e.g. according to equations 11 and 12 above
+           and as illustrated e.g. with step S1 in figure 5 in one embodiment,
+10     -   determining, calculating or obtaining a possible upshift of a correlation value
+           based at least on the maximum absolute value (xabsmax), e.g. by
+           calculating the possible upshift of a next loop's accumulated in-loop
+           correlation value in a signed 32-bit word through the equation 19 below and
+           illustrated with step S2 in figure 5 in one embodiment,
+15     -   if the number of final unit pulses (K) will end up higher than a threshold (tp),
+           which for example may be 127 unit pulses, determine, e.g. keep track
+           of/store, a maximum pulse amplitude (maxampy) value/information
+           calculated e.g. according to equation 26 above of a vector (y(n)), which may
+           be defined according to equations 13 and 14 above, and
+20              o determining/calculating/deciding/selecting based on the stored
+                    maximum pulse amplitude, e.g. through a calculation in accordance
+                   with equations 22 and 23 below and as illustrated by step S3 in
+                   figure 6, if more than a certain word length is needed or should be
+                    used, e.g. more than a signed 16 bit word or more than a signed 32
+25                  bit word, to represent in-loop energy without losing, or substantially
+                    losing, any energy information,
+                o representing a best squared correlation term/parameter/value and a
+                    best accumulated energy term/parameter/value by more than the
+   10176965_1.docx
+
+                                                35
+                   certain word length, e.g. 32 bit words or 64 bit words, if more than
+                   the certain word length is needed, and
+                o if less than the certain word length is needed, running a first loop,
+                o if more than the certain word length is needed, running a second,
+ 5                 alternative loop with the "best so far" (near optimal) accumulated
+                   energy term and best squared correlation term represented by the
+                   more than the certain word length words.
+   The second loop may be a higher precision and computationally more intensive
+   high precision unit pulse loop than the lower precision (i.e. in relation to the second
+10 loop) first loop. The inloop accumulated energy based selection of the inner loop
+   precision has the effect that target sub vectors that have a high peakiness, or have
+   very fine granularity (final K is high) will or could be using the higher precision loop
+   and more cycles more often, while non-peaky or low pulse granularity sub vectors
+   will or could more often use the lower precision loop and fewer cycles.
+15 One aspect relates to a communication device 1, illustrated in figure 9, which
+   comprises an encoder or codec 2 for video or audio coding, e.g. an EVS encoder.
+   The encoder or codec may be fully or partially implemented as a DSP positioned
+   in the communication device. In one first embodiment the encoder/codec is
+   configured to make a PVQ-shape search based on a target sub vector (x(n)), the
+20 number of finite unit pulses (K), a sub vector dimension value (N) of the target sub
+   vector and optionally also one or more gain values (gsub). The encoder or codec
+   may also be configured to make a PVQ band split, and in such a case the PVQ
+   shape search would also be based on a number/value of sub vectors of a band
+   (Ns) and a largest gain of a gain vector G, (gmax = max (G) = max (go ... g(Ns-1)).
+25 The encoder or codec is further configured to output from the PVQ-shape search
+   an integer vector (y) and/or a shape sub vector xq(n) to be used by the encoder
+   for PVQ indexing. The integer vector (y) comprises element values and has the
+   same length as the sub vector dimension value (N) and an absolute sum of all the
+   element values is equal to the number of unit pulses (K).
+   10176965_1.docx
+
+                                               36
+   The encoder/codec/communication device is configured to perform the PVQ
+   shape search, wherein the encoder/codec/communication device is configured to:
+       -   determine, calculate or obtain (S1, S23) a maximum absolute value
+           (xabsmax) of the input (target) vector (x(n)), e.g. according to equations 11
+ 5         and 12 above,
+       -   determine, calculate or obtain (S2,S28) a possible upshift of a correlation
+           value based at least on the maximum absolute value (xabsmax), e.g. by
+           calculating the possible upshift of a next loop's accumulated in-loop
+           correlation value in a signed 32-bit word through the equation 19 above,
+10     -   if the number of final unit pulses (K) will end up higher than a threshold (tp),
+           which for example may be 127 unit pulses, keep track of/store (S30) a
+           maximum pulse amplitude (maxampy) value/information calculated e.g.
+           according to equation 26 above of a vector (y(n)), which may be defined
+           according to equations 13 and 14 above, and
+15              o determine/calculate/decide/select (S3, S32) based on the stored
+                   maximum pulse amplitude, e.g. through a calculation in accordance
+                   with equations 22 and 23 above, if more than a certain word length is
+                   needed or should be used, e.g. more than a signed 16 bit word or
+                   more than a signed 32 bit word, to represent in-loop energy,
+20              o  represent (S34) a best squared correlation term/parameter/value and
+                   a best accumulated energy term/parameter/value by more than the
+                   certain word length, e.g. 32 bit words or 64 bit words, if more than
+                   the certain word length is needed, and
+                o if less than the certain word length is determined, run (S33) a first
+25                 loop,
+                o if more than the certain word length is determined, run (S35) a
+                   second, alternative loop with the best accumulated energy term and
+   10176965_1.docx
+
+                                              37
+                   best squared correlation term represented by the more than the
+                   certain word length words.
+   The above PVQ-shape search, which may be a limited precision PVQ-shape
+   search, is in one embodiment performed by a vector quantizer, which is a part of
+ 5 the encoder/codec and may be implemented at least partly, but also fully as a DSP
+   unit, which may be positioned in or adapted to be positioned in a communication
+   device. Thus the encoder/codec may be fully or partly implemented as a hardware
+   unit, e.g. a DSP or a programmable-field gate array (FPGA). It may however in
+   alternative embodiments be implemented with the help of a general purpose
+10 processor and a codec computer program which when run on the general purpose
+   processor causes the communication device to perform one or more of the steps
+   mentioned in the paragraph above. The processor may also be a Reduced
+   Instruction Set Computing (RISC) processor.
+   Another aspect of the disclosure herein is, as indicated in the paragraph above, a
+15 computer program 6 illustrated in figure 10 and where one embodiment is fully
+   disclosed by the ANSI-C code example in appendix 1 below., such as an encoder
+   computer program or codec computer program, comprising computer readable
+   code, which when run on a processor/processor unit 4 of a communication device
+   1 causes the communication device to perform one or more of the steps
+20 mentioned in conjunction with the method in the paragraph below or any of the
+   steps mentioned in conjunction with figure 7.
+   Yet another aspect is a PVQ-shape search method performed by a communication
+   device/codec/encoder, wherein the method comprises one or more of the following
+25 steps:
+       -   determining, calculating or obtaining (S1) a maximum absolute value
+           (xabsmax) of the input (target) vector (x(n)),, e.g. according to equations 11
+           and 12 above,
+       -   determining, calculating or obtaining (S2, S28) a possible upshift of a
+30         correlation value based at least on the maximum absolute value (xabsmax),
+   10176965_1.docx
+
+                                               38
+           e.g. by calculating the possible upshift of a next loop's accumulated in-loop
+           correlation value in a signed 32-bit word through the equation 19 above,
+        -  if the number of final unit pulses (K) will end up higher than a threshold (tp),
+           which for example may be 127 unit pulses, keep track of/store a maximum
+ 5         pulse amplitude (maxampy) value/information calculated e.g. according to
+           equation 26 above of a vector (y(n)), which may be defined according to
+           equations 13 and 14 above, and
+                o determining/calculating/deciding/selecting (S3) based on the stored
+                   maximum pulse amplitude, e.g. through a calculation in accordance
+10                 with equations 22 and 23 above, if more than a certain word length is
+                   needed or should be used, e.g. more than a signed 16 bit word or
+                   more than a signed 32 bit word, to represent in-loop energy,
+                o representing a best squared correlation term/parameter/value and a
+                   best accumulated energy term/parameter/value by more than the
+15                 certain word length, e.g. 32 bit words or 64 bit words, if more than
+                   the certain word length is needed, and
+                o if less than the certain word length is determined, running a first loop,
+                o if more than the certain word length is determined, running a second,
+                   alternative loop with the best accumulated energy term and best
+20                 squared correlation term represented by the more than the certain
+                   word length words.
+   The communication device may be a user equipment (UE) in the form of a mobile
+   phone, video camera, sound recorder, tablet, desktop, laptop, TV set-top box or
+   home server/home gateway/home access point/home router, etc. as defined
+25 above.
+   Still another aspect is a computer readable storage medium 5 (see figure 10) on
+   which any of the above embodiments of the computer program is stored. The
+   computer readable storage medium may be in the form of a volatile or non-volatile
+   10176965_1.docx
+
+                                               39
+   memory, e.g. an EEPROM (Electrically Erasable PROM), FPGA, a flash memory
+   (including Solid-state drive), and a hard drive.
+   An embodiment of the communication device 1 is illustrated in figure 9. The
+   communication device comprises, for the performance of a PVQ-shape search,
+ 5 one, more than one or all of the following units:
+       -   a first determining unit, U1, for determining, calculating or obtaining a
+           maximum absolute value (xabsmax) of the input (target) vector (x(n)) , e.g.
+           according to equations 11 and 12 above,
+       -   a second determining unit, U2, for determining, calculating or obtaining a
+10         possible upshift of a correlation value based at least on the maximum
+           absolute value (xabsmax), e.g. by calculating the possible upshift of a next
+           loop's accumulated in-loop correlation value in a signed 32-bit word through
+           the equation 19 above,
+       -   a storing unit, U3, for keeping track of/store a maximum pulse amplitude
+15         (maxampy) value/information calculated e.g. according to equation 26
+           above of a vector (y(n)), which may be defined according to equations 13
+           and 14 above, if the number of final unit pulses (K) will end up higher than a
+           threshold (tp),
+       -   a selection unit, U4 for determining/calculating/deciding/selecting based on
+20         the stored maximum pulse amplitude, e.g. through a calculation in
+           accordance with equations 22 and 23 above, if more than a certain word
+           length is needed or should be used, e.g. more than a signed 16 bit word or
+           more than a signed 32 bit word, to represent in-loop energy,
+       -   a representation unit, U5, for generating a best squared correlation
+25         term/parameter/value and a best accumulated energy term/parameter/value
+           with a word length, e.g. 32 bit words or 64 bit words, being more than the
+           certain word length if more than the certain word length is selected by the
+           selection unit, and
+   10176965_1.docx
+
+                                                40
+       -   an inner loop processing unit, U6, for
+                o running a first loop, if less than the certain word length is selected by
+                   the selection unit, and
+                o running a second, alternative loop with the best accumulated energy
+ 5                 term and best squared correlation term represented by the more
+                   than the certain word length words, if more than the certain word
+                   length is determined.
+   The units mentioned in the paragraph above may be comprised in a
+   codec/encoder 2 in the form of a DSP in the communication unit and may
+10 furthermore be comprised in a hardware vector quantizer of the DSP. In an
+   alternative embodiment, all the units in the paragraph above are implemented in
+   the communication device as software.
+   As further illustrated in figure 9, the communication device 1 may also comprise
+   further units related to the encoder/codec and in particular units related to vector
+15 quantization and PVQ-shape searching. Such units are configured to enable
+   shape searches according to the description and figs comprised in this application.
+   Exemplary units illustrated in figure 9 are:
+   - a PVQ band split unit U7 for performing the optional step S21 described in
+   conjunction with figure 7,
+20 - a comparison unit U8 for performing the step S24 described in conjunction with
+   figure 7 below,
+   - a PVQ vector generating unit U9 for performing the step S25 described below,
+   - a starting point generating unit U10 for performing the step S26 described below,
+   - a parameter calculating unit U11 for performing the step S27 described below,
+25 - a bit allocation unit U12 for e.g. supplying K and N to the shape search, and
+   - a PVQ indexing unit U13, which can be seen as a receiver of the output from the
+   PVQ-shape search disclosed herein,
+   10176965_1.docx
+
+                                                41
+   - a normalization unit U14 for performing step S36 described below, and
+   - an output unit U15 for performing step S37 described below.
+   In the case of a software implementation in a communication device, an
+   embodiment of the communication device 1 may be defined as a communication
+ 5 device comprising a processor 4 and a computer program storage product 5 in the
+   form of a memory, said memory containing instructions executable by said
+   processor, whereby said communication device is operative to perform one, more
+   than one or all of the following:
+       -   determine, calculate or obtain a maximum absolute value (xabsmax) of an
+10         input (target) vector (x(n)), e.g. according to equations 11 and 12 above,
+       -   determine, calculate or obtain a possible upshift of a correlation value
+           based at least on the maximum absolute value (xabsmax), e.g. by
+           calculating the possible upshift of a next loop's accumulated in-loop
+           correlation value in a signed 32-bit word through the equation 19 above,
+15     -   if the number of final unit pulses (K) will end up higher than a threshold (tp),
+           which for example may be 127 unit pulses, keep track of/store a maximum
+           pulse amplitude (maxampy) value/information calculated e.g. according to
+           equation 26 above of a vector (y(n)), which may be defined according to
+           equations 13 and 14 above, and
+20              o determine/calculate/decide/select based on the stored maximum
+                   pulse amplitude, e.g. through a calculation in accordance with
+                   equations 22 and 23 above, if more than a certain word length is
+                   needed or should be used, e.g. more than a signed 16 bit word or
+                   more than a signed 32 bit word, to represent in-loop energy,
+25              o  represent a best squared correlation term/parameter/value and a
+                   best accumulated energy term/parameter/value by more than the
+                   certain word length, e.g. 32 bit words or 64 bit words, if more than
+                   the certain word length is needed, and
+   10176965_1.docx
+
+                                              42
+                o if less than the certain word length is determined, run a first loop,
+                o if more than the certain word length is determined, run a second,
+                   additional loop with the best accumulated energy term and best
+                   squared correlation term represented by the more than the certain
+ 5                 word length words.
+   To further illustrate aspects and embodiments, some of them are in the following
+   going to be described in conjunction with figures 7-8.
+   Figure 8 provides an overview of a transmitting side of the emerging 3GPP EVS,
+   including an EVS encoder 3, which here is comprised in the communication device
+10 1.
+   Figure 7 illustrates some method steps in an alternative way of describing some
+   embodiments in relation to the embodiments illustrated in figure 5-6. Even though
+   some of the steps mentioned with respect to figure 7 can be said to be made in
+   conjunction with a PVQ-shape search, it should also be apparent that some of the
+15 steps could also be said to be performed before the PVQ-shape search. In an
+   optional first step S21, a PVQ band split is performed.
+   Shape target sub vectors, optionally from step S21, are received in a second step
+   S22, wherein, in dependence of embodiment, also gsub, gmax and Ns may be
+   received.
+20 In a third step S23, which corresponds to step S1 in figure 5, a max absolute value
+   of a target vector is determined, e.g. by first calculating the absolute value of the
+   sub vector x(n) of the target vector and then selecting the largest absolute value
+   of the sub vector.
+   In an optional fourth step S24, it is determined whether the value of the target
+25 vector is equal to or below a first threshold. The threshold is set to "filter out" target
+   vectors which are considered to have very low energy values. As explained above,
+   the threshold could be set to be equal to zero in one embodiment. It could in this
+   fourth step also be decided if a sub vector gain is equal to or below a second
+   threshold. In one embodiment the second threshold is set to zero, but may in other
+   10176965_1.docx
+
+                                               43
+   embodiments be set to be the Machine Epsilon in dependence of the precision
+   used for processed words.
+   If it in the fourth step S24 is determined that the target vector is equal or below the
+   first threshold and/or the sub vector gain is below or equal to the second threshold,
+ 5 then a PVQ-vector is created in an optional fifth step S25. The creation is in one
+   embodiment deterministically created by assigning half of the K unit pulses to a
+   first position (        -   ), and the remaining unit pulses to a last position (
+    y[N -1]= y[N - 1]+ (K - y[o]) ). This step could in conjunction with the fourth
+                                                                                       step
+   S24 be seen as bypassing the whole actual PVQ-shape search, but can also be
+10 seen as a sub-routine within the context of a general PVQ-shape search
+   procedure.
+   In an optional sixth step S26, an initial value (starting point) for y, ystart, is set for
+   the PVQ-shape search to follow, wherein the initial value is dependent on the ratio
+   between K and N. If the ratio is larger than a third threshold value, which may be
+15 0.5 unit pulses per coefficient, a first projection to a K-1 sub pyramid is used as the
+   initial vector-y_start in a following step. The first projection may be calculated as
+   in equations 13 and 14 above. If lower than the third threshold, then the initial
+   vector ystart is decided to start off from 0 pre-placed unit pulses.
+   In preparation for subsequent PVQ-shape search steps, all the initial vector values
+20 in ystart is set to zero in a seventh step S27. In this step a first parameter, here
+   called the accumulated number of unit pulses, pulsetot , and a second parameter,
+   here the accumulated correlation, corrxy(pulsetot) , and a third parameter, here
+   called the accumulated energy energyy(pulsetot) for the starting point are
+   computed, e.g. according to equations 15-17 respectively. A fourth parameter,
+25 here called enloopy (pulsetot) may also be calculated in this step according to
+   equation 18 above.
+   In an eighth step S28, a PVQ-shape search is started, or in an alternative way of
+   looking at it, the second, fine search part of the PVQ-shape search is started for
+   10176965_1.docx
+
+                                               44
+   remaining unit pulses up to K with the help of previously obtained, determined or
+   calculated K, N, Xabs, maxxabs, and y, and in some embodiments also gsub,
+   gmax and Ns. Detailed steps of some embodiments of this fine search are
+   thoroughly illustrated by e.g. figure 6, but it could be emphasized that in some
+ 5 embodiments the fine search comprises a determination of a fifth parameter/value,
+   here called an upshift of a correlation value, corrupshift, is calculated for at least
+   some, and in some embodiments all, the unit pulses for which the fine search or
+   inner loop is done. In some embodiments a possible upshift of a next loop's
+   accumulated in-loop correlation value in a signed 32-bit word is calculated based
+10 on equation 19 above and corrupshift is then used as input to a calculation of a
+   correlation value corrxy in equation 20.
+   In a ninth step S29, which may be said to be a part of the fine PVQ-shape search,
+   it is determined whether the number of final unit pulses K will end up higher than a
+   third threshold, tp , for the number of final unit pulses. If this is the case, then in a
+15 tenth step S30, the maximum pulse amplitude maxampy is stored.
+   In an eleventh step S31, a sixth parameter, enmargin , is calculated according to
+   e.g. equation 22.
+   In a twelfth step S32, the sixth parameter is compared with fourth threshold value,
+   which corresponds to a certain word length.
+20 If the answer YES (in S32 Fig7) or False (in Ansi-code example in Appendix 1) is,
+   i.e. enmargin in the exemplary equation/decision 23 is equal or larger than fourth
+   threshold "16", then in a step S33, a first, faster and "coarser" loop is run than in a
+   second loop of the fine search. Embodiments of the first loop are shown in e.g.
+   figure 6.
+25 If the answer is "No" (in S32 Fig7) or True (in Ansi-code example in Appendix 1),
+   i.e. enmargin in the exemplary equation/decision 23 is less than "16", then in a
+   fourteenth step S34, a seventh parameter, the best squared correlation
+   10176965_1.docx
+
+                                              45
+   term/parameter/value, and an eighth parameter, best accumulated energy
+   term/parameter/value, are generated/transformed to become more than the certain
+   word length, which then in a fifteenth step S35 are used in the second, more
+   detailed inner loop of the fine search. Embodiments of the second loop are shown
+ 5 in more detail in e.g. figure 6.
+   In a sixteenth step S36, at least each non-zero PVQ-sub vector element is
+   assigned its proper sign and the vector is L2-normalized to unit energy. If, in some
+   embodiments, a band has been split, then it is scaled with a sub-vector gain gsub.
+   A normalized xq may also be determined based on equation 28. An exemplary
+10 procedure for this step is more thoroughly described above.
+   In a seventeenth step S37, the normalized xq and y are output from the PVQ
+   shape search process and forwarded to a PVQ-indexing process included in e.g.
+   the codec.
+   Some advantages of embodiments and aspects
+15 Below are some advantages over prior art enabled at least some of the aspects
+   and embodiments disclosed above.
+   The proposed correlation scaling method/algorithm using a pre-analysis of the
+   current accumulated maximum correlation, improves the worst case (minimum)
+   SNR performance of a limited precision PVQ-shape quantization search
+20 implementation. The adaptive criterion for up-front correlation margin analysis
+   requires very marginal additional complexity. Further no costly pre-normalization of
+   the target vector x to e.g. unit energy is required.
+   The adaptive criterion using tracking of the maximum pulse amplitude in the
+   preliminary result , followed by a pre-analysis of the worst case accumulated
+25 energy, for e.g. the soft 16/32 bit precision inner-loop decision requires very little
+   additional computational complexity and provides a good trade-off where the
+   complexity may be kept low while high precision correlation and high precision
+   energy metrics are still used for relevant input signals, and further subjectively
+   important peaky signals will be assigned more precision. In other words, at least
+   10176965_1.docx
+
+                                               46
+   some of the embodiments and aspects improve the functioning of a
+   computer/processor itself.
+   In Tables 2/3 above in appendix 2 below, one can find that an example PVQ
+   based system using the adaptive precision logic cost will be 6.843 WMOPS, if one
+ 5 would use 32 bit energy and squared correlation precision in all(any K) inner
+   search loops the cost is raised to 10.474 WMOPS.
+   Concluding remarks
+   The embodiments described above are merely given as examples, and it should
+   be understood that the proposed technology is not limited thereto. It will be
+10 understood by those skilled in the art that various modifications, combinations and
+   changes may be made to the embodiments without departing from the present
+   scope. In particular, different part solutions in the different embodiments can be
+   combined in other configurations, where technically possible.
+   When using the word "comprise" or "comprising" it shall be interpreted as non
+15 limiting, i.e. meaning "consist at least of".
+   It should also be noted that in some alternate implementations, the functions/acts
+   noted in the blocks may occur out of the order noted in the flowcharts. For
+   example, two blocks shown in succession may in fact be executed substantially
+   concurrently or the blocks may sometimes be executed in the reverse order,
+20 depending upon the functionality/acts involved. Moreover, the functionality of a
+   given block of the flowcharts and/or block diagrams may be separated into multiple
+   blocks and/or the functionality of two or more blocks of the flowcharts and/or block
+   diagrams may be at least partially integrated. Finally, other blocks may be
+   added/inserted between the blocks that are illustrated, and/or blocks/operations
+25 may be omitted without departing from the scope of inventive concepts.
+   It is to be understood that the choice of interacting units, as well as the naming of
+   the units within this disclosure are only for exemplifying purpose, and nodes
+   suitable to execute any of the methods described above may be configured in a
+   plurality of alternative ways in order to be able to execute the suggested procedure
+30 actions.
+   10176965_1.docx
+
+                                                47
+   It should also be noted that the units described in this disclosure are to be
+   regarded as logical entities and not with necessity as separate physical entities.
+   Reference to an element in the singular is not intended to mean "one and only
+   one" unless explicitly so stated, but rather "one or more." All structural and
+ 5 functional equivalents to the elements of the above-described embodiments that
+   are known to those of ordinary skill in the art are expressly incorporated herein by
+   reference and are intended to be encompassed hereby. Moreover, it is not
+   necessary for a device or method to address each and every problem sought to be
+   solved by the technology disclosed herein, for it to be encompassed hereby.
+10 In some instances herein, detailed descriptions of well-known devices, circuits,
+   and methods are omitted so as not to obscure the description of the disclosed
+   technology with unnecessary detail. All statements herein reciting principles,
+   aspects, and embodiments of the disclosed technology, as well as specific
+   examples thereof, are intended to encompass both structural and functional
+15 equivalents thereof. Additionally, it is intended that such equivalents include both
+   currently known equivalents as well as equivalents developed in the future, e.g.
+   any elements developed that perform the same function, regardless of structure.
+   In this specification where reference has been made to patent specifications, other
+   external documents, or other sources of information, this is generally for the
+20 purpose of providing a context for discussing the features of the invention. Unless
+   specifically stated otherwise, reference to such external documents is not to be
+   construed as an admission that such documents, or such sources of information,
+   in any jurisdiction, are prior art, or form part of the common general knowledge in
+   the art.
+25 ABBREVIATIONS
+   N               vector dimension
+   Ns              sub-vector dimension
+   x               target vector
+   xq              Quantized shape vector
+30 final           integer vector adhering to the LI-norm K
+   10176965_1.docx
+
+                                                48
+   K               Number of final unit pulses
+   k               number of accumulated unit pulses index
+   n               coefficient or sample index
+   i               sub vector index
+ 5 MDCT            Modified Discrete Cosine Transform
+   PVQ             Pyramid Vector Quantizer (Quantization)
+   WC              Worst Case
+   WMOPS           Weighted Million Operations Per Second
+   AccEn           Accumulated Energy
+10 ROM             Read Only Memory
+   PROM            Program ROM
+   SNR             Signal-to-Noise Ratio
+   EVS             Enhanced Voice Service
+   3GPP            3 rd Generation Partnership Project
+15 DSP             Digital Signal Processor
+   CELT            Constrained Energy Lapped Transform
+   IETF            Internet Engineering Task Force
+   MAC             Multiply-Accumulate
+   ACELP           Algebraic code-excited linear prediction
+20 EPS             Machine epsilon
+   10176965_1.docx
+
+                                                   49
+Appendix 1: Exemplary implementation of embodiment in ANSI-C code
+Below is an example of an implementation of an exemplifying embodiment in ANSI
+C-code using STL 2009 G.191 virtual 16/32 bit (a simulation of a DSP).
+static
+Word16 maxval-fx(                /* o maximum value inthe input vector            */
+             const Word16 *vec, /* i :input vector                         */
+             const Word16 Ivec /* i length of input vector                    */
+{
+   Word16 j,tmp;
+   tmp = vec[O]; move16();
+   FOR (j=1 ;j<lvec ;j++)
+   {
+       tmp = s-max(vecj],tmp);
+   }
+   return tmp;
+}
+/* The inner search loop for one single additional unit pulse, starting from pulsetot
+   with information about required energy precision/down scaling for the dim loop in en-dnshift,
+   and the current maxxabs absolute value to be used for an near optimal correlation upscaling.
+   returns the index of the best positioned unit pulse in imax
+*/
+static
+Word16 onepulse-search(const Word16 dim,              /* vector dimension     */
+                 const Word16* xabs, /* absolute vector values */
+                 Word16* y,          /*output vector        */
+                 Word16 *pulse-tot-ptr,
+                 Word32* L-xy-ptr,      /* accumulated correlation */
+                 Word32* L-yy-ptr,      /* accumulated energy */
+                 Word16 high-precactive,
+                 Word16 endnshift,
+                 Word16 max xabs)          /*current accumulated max amplitude for pulses */
+{
+   Word16 i, corr up-shift, corrtmp, imax, corr-sq-tmp, enmaxden, cmaxnum, en_tmp;
+   Word32 Ltmpen_lc, Ltmpcorr ;
+   Word32 Ltmp-en, Lenmaxden, Lcorr sq-max, L-tmp-corr-sq;
+   Word32 Lleft_h, Lright-h;
+   UWord32 ULleftI, UL-rightUl, UL-dummy;
+10176965_1.docx
+
+                                                     50
+#ifndef NONBEPVQSEARCHFIX
+   Word16 corr-margin;
+#endif
+#ifdef BECLEANPVQSEARCH
+   Word32 Ltmp;
+   UWord32 UL_tmp;
+   UWord16 usgn;
+#endif
+   /* maximize correlation precision, prior to every unit pulse addition in the vector */
+   corrup-shift = norml(Lmac(*Lxyptr, 1, maxxabs));
+   /* pre analyze worst case Lxy update in the dim loop           , 2 ops */
+   /* clean BE code, with split out low/high precision loops
+   /* activate low complexity en/corr search section conditionally if resulting energy iswithin limits */
+   /* typical case for higher dimensions
+   IF(high-precactive == 0)
+   {
+      enmaxden            =  0; /*movel6()*/; /* OPT: move saved by using high-precactive as
+                                                 enmaxden */
+      cmaxnum            = -1; movel6(); /* req. to force a 1st update for n==0 */
+       FOR(i = 0; i < dim; i++) /* FOR 3 ops */
+      {
+         Ltmpcorr = L-shl(L-mac(*L-xy-ptr,1,x abs[i]), corrup-shift );/*actual in-loop target */
+         corrtmp          = round fx(L-tmp-corr);
+         corrsq-tmp = mult(corr tmp, corr-tmp); /*CorrSq, is 16bit for low complexity crossmult */
+         LtmpenIc = L-mac(*L-yy-ptr, 1,y[i]);
+         /*Q1 result , energy may span up to -14+1(Q1)+1(sign)=16 bits, 1op */
+         /*extractI without shift can always be used for this section as energy isguaranteed to stay
+in
+           the lower word, 1op */
+         entmp = extractjl(L-tmp-en-lc);
+        /* Lshl + roundfx could also be used also but then adds an uphift cost (2-3 ops)*/
+         /* 16/32 bit comparison WC (4 +1+1 + (1+1+1) = 9
+         /* corr sq-tmp/en-tmp-den > cmaxnum/enmaxden */
+         /* corrsq-tmp * enmaxden > cmaxnum * enitmp */                            /* IF     4 ops */
+         IF(Lmsu(Lmult(corr-sqtmp, en-max-den),cmaxnum , en-tmp) > 0)                     /*         2
+ops */
+         {
+            cmaxnum       = corr-sq-tmp; move16();      /* 1op */
+10176965_1.docx
+
+                                                  51
+           enmaxden = en-tmp;            movel6(); /* 1op */
+            imax      =i;       move 6(); /* 1 op */
+        }
+     }/*dim */
+   }
+   ELSE
+   { /* High resolution section activated when vector energy isbecoming high (peaky or many
+pulses)
+      */
+     /* BASOP operator Mpy32_32_ss used to allow higher resolution for both the CorrSq &Energy
+        terms */
+     /*Performance: close to float reference
+     L_enmaxden = Ldepositl(0);                                              /* 1op */
+     L_corrsq-max = L-deposit l(-1); /* req. to force a 1st update */                  /* 1op */
+     FOR(i = 0; i < dim; i++)                                       /* FOR 3 ops*/
+     {
+         Litmpcorr        = L-shl(L-mac(*L-xy-ptr,1,x abs[i]), corr-up-shift );/* actual inloop WC
+value */
+         Mpy_32_32_ss(L-tmp-corr,L-tmp-corr, &L-tmp-corr-sq, &UL-dummy);
+        /* CorrSq 32 bits,4 ops */
+         Ltmpen = Lmac(*L-yy-ptr, 1,y[i]);         /* Q1,energy may span up to sign+19 bits , 1op
+*/
+        /* For highest accuracy use pairs of maximum upshifted 32x32 bit signed values
+        /* (L-tmp-corr sq / Ltmp-en) > (L-corr-sq-max/Lenmax-den)                                 */
+        /* (L-tmp-corr-sq * L en-max den) > (L-corr sq-max * Ltmp-en)                             */
+         Mpy_32_32_ss( Lenmaxden, Ltmp-corr-sq, &Lleft_h, &UL-left l);                         /*4 ops
+*/
+         Mpy_32_32_ss( L-tmp-en, L-corr-sq-max, &L_righth, &UL-rightUl);                      /*4 ops */
+        /* 32/64 bit comparison WC (1+1+ 2x2+ 4 +(2+2+1) = 15
+         Ltmp = L-sub(Lleft_h, Lright-h);            /* high signed word check             1op */
+         ULtmp = UL-subNs(UL-rightl, ULleft-l, &u-sgn);
+        /* low unsigned word check, note switch due to ">=" in ULsubNs, 1op */
+         IF(( Ltmp > 0)       (Ltmp == 0) && (u-sgn !=0))) /* IF 4 ops*/
+        {
+           L_corr-sq-max = Ltmp-corr sq; move32(); /* 2 ops */
+           L_enmaxden = Ltmpen;               move32(); /* 2 ops */
+10176965_1.docx
+
+                                                     52
+             imax       =  i;         move16(); /* 1op */
+          }
+       } /* dim loop*/
+    }
+   /* finally add found unit pulse contribution to past Lxy, Lyy, for next pulse loop */
+    *L-xy-ptr = L-mac(*L xy-ptr, x abs[imax], 1);            /* xyjflt += xabs[imax]; Q12+1 */
+    *L-yy-ptr = L-mac(*Lyy ptr, 1,y[imax]);               /*yy-jlt +=y[imax];         */
+    y[imax]         = add(y[imax],1);      move16();    /* QO added pulse
+    (*pulse-tot-ptr) = add((*pulse-tot-ptr) 1);          /* increment total pulse sum */
+    return imax;
+}
+/*--------------------------------------------------- *
+ *  Function pvq-encodefx()                                   *
+ *                                                 *
+ *  Basic PVQ search algorithm:                                 *
+ *   Selective Li-norm projection to the lower -(K-1) pyramid            *
+ * followed by an ACELP-like unit pulse addition fine search            *
+ *-----------------------------------*/
+void pvq-encodejfx(
+    Encoder_Statefx *stfx,
+    const Word16 *x,        /* i: vector to quantize         Q15-3=>Q12        */
+    Word16 *y,           /*o: raw pulses (non-scaled short) QO               */
+    Word16 *xq,           /*o: quantized vector            Q15            */
+    const short pulses, /* i: number of allocated pulses
+    const short dim,      /* i: Length of vector == N
+    const Word16 neg-gain /* i: -Subvector Gain we use -negative gain in Q15 O..i */
+{
+    Word16 i;
+    Word16 pulse_tot;
+    Word16 xabs[PVQMAXBANDSIZE];
+    Word16 max_xabs;
+    Word32 L_xsum;
+    Word32 Lproj-fac;
+    Word32 Lyy, Lxy;
+    Word16 max-amp-y, imax;
+    Word16 k,en-margin, endnshift, high-precactive;
+    Word32 Lnum, Ltmp;
+    Word16 projjfac, tmp, shift denshiftnumshiftdelta, num,den;
+    UWord16 u16_tmp;
+10176965_1.docx
+
+                                                      53
+  Word16 dim_ml;
+  Word32 L_isqrt;
+  Word16 neg-gain-norm, shifttot;
+  Word16 high-pulse-density-flag;
+   PvqEntryjfx entry;
+  /* Create absolute vector and calculate sum of abs vector */
+   L_xsum = L-deposit-h(O);
+   maxxabs = -1;                move16();
+   FOR( i = 0; i < dim; i++)
+  {
+      xabs[i] = abs-s(x[i]);            move16();            /* Q12 */
+      maxxabs = smax(max-xabs, xabs[i]);                    /* for efficient search correlation scaling */
+      L_xsum = L_macO(L-xsum, 1,xabs[i]);                           /*stay in Q12 */
+      y[i]    = 0;                   move16();         /* init */
+  }
+  test(;
+   IF(L-xsum == 0 || neg-gain == 0
+  { /* zero input or zero gain case */
+      /* put a "half"-pulsesum first and last, or all pulses in pos 0 */
+      pulse-tot = pulses;      move16();
+      dim_ml = sub(dim,1);
+      y[dim-ml] = 0;          move16();
+      y[0] = shr(pulses,1); move16();
+      y[dim-ml] = add(y[dim-ml], sub(pulses, y[0])); move16();
+      Lyy = L-mult(y[0],y[0]); /* Lyy needed for normalization */
+      if(dim-m1 !=0){
+          Lyy = L-mac(L-yy, y[dim-m1],y[dim-ml]); /* (single basop) */
+      }
+  }
+   ELSE
+  { /* regular search */
+     /* projfacjflt = (pulses - 1)/xsum_fIt; */ /* normalize to Li norm = absolute k-1 pyramid */
+    num = sub(pulses,i);
+    high-pulse-density-flag = 0; move16();
+    if ( sub(pulses, shr(dim, 1)) > 0)
+    {
+       high-pulse-density-flag = 1; move16();
+    }
+    test;
+10176965_1.docx
+
+                                                       54
+    IF((num > 0) &&(high-pulse-density-flag !=0))
+    {
+        shiftden = norm_l(Lxsum);                      /*xsum input Q12                     */
+        den      = extracth(L-shl(L-xsum, shiftden)); /* now in Q12+shiftden
+        L_num       = Ldeposit-l(num);
+        shiftnum = sub(norm-l(L-num) 1);
+        L_num = L shl(Lnum, shift num) ;                   /* now in QO +shiftnum -1
+        proj-fac = div-l(Lnum, den );                  /* Lnum always has to be less than den<<16 */
+        shiftdelta=sub(shiftnumshift den);
+        L-proj-fac = Lshl(LKdepositjl(projjfac), sub(9, shift-delta)); /* bring to a fixed Q12        */
+    }
+      pulsetot = 0;                move 6();
+      Lyy = Ldeposit-l(0);
+      Lxy = Ldeposit-l(0);
+      /* Find a start position on a lower sub pyramid, if the pulse density is larger than 0.5 */
+      IF((num > 0)&& (high-pulse-density-flag !=0))
+      {
+         FOR( i = 0; i < dim ; i++) /* max 64 */
+         {
+            /*yjflt[i] = (short)floor(xabs fIt[i] * projfacjflt); */ /* FLOAT pyramid truncation */
+            /*y[i]     = shr(xabs[i]*L-proj-fac);              */ /* BASOP pyramid truncation */
+            Mpy_32_16_ss(L-proj fac,xabs[i],&Ljtmp,&u16_tmp);                     /*Q12 *Q12 +1*/
+            y[i]      = extract l(L-shr( Ltmp, 12+12-16+1 )); movel6(); /* the pyramid-"truncation" */
+                                                         /*Q12 *Q12 -> Q0*/
+            pulsetot = add(pulse-tot, y[i]);          /* Q0                            */
+            Lyy         = L-mac(L-yy, y[i], y[i]);    /* Energy, result will scale up by 2 by Limac */
+            L_xy        = L-mac(L-xy, xabs[i], y[i]); /*Corr, Q0*Q12 +1-- > Q13
+         }
+      }
+     /* PVQ fine search loop description
+     /* Run an ACELP-like full CorrSq/Energy search */
+     /* the basic search logic isto test adding one unit pulse to each position n in the output vector
+y
+         and update the correlation and energy terms iteratively.
+10176965_1.docx
+
+                                                      55
+       Rxy(k,n) = Rxy(k-1) + 1*abs(x(kn))             %add target times unit correlation
+       Ryy(k,n) = Ryy(k-1) + 2*y(k-1,n) + 1A2 %added unit energy contribution
+       RxySq(k,n) = Rxy(k,n)*Rxy(k,n)
+       minimize ( -Rxy(k,n)/Sqrt(Ryy(k,n))),           over n and k
+       (or equiv. maximize ( RxySq(k,n)/Ryy(k,n) ), over n and k
+         RxySq(k,n)            bestRxySq
+           -------        >    ------            ? update best candidate
+         Ryy(k,n)              bestRyy
+         bestRyy * RxySq(k,n) > bestRxySq * Ryy(k,n) ? update best candidate
+         Misc:
+          1A2 in Ryy(k,n) can be added before the dimension loop
+          Ryy(k,n) can optionally be pre down-scaled by 2.0 to avoid one multiplication/shift
+          Rxy(k,n) can dynamically scaled for each unit pulse loop to optimize RxySq.
+          CorrSqTerm =(Rxy(k,n))A2, should have maximum precision in a Word16/Word32 variable
+          Energy term:Ryy(k, n)
+            should not become zero, i.e. most often have enough precision to not become truncated
+            i.e. preferably use a 32 bit variable if more than 127 pulses are accumulated in Q1.
+            k=127=>log2(127A2 ) = 13.9774 bits, fits in Q1 signed, with Q1 the pre division by 2
+works
+            k=255=>log2(255A2 ) = 15.9887 bits, i.e 1 bits scaling, fits in Q1 unsigned 16 bit value
+          Dimension aspects:
+            dim 6 and higher isalways 16 bit energy safe as max pulses is96
+                 (for 1+31 bits short codewords)
+            dims 5,4,3,2 may be allocated higher than 127 pulses (or lower)
+            dim 1 does not really need a search, only the sign is relevant.
+            Currently we have KMAX=512, or more precisely for DIM 5            kmax is 238
+                                               DIM 4,3,2,1 kmax is512
+          Unsigned DSP arithmetic could also be used,
+             but then the "startup" case/ now a negative sentinel has to be handled in a special way
+             and further currently ULmacULmacCULmsuULmsu0 is not available as STIL
+unsigned basops
+            To make the PVQ search code work efficiently we do:
+                   1.Always use near optimal norm_I based dynamic up-scaling of the correlation term,
+                     by analyzing the accumulated correlation sofar. (Rxy for k-i pulses)
+                     and using a pre-analyzed maximum possible target value maxxabs.
+10176965_1.docx
+
+                                                      56
+                  2. Selectively use 16 or 32 bit representation of the energy term,
+                      depending on the pre-accumulated energy.
+                      further if the energy term Ryy needs more than 16 bits, we switch to a 32 bit
+                      energy representation
+                      and also a higher 32 bit precision for the correlation Rxy and
+                      increase the precision inthe distortion cross-multiplication calculations
+                      to near 64 bits.
+    */
+    /* Rxy-max=(k,*)= max( Lxy + 1*max_x_abs)
+       analysis needed for near optimal Lxy normalization (corr, corrSq) */
+    /* Ryy-max(k,*) = max(L-yy(k-1) + .5 + 1*max-amp-y(k-1))
+       analysis needed for energy (Lyy) precision selection when pulses > 127 ,
+       ((127A2)*2 fits in Signed Word16) */
+           L_yy=Lshr(Lyy,1); /* scale down by 2 for search loop domain */
+           IF(sub(pulses,127)<=O )
+           { /* LC inner loop, enters here always for dimensions 6 and higher,
+                and also sometimes for dimensions 1 .. 5 */
+              /* ( if high energy precision is inactive, maxamp-y is not needed ,
+                 no maxamp-y(k-1) update )
+              FOR (k=pulse tot; k<pulses;k++){
+                 Lyy = L add(L yy,1); /* .5added to energy for pulsetot+1 */
+                 imax = one-pulse-search(dim, xabs,y,&pulsetot,&Lxy,&L-yy,O, 0,maxxabs);
+              }
+           }
+           ELSE
+           { /* HC or LC+HC inner loops */
+              max-amp-y = max_val fx(y, dim); /* this loops over max 5 values */
+             /* max-amp-y from projected y is needed when pulses-sum exceeds 127                */
+              /* First section with 32 bit energy inactive, max-amp-y kept updated though */
+              FOR( k=pulsetot; k<128; k++){
+                 Lyy         = Ladd(Lyy,1);                      /* .5 added */
+                 imax        = one-pulse-search(dim, xabs,y,&pulse-tot,&L-xy,&L-yy,0,0,max-xabs);
+                 max-amp-y = s-max(max-amp-y, y[imax]);
+              }
+              /* Second section with higher number of pulses, 32 bit energy precision adaptively
+                selected, max-amp-y kept updated
+              FOR( k=pulse-tot; k<pulses; k++){
+                 Lyy         = Ladd(Lyy,1); /* .5added
+                 en-margin = norml(Lmac(Lyy,1, max-amp-y)); /*find max "addition", margin,-2
+ops */
+10176965_1.docx
+
+                                                      57
+                   endnshift = sub(16, en-margin); /* calc. shift to lower word */
+                   high-precactive = 1; move16();
+                   if( en-dn-shift <= 0 ){ /*only use 32 bit energy if actually needed */
+                      high-precactive = 0; move16();
+                   }
+                   /* 32 bit energy and corr adaptively active, max-amp-y kept updated */
+                   imax       = one-pulse-search(dim,xabs,y,&pulse-tot,&L-xy,&L-yy,high-precactive,
+                                       endnshift, maxxabs);
+                   max-amp-y = s-max(max-amp-y, y[imax]);
+                }
+              }
+        Lyy = L-shl(L-yy,1); /* yy= yy*2.0 */ /* compensate search loop analysis energy downshift
+by
+                                                  1, to make energy right for unit/inverse gain
+calculation */
+   }
+/* Apply unit energy (L2) normalization scaling, always at least one pulse so no div-by-zero check is
+   needed */
+   Lisqrt         = Ldeposit-l(0);
+   IF(neg-gain !=0 ){
+      Lisqrt = Isqrt(L-shr(L-yy,1)); /* Note: one single gain factor as in flt is not computed */
+   }
+   shiftnum         =  norms(pulse-tot);               /* account for max possible pulse amplitude in y,
+                                                          can be used even when max-amp-y is not
+avail. */
+   shiftden = norms(neg-gain);                          /* account for gain downscaling shift */
+   neg-gain-norm = shl(neg-gain, shift-den);             /* up to 10 dB loss without this norm */
+   shifttot = sub(add(shiftnum, shift den), 15);
+   /* DSP OPT : to save average complexity a special loop can be made for the common gain==1.0
+case */
+   /* DSP OPT PROM : reuse a common decoder normalization loop
+   Lisqrt = Lnegate(L-isqrt);
+   FOR( i = 0; i < dim; i++)
+   {
+      tmp = shl(y[i],shift num); /* upshifted abs(y[i]) used in scaling */
+      if( x[i] < 0
+      {
+          tmp = negate(tmp);                          /* apply sign */
+      }
+      if( y[i]   0
+10176965_1.docx
+
+                                                   58
+        {
+          y[i]   = shr(tmp, shift num); move16(); /* updates sign of y[i},-range -/+ 512),array move
+  */
+        }
+        Mpy_32_16_ss( L isqrt, tmp, &L tmp, &ul6_tmp);             /*Q31*Q(O+x) +1
+        Mpy_32_16_ss( Ltmp, neg-gainnorm , &Ltmp, &ul6_tmp); /* Q31*Q(O+x) *Q15 +1 */
+        Ltmp = L-shr(L tmp, shift tot);                 /* Q31+x             */
+        xq[i] = round fx(L tmp);       move16();          /* Q15, array move     */
+        LKxq[i] = L-tmp;                         /* Q31 currently unused */
+     }
+   /* index the found PVQ vector into short codewords */
+     entry = mpvq-encode-vec-fx(y, dim, pulses);
+    /* send the short codeword(s) to the range encoder */
+     rcencbits fx(st fx, ULdepositjl(entry.lead-signjind) , 1); /* 0 or 1 */
+     IF(sub( dim, 1) !=0)
+     {
+        rcencuniform fx(st-fx, entry.index, entry.size);
+     }
+     return;
+  The above code should be easy to read for all persons skilled in the art and should
+  not have to be explained more in detail. However, for the non-skilled person it is
+  mentioned that the relational operator "= =" is an operator which in an example of
+5 "A= =B" returns a logical value set to logical 1 (true) when values A and B are
+  equal; and otherwise returns logical 0 (false). L_mac is a multiply-accumulate
+  within the meaning that Lmac (Lv3, v1, v2) = Lv3+v1*v2.
+  10176965_1.docx
+
+                                                59
+   APPENDIX 2: Tabled Simulation results
+   Simulation Background
+   Embodiments of the disclosure herein have been simulated. For all PVQ-shape
+   search simulations made, the bit rate used was 64000 bps, and the codec was
+ 5 operated in MDCT mode, with initial MDCT coefficient sub-band sizes of [ 8, 12,
+   16, 24, 32 ] coefficients. These bands may very well be divided into smaller band
+   sections, each represented by a sub vector, by a PVQ band splitting-algorithm. For
+   example, a band of size 8 may be split into smaller sub-section, e.g. "4, 4" or
+   "3,3,2",if it is allocated enough bits. Typically, each band is split in such a way
+10 that a maximum of 32 bits may be used for shape coding of every final sub-vector.
+   In this PVQ-indexing implementation a band of size 8 may have up to 36 unit
+   pulses, a sub section of size 7 may have up to 53 unit pulses, a section of size 6
+   may have up to 95 unit pulses, a section of size 5 may have up to 238 unit pulses,
+   a section of size 4,3,2,1 may have up to 512 unit pulses. As the shorter sections
+15 with a high number of pulses are created dynamically by band-splitting, they are
+   more infrequent than the longer sub vector sizes. The WMOPS figures in the
+   Result Tables below include: ( PVQ-pre-search, PVQ-fine search , PVQ
+   normalization and PVQ-indexing.). The "% identical" figures in the Result Tables
+   below, is the number of identical vectors found in the evaluated limited precision
+20 shape search Algorithm, compared to an unconstrained floating point PVQ shape
+   search.
+   Result Tables
+   Pulses <= 127,                  Min     Seg-     %        Worst      Average
+                                   SNR     SNR      identic  Case       WMOPS
+   Algorithm                       (dB)    (dB)     al       WMOPS                 Remark
+   En{energy-bits} x                                vectors
+   CorrSq{corrSq-bits}
+   Mixed                           4.771   188.803  99.3     6.843      5.496      16x16 always
+   "En 16 x CorrSql6"I"En32 x                                                      used, WC (worst
+   CorrSq32",                                                                      case) in 16x16
+   10176965_1.docx
+
+                                              60
+ pre-analyze max(x-abs)
+Locked "En16 x CorrSq16"           4.771  188.803 99.3 6.843        No change as
+pre-analyze max(x-abs)                                              energy never
+                                                                    exceeds 16 bits
+"En16 x CorrsSq16" using a         -6.021 180.556 94.6 6.826  5.476 Algorithm is bit
+known art correlation scaling                                       worse (lower
+method "OPUS", using                                                minSNR
+accumulated number of unit                                          less identical hits,)
+pulses.                                                             at very similar
+                                                                    complexity
+Locked "En32 x CorrSq16",          4.771  188.803 99.3 8.970  6.961 Unnecessary to
+ pre-analyze max(x-abs)                                             Use En32 for
+                                                                    pulses <=127, as
+                                                                    energy never
+                                                                    exceeds 16 bits
+                                                                    dynamics
+Locked "En16 x CorrSq32",          190.0  190.0   100  9.386  7.248 2.5 WMOPS extra
+pre-analyze input max(x-abs)                                        required for the
+                                                                    last 0.7 %hits
+Locked "En32 x CorrSq32",          190.0  190.0   100  10.474 7.999 Unnecessary 0.9
+pre-analyze max(x-abs)                                              WMOPS increase
+                                                                    compared to
+                                                                    Locked
+                                                                    "En16xCorrSq32"
+Table 1 Results for final K <= 127
+10176965_1.docx
+
+                                    61
+Pulses> 127          minSNR segSNR     %identical Worst      Average- Remark
+Algorithm                              vectors    Case-      WMOPS
+En{energy-bits} x    (dB)   (dB)                  WMOPS
+CorrSq{corrSq-bits}
+Mixed AccEn          32.686 160.316    80.4%      6.843      5.496    Agood
+controlled                                        (WC still           enough
+"En 16 x CorrSql6"/                               from 16x16          solution
+"En32 x CorrSq32"                                 sections)
+                                                                      WC is still for
+   pre-analyze input
+                                                                      16x16, WC is
+ acc. energy
+                                                                      not increased
+controlled precision
+Mixed AccEn          32.686 130.258    59.3%      n/a        n/a      Energy
+controlled                                                            information is
+"En 16 x CorrSql6"/                                                   occasionally
+"En 16 x CorrSq32"                                                    truncated ,
+pre-analyze input,                                                    causing low
+acc. energy                                                           SNR
+controlled precision
+Mixed AccEn          32.686 117.634    50.6 %     n/a        n/a      Correlation
+controlled                                                            information
+"En 16 x CorrSql6"/                                                   has low
+"En32 x CorrSq16"                                                     precision,
+pre-analyze input,                                                    causing low
+acc. energy                                                           SNR
+controlled precision
+Locked "En16 x       32.686 113.629    47.8%      n/a        n/a      Energy
+10176965_1.docx
+
+                                    62
+CorrSq16",                                            information
+                                                      occasionaly
+       pre-analyze
+                                                      truncated
+input,                                                and
+                                                      correlation in
+                                                      information
+                                                      has low
+                                                      precission,
+                                                      causing low
+                                                      SNR
+Locked "En32x      32.686   117.634    50.6 % n/a n/a Correlation
+CorrSq16",                                            information
+pre-analyze input                                     has low
+                                                      precision,
+                                                      causing low
+                                                      SNR
+Locked "En16 x     40.994   159.714    78.8%  n/a n/a Energy
+CorrSq32",                                            information is
+pre-analyze input                                     occasionally
+                                                      truncated,
+                                                      causing low
+                                                      SNR
+Locked "En32x      49.697   189.773    99.8%  7.1 5.7 WC now in
+CorrSq32",                                            32x32
+pre-analyze input                                     section,
+                                                      higher
+                                                      complexity
+                                                      WC
+Table 2 Results for K > 127
+10176965_1.docx
+
+                                                63
+   CLAIMS
+      1.     A method for Pyramid Vector Quantizer (PVQ) shape search, performed
+               by a digital signal processor, the PVQ taking a target vector x as input
+ 5             and deriving a vector y by iteratively adding unit pulses in an inner
+               dimension search loop, the method comprising:
+                   before entering a next inner dimension search loop for unit pulse
+                   addition:
+                   -determining, based on a maximum pulse amplitude (maxampy), of a
+10                 current vector y, whether more than a current bit word length is
+                   needed to represent, in a lossless manner, a variable (enloopy)
+                   related to an accumulated energy of y, in the next inner dimension
+                   search loop.
+      2.     The method according to claim 1, wherein the method further comprises:
+15                 before entering the next inner dimension search loop for unit pulse
+                   addition:
+                   -determining, based on a maximum absolute value (xabsmax) of the
+                   input vector (x), a possible upshift, in a bit word, of the next inner
+                   dimension search loop's accumulated in-loop correlation value (corrxy)
+20                 between x and the vector y.
+      3.     The method according to claim 1 or 2, further comprising:
+                   when more than the current bit word length is needed to represent
+                   enloopy:
+                   -performing the inner loop calculations using a longer bit word length
+25                 to represent enloopy.
+      4.     The method according to claim 1 or 2, further comprising:
+                   when more than the current bit word length is needed to represent
+                   enloopy:
+   10176965_1.docx
+
+                                                 64
+                   -performing the inner loop calculations using a longer bit word length
+                   to represent a squared accumulated in-loop correlation value (corrxy 2)
+                   between x and the vector y, in the inner dimension search loop.
+      5.     The method according to claim 1 or 2, further comprising,
+ 5            when more than the current bit word length is not needed to represent
+               enloopy:
+                   -performing the inner loop calculations by employing a first unit pulse
+                   addition loop using a first bit word length to represent enloopy, and:
+              when more than the current bit word length is needed to represent
+10             enloopy:
+                   -performing the inner loop calculations by employing a second unit
+                   pulse addition loop using a longer bit word length to represent enloopy
+                   than the first unit pulse addition loop.
+      6.     The method according to any one of claims 1-4, further comprising,
+15            when more than the current bit word length is not needed to represent
+               enloopy:
+                   -performing the inner loop calculations by employing a first unit pulse
+                   addition loop having a certain precision, and:
+              when more than a current bit word length is needed to represent enloopy:
+20                 -performing the inner loop calculations by employing a second unit
+                   pulse addition loop having a higher precision than the first unit pulse
+                   addition loop.
+      7.     The method according to any one of the preceding claims, wherein the
+               determining, based on maxampy, of whether more than the current bit
+25            word length is needed to represent enloopy comprises determining
+               characteristics of the case when, in the upcoming inner search loop, a
+               unit pulse is added to the position in y being associated with maxampy.
+      8.     The method according to any one of claims 1-6, further comprising:
+   10176965_1.docx
+
+                                                 65
+                   in the inner dimension search loop for unit pulse addition:
+                   -determining a position   nests) in y for addition of a unit pulse by
+                   evaluating a cross-multiplication, for each position n in y, of a
+                   correlation and energy value for the current n; and a squared
+ 5                 correlation (BestCorrSq) and an energy value (bestEn) saved from
+                   previous values of n, as:
+                   corrxy2 * bestEn > BestCorrSq * enloopy
+                   where
+                          best -- n
+                     bestEn = enloopy      when corrxy2 * bestEn > BestCorrSq * enloopy
+                                      21
+                   BestCorrSq = corrxy}
+10
+      9.     The method according to any one of the preceding claims, further
+               comprising:
+                   -keeping track of maxampy when a final value of K, associated with
+                   the target vector x, exceeds a threshold value.
+15    10.       A digital signal processor configured for Pyramid Vector Quantization
+               (PVQ) shape search; the PVQ taking a target vector x as input and
+               deriving a vector y by iteratively adding unit pulses in an inner dimension
+               search loop, the digital signal processor being configured to:
+                   before entering a next inner dimension search loop for unit pulse
+20                 addition:
+                   -determine, based on a maximum pulse amplitude (maxampy) of a
+                   current vector y, whether more than a current bit word length is
+                   needed to represent, in a lossless manner, a variable (enloopy)
+                   related to an accumulated energy of y, in the next inner dimension
+25                 search loop.
+      11.       The digital signal processor according to claim 10, being further
+               configured to:
+   10176965_1.docx
+
+                                                 66
+                   before entering the next inner dimension search loop for unit pulse
+                   addition:
+                   -determine, based on a maximum absolute value (xabsmax) of the
+                   input vector (x), a possible upshift, in a bit word, of the next inner
+ 5                 dimension search loop's accumulated in-loop correlation value (corrxy)
+                   between x and the vector y.
+      12.      The digital signal processor according to claim 10 or 11, being further
+               configured to:
+                   -perform the inner loop calculations using a longer bit word length to
+10                 represent enloopy, when more than the current bit word length is
+                   needed to represent enloopy.
+      13.      The digital signal processor according to any one of claims 10-12, being
+               configured to:
+                   -perform the inner loop calculations by employing a first unit pulse
+15                 addition loop using a first bit word length when more than the current
+                   bit word length is not needed to represent enloopy, and:
+                   -perform the inner loop calculations by employing a second unit pulse
+                   addition loop using a longer bit word length than the first unit pulse
+                   addition loop when more than the current bit word length is needed to
+20                 represent enloopy.
+      14.      The digital signal processor according to any one of claims 10-12, being
+              further configured to:
+                   -perform the inner loop calculations by employing a first unit pulse
+                   addition loop, having a certain precision, when more than the current
+25                 bit word length is not needed to represent enloopy; and to
+                   -perform the inner loop calculations by employing a second unit pulse
+                   addition loop, having a higher precision than the first unit pulse
+                   addition loop, when more than the current bit word length is needed
+                   to represent enloopy.
+   10176965_1.docx
+
+                                                67
+      15.      The digital signal processor according to any one of claims 10-14,
+              wherein the determining, based on maxampy, of whether more than the
+               current bit word length is needed to represent enloopy is configured to
+               comprise determining characteristics of the case when, in the next inner
+ 5             dimension search loop, a unit pulse is added to the position in y being
+               associated with maxampy.
+      16.      The digital signal processor according to any one of claims 10-14, being
+              further configured to:
+                   in the inner dimension search loop for unit pulse addition:
+10                 -determine a position nests) in y for addition of a unit pulse by
+                   evaluating a cross-multiplication, for each position n in y, of a
+                   correlation and energy value for the current n; and a correlation
+                   (BestCorrSq) and energy value (bestEn) saved from previous values
+                   of n, as:
+15                 corrxy2 * bestEn > BestCorrSq * enloopy
+                   where
+                         best -- n
+                     bestEn = enloopy     when corrxy2 * bestEn > BestCorrSq * enloopy
+                                      2a
+                   BestCorrSq = corrxyl
+      17.      The digital signal processor according to any one of claims 10-16, being
+              further configured to keep track of maxampy when a number of final unit
+20             pulses (K) associated with the target vector x, exceeds a threshold value.
+      18.      The digital signal processor according to any one of claims 10-17,
+              wherein the digital signal processor is a fixed precision digital signal
+               processor.
+      19.       Communication device comprising the digital signal processor according
+25            to any one of claims 10-18.
+   10176965_1.docx
+
+                                    1/10
+<removed-date>
+                  'HWHUPLQHZRUGOHQJWKIRUHQORRS\ IRU
+                   QH[WLQQHUORRSEDVHGRQPD[DPS\            
+<removed-apn>
+              5XQLQQHUORRSZLWKGHWHUPLQHGZRUGOHQJWK
+                 IRUHQORRS\ VHOHFWHGSUHFLVLRQORRS             
+               8SGDWHPD[DPS\ DIWHUDGGLWLRQRISXOVH           
+                          LQLQQHUORRS
+                                                              Figure 1
+                   .HHSWUDFNRI'HWHUPLQHPD[DPS\              
+                           'HWHUPLQH[DEVPD[                     
+                 'HWHUPLQHPD[XSVKLIWRIFRUU[\ IRUQH[W
+                      LQQHUORRSEDVHGRQ[DEVPD[              
+                  'HWHUPLQHZRUGOHQJWKIRUHQORRS\ IRU
+                   QH[WLQQHUORRSEDVHGRQPD[DPS\             
+               5XQLQQHUORRSZLWKGHWHUPLQHGZRUGOHQJWK
+                                                                 
+              IRUHQORRS\ DQGGHWHUPLQHGXSVKLIWIRUFRUU[\
+                           8SGDWHPD[DPS\                        
+                  DIWHUDGGLWLRQRISXOVHLQLQQHUORRS
+                                                                Figure 2
+
+                                                   2/10
+<removed-date>
+                                     'HWHUPLQHPD[DPS\                        
+                                      'HWHUPLQH[DEVPD[                       
+                            'HWHUPLQHPD[XSVKLIWRIFRUU[\ IRUQH[W
+                                 LQQHUORRSEDVHGRQ[DEVPD[                 
+<removed-apn>
+                            'HWHUPLQHZRUGOHQJWKIRUHQORRS\ IRU
+                             QH[WLQQHUORRSEDVHGRQPD[DPS\                
+                    5XQLQQHUORRSZLWKSUHFLVLRQEDVHGRQZRUGOHQJWKIRUHQORRS\
+                                                                                           
+                                 DQGGHWHUPLQHGXSVKLIWIRUFRUU[\A
+                                      8SGDWHPD[DPS\                          
+                             DIWHUDGGLWLRQRISXOVHLQLQQHUORRS
+                                                                               Figure 3
+                                .HHSWUDFNRIPD[DPS\                   
+                        'HWHUPLQHZRUGOHQJWKIRUHQORRS\ IRU          
+                         QH[WLQQHUORRSEDVHGRQPD[DPS\
+                                 /RQJHUZRUGOHQJWK            12
+                                     QHHGHG"
+                                                                                  
+                                            <(6
+                     5XQKLJKSUHFLVLRQLQQHUORRS              5XQORZSUHFLVLRQLQQHUORRS
+                                                                               Figure 4
+
+           <removed-apn>   <removed-date>
+                                 3/10
+Figure 5
+
+           <removed-apn>   <removed-date>
+                                 4/10
+Figure 6
+
+                  5/10
+<removed-date>
+<removed-apn>
+              HQHUJ\
+                         VHYHQWK
+                                   Figure 7
+
+           <removed-apn>   <removed-date>
+                                 6/10
+Figure 8
+
+           <removed-apn>   <removed-date>
+                                 7/10
+Figure 9
+
+            <removed-apn>   <removed-date>
+                                  8/10
+Figure 10
+
+                                         9/10
+<removed-date>           Processing circuitry
+                            1101
+                                                Interface
+                                                  1102
+<removed-apn>
+                             Encoder 1100                        Figure 11a
+                      1101
+              1103
+                          Processor                 Interface
+              1104                                    1102
+                             Memory
+              1105        Computer
+                          program
+                                                 Encoder 1100
+                                                                     Figure 11b
+                      1101
+               1106
+                           Determining unit          Interface
+              1107                                     1102
+                          Fine search unit
+                             Encoder 1100
+                                                                     Figure 11c
+
+            <removed-apn>   <removed-date>
+                                  10/10
+Figure 12
+
